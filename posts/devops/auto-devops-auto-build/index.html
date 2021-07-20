@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>自动化运维之自动构建</title>
+    <meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta http-equiv="X-UA-Compatible" content="ie=edge" />
+
+
+<link rel="stylesheet" href="/assets/css/bootstrap.min.css" />
+<link rel="stylesheet" href="/assets/css/style.css" />
+<link rel="stylesheet" href="/assets/css/navbar.css" />
+
+
+<link href="https://fonts.googleapis.com/css2?family=Muli:wght@300;400;500;600" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" />
+
+
+<link rel="icon" type="image/png" href="/assets/images/favicon.png" />
+
+
+    
+<link
+  rel="stylesheet"
+  href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/styles/atom-one-dark.min.css"
+/>
+<link rel="stylesheet" href="/assets/css/single.css" />
+
+
+    
+    
+      
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'UA-142765126-1', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+
+    
+  </head>
+
+  <body>
+    <div class="container-fluid bg-dimmed wrapper">
+      
+      
+    <nav class="navbar navbar-expand-lg top-navbar final-navbar shadow">
+    <div class="container">
+      <a class="navbar-brand" href="/posts">
+        <img src="/assets/images/logo.png">青云卷</a>
+      <button class="navbar-toggler navbar-light" type="button" >
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <div class="collapse navbar-collapse" id="top-nav-items">
+        <ul class="navbar-nav ml-auto">
+        </ul>
+      </div>
+    </div>
+</nav>
+
+
+
+      
+      
+<div class="container p-0 read-area">
+  
+  <div class="hero-area col-sm-12" style='background-image: url(https://mydream.ink/assets/images/posts/devops/GitLab-Kubernetes-Running-CI-Runners-in-Kubernetes.png);'>
+  </div>
+
+  
+  <div class="page-content">
+    <div class="author-profile ml-auto align-self-lg-center">
+      <img class="rounded-circle" src='/assets/images/portrait.jpg'/>
+      <h5 class="author-name">Jerry Chan</h5>
+      <p>September 8, 2019</p>
+    </div>
+
+    <div class="title">
+      <h1>自动化运维之自动构建</h1>
+    </div>
+
+    <div class="post-content" id="post-content">
+      <p>本文供自己记录学习，我会尽量保证文章准确无误，但因本人水平有限，如果不幸产生任何错误，望读者不吝赐教。</p>
+<h2 id="浅析-gitlab-runner-相关配置">浅析 gitlab-runner 相关配置</h2>
+<p>在 gitlab-runner 中每个 runner 都需要指定 <a href="https://docs.gitlab.com/runner/executors/">executor</a>，executor 有以下几种类型：</p>
+<ul>
+<li>SSH</li>
+<li>Shell</li>
+<li>Parallels</li>
+<li>VirtualBox</li>
+<li>Docker</li>
+<li>Docker Machine (auto-scaling)</li>
+<li>Kubernetes</li>
+<li>Custom</li>
+</ul>
+<p>我们会将 gitlab-runner 部署在 kubernetes 集群中，所以此处选用 kubernetes 作为 executor。有关该 executor 的配置方式，在<a href="https://docs.gitlab.com/runner/executors/kubernetes.html">官方文档</a>中有详细说明，此处就此次配置所需要的进行简单说明，其它的再视情况进行补充。</p>
+<p>与其它类型的 executor 一样，kubernetes 也需要根据 gitlab 仓库的 url 和 token 对 runner 进行注册方可使用。注册后会有一个常驻的 pod （我姑且叫它 runner 服务端）对来自于 gitlab 的 pipeline 任务进行监听，当监听到有新的任务需要执行时，就会创建新的 pipeline 跑 <code>.gitlab-ci.yml</code> 上对应的job。所以 runner 服务端相关联的 ServieAccount 一定需要具备对应的 namespace 的 pod 的创建的权限。</p>
+<p>配置一个 runner 有多种方式，包括启动参数、环境变量、配置文件等。这其中配置文件的功能最强，参数可配置项较环境变量稍多（或许它们具有相同的能力，只是我没有发现，如果你知道欢迎帮忙补充）。通过<code>gitlab-runner help register</code>命令我们可以找到所有的启动参数和环境变量，参数与环境变量之间的关系请参照<a href="https://gist.github.com/alphajc/e2c19fa624ccc29fb3af0803e9afcb22">参数与环境变量对照表</a>。</p>
+<h3 id="runner-的集群中权限">runner 的集群中权限</h3>
+<p>前面已经谈到 runner 服务端在注册成功监听到新的任务后，需要以 Pod 的形式创建 Worker 对新对任务进行处理。这里我们需要考虑几种权限：Pod 的操作权限、Worker 镜像的拉取权限以及在 Worker 中构建镜像时对私有镜像的拉取权限。</p>
+<p>Pod 的操作权限通过 kubernetes 中的 ServiceAccount 来实现，我们需要赋予对应的 ServiceAccount 对指定命名空间的 Pod 的操作权限，相关的参数有<code>--kubernetes-namespace</code>和<code>--kubernetes-service-account</code>以及他们环境变量的开关参数<code>--kubernetes-namespace_overwrite_allowed</code>和<code>--kubernetes-service_account_overwrite_allowed</code>。这里指定的 ServiceAccount 一定要在指定的 Namespace 中有 Pod 的操作权限，否则 gitlab 在跑 pipeline 的时候会报权限错误。有关 ServiceAccount 的权限配置是通过 RBAC 实现的，详情参照<a href="https://kubernetes.io/docs/reference/access-authn-authz/rbac/">kubernetes 中 RBAC 认证的文档</a>。</p>
+<p>对于 Worker 镜像的拉取权限，一般都是在集群创建时预先配置好的，此处无需另行配置。而 Worker 中构建镜像时对私有镜像的拉取和推送权限是在 <code>.gitlab-ci.yml</code>中进行配置的，这里不要搞混。</p>
+<h3 id="runner-的持久化存储">runner 的持久化存储</h3>
+<p>runner 可以使用 hostPath 和 PVC 做持久化存储，跟 Kubernetes 中的概念完全一样。用法参照<a href="https://docs.gitlab.com/runner/executors/kubernetes.html#using-volumes">使用卷</a>，参考配置如下：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-toml" data-lang="toml"><span style="color:#a6e22e">concurrent</span> = <span style="color:#ae81ff">4</span>
+
+[[<span style="color:#a6e22e">runners</span>]]
+  <span style="color:#75715e"># usual configuration</span>
+  <span style="color:#a6e22e">executor</span> = <span style="color:#e6db74">&#34;kubernetes&#34;</span>
+  [<span style="color:#a6e22e">runners</span>.<span style="color:#a6e22e">kubernetes</span>]
+    [[<span style="color:#a6e22e">runners</span>.<span style="color:#a6e22e">kubernetes</span>.<span style="color:#a6e22e">volumes</span>.<span style="color:#a6e22e">host_path</span>]]
+      <span style="color:#a6e22e">name</span> = <span style="color:#e6db74">&#34;hostpath-1&#34;</span>
+      <span style="color:#a6e22e">mount_path</span> = <span style="color:#e6db74">&#34;/path/to/mount/point&#34;</span>
+      <span style="color:#a6e22e">read_only</span> = <span style="color:#66d9ef">true</span>
+      <span style="color:#a6e22e">host_path</span> = <span style="color:#e6db74">&#34;/path/on/host&#34;</span>
+    [[<span style="color:#a6e22e">runners</span>.<span style="color:#a6e22e">kubernetes</span>.<span style="color:#a6e22e">volumes</span>.<span style="color:#a6e22e">host_path</span>]]
+      <span style="color:#a6e22e">name</span> = <span style="color:#e6db74">&#34;hostpath-2&#34;</span>
+      <span style="color:#a6e22e">mount_path</span> = <span style="color:#e6db74">&#34;/path/to/mount/point_2&#34;</span>
+      <span style="color:#a6e22e">read_only</span> = <span style="color:#66d9ef">true</span>
+    [[<span style="color:#a6e22e">runners</span>.<span style="color:#a6e22e">kubernetes</span>.<span style="color:#a6e22e">volumes</span>.<span style="color:#a6e22e">pvc</span>]]
+      <span style="color:#a6e22e">name</span> = <span style="color:#e6db74">&#34;pvc-1&#34;</span>
+      <span style="color:#a6e22e">mount_path</span> = <span style="color:#e6db74">&#34;/path/to/mount/point1&#34;</span>
+    [[<span style="color:#a6e22e">runners</span>.<span style="color:#a6e22e">kubernetes</span>.<span style="color:#a6e22e">volumes</span>.<span style="color:#a6e22e">config_map</span>]]
+      <span style="color:#a6e22e">name</span> = <span style="color:#e6db74">&#34;config-map-1&#34;</span>
+      <span style="color:#a6e22e">mount_path</span> = <span style="color:#e6db74">&#34;/path/to/directory&#34;</span>
+      [<span style="color:#a6e22e">runners</span>.<span style="color:#a6e22e">kubernetes</span>.<span style="color:#a6e22e">volumes</span>.<span style="color:#a6e22e">config_map</span>.<span style="color:#a6e22e">items</span>]
+        <span style="color:#e6db74">&#34;key_1&#34;</span> = <span style="color:#e6db74">&#34;relative/path/to/key_1_file&#34;</span>
+        <span style="color:#e6db74">&#34;key_2&#34;</span> = <span style="color:#e6db74">&#34;key_2&#34;</span>
+    [[<span style="color:#a6e22e">runners</span>.<span style="color:#a6e22e">kubernetes</span>.<span style="color:#a6e22e">volumes</span>.<span style="color:#a6e22e">secret</span>]]
+      <span style="color:#a6e22e">name</span> = <span style="color:#e6db74">&#34;secrets&#34;</span>
+      <span style="color:#a6e22e">mount_path</span> = <span style="color:#e6db74">&#34;/path/to/directory1&#34;</span>
+      <span style="color:#a6e22e">read_only</span> = <span style="color:#66d9ef">true</span>
+      [<span style="color:#a6e22e">runners</span>.<span style="color:#a6e22e">kubernetes</span>.<span style="color:#a6e22e">volumes</span>.<span style="color:#a6e22e">secret</span>.<span style="color:#a6e22e">items</span>]
+        <span style="color:#e6db74">&#34;secret_1&#34;</span> = <span style="color:#e6db74">&#34;relative/path/to/secret_1_file&#34;</span>
+    [[<span style="color:#a6e22e">runners</span>.<span style="color:#a6e22e">kubernetes</span>.<span style="color:#a6e22e">volumes</span>.<span style="color:#a6e22e">empty_dir</span>]]
+      <span style="color:#a6e22e">name</span> = <span style="color:#e6db74">&#34;empty_dir&#34;</span>
+      <span style="color:#a6e22e">mount_path</span> = <span style="color:#e6db74">&#34;/path/to/empty_dir&#34;</span>
+      <span style="color:#a6e22e">medium</span> = <span style="color:#e6db74">&#34;Memory&#34;</span>
+</code></pre></div><h3 id="在-runner-中构建镜像">在 runner 中构建镜像</h3>
+<p>在 runner 中构建 Docker 镜像有两种方式，最常见的是使用<code>docker build</code>命令，另一种是使用谷歌推出的<a href="https://github.com/GoogleContainerTools/kaniko"><code>kaniko</code></a>。相较于<code>docker build</code>，<code>kaniko</code>无需 Docker Daemon 即可工作，因此 Worker 无需在特权模式下工作，这种方式不会挑战 Kubernetes 集群的安全性。下面将具体谈谈两种方式：</p>
+<h4 id="docker-build">docker build</h4>
+<p>使用这种方式构建 Docker 镜像我们不得不为执行该 Job 的 Worker 开启特权模式，这会带来安全性问题。如果你对此不以为然的话，就可以进行接下来的步骤了。</p>
+<p>尽管这种方式本身就是不安全的，但是如果做好以下几点，依然可以有效降低安全风险：</p>
+<ol>
+<li>将特权模式的 runner 打上专用标签，仅供使用对应标签的 job 调用；</li>
+<li>创建这种类型的 runner 服务端时，使用 Taint 标记 Node，告诉其它应用这个结点的污点，在部署 runner 或其它可以容忍这个安全问题的应用时设置对应的 Toleration。</li>
+</ol>
+<p>这可以确保特权模式不被滥用，亦可对应用的安全性负责。</p>
+<p>以特权模式运行的<code>docker: dind</code>容器会在<code>2375/tcp</code>端口上进行监听，我们可以通过 TCP 协议对 Docker 进行操作。</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#f92672">image</span>: <span style="color:#ae81ff">docker:latest</span>
+
+<span style="color:#f92672">variables</span>:
+    <span style="color:#f92672">DOCKER_HOST</span>: <span style="color:#ae81ff">tcp://localhost:2375</span> <span style="color:#75715e"># 在 Kubernetes 中 service 会以 sidecar 的形式插到 Pod 中，同一 Pod 中的网络使用 localhost 访问即可</span>
+    <span style="color:#f92672">DOCKER_DRIVER</span>: <span style="color:#ae81ff">overlay2</span>
+
+<span style="color:#f92672">services</span>:
+  - <span style="color:#ae81ff">docker:18-dind</span>
+
+<span style="color:#f92672">before_script</span>:
+  - <span style="color:#ae81ff">docker login -u &#34;$CI_REGISTRY_USER&#34; -p &#34;$CI_REGISTRY_PASSWORD&#34; $CI_REGISTRY</span>
+
+<span style="color:#f92672">build-master</span>:
+  <span style="color:#f92672">stage</span>: <span style="color:#ae81ff">build</span>
+  <span style="color:#f92672">script</span>:
+    - <span style="color:#ae81ff">docker build --pull -t &#34;$CI_REGISTRY_IMAGE&#34; .</span>
+    - <span style="color:#ae81ff">docker push &#34;$CI_REGISTRY_IMAGE&#34;</span>
+</code></pre></div><blockquote>
+<p>注：docker 宿主机的版本与<code>dind</code>的版本最好一致。比如我宿主机使用的<code>18.03</code>的版本，那么镜像就应该使用<code>docker:18-dind</code>，如果直接使用<code>docker:dind</code>会使用最新版本的 docker。我当时遇到的一个问题是在 dind 容器中只监听了<code>2376</code>端口，没有<code>2375</code>。<code>2376</code>端口是做了加密的，至少需要配置证书都能使用，<code>2375</code>端口不能正常使用，不知道是因为版本不一致，还是本来就只会监听<code>2376</code>，我看 Dockerfile 中，两个端口都有暴露，时间关系我就没有进一步细研了。当我换作<code>docker:18-dind</code>后，问题都解决了。</p>
+</blockquote>
+<h4 id="kanikohttpsdocsgitlabcomeecidockerusing_kanikohtml"><a href="https://docs.gitlab.com/ee/ci/docker/using_kaniko.html">kaniko</a></h4>
+<p>用法如下：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#f92672">build</span>:
+  <span style="color:#f92672">stage</span>: <span style="color:#ae81ff">build</span>
+  <span style="color:#f92672">image</span>:
+    <span style="color:#f92672">name</span>: <span style="color:#ae81ff">gcr.io/kaniko-project/executor:debug</span>
+    <span style="color:#f92672">entrypoint</span>: [<span style="color:#e6db74">&#34;&#34;</span>]
+  <span style="color:#f92672">script</span>:
+    - <span style="color:#ae81ff">echo &#34;{\&#34;auths\&#34;:{\&#34;$CI_REGISTRY\&#34;:{\&#34;username\&#34;:\&#34;$CI_REGISTRY_USER\&#34;,\&#34;password\&#34;:\&#34;$CI_REGISTRY_PASSWORD\&#34;}}}&#34; &gt; /kaniko/.docker/config.json</span>
+    - <span style="color:#ae81ff">/kaniko/executor --context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/Dockerfile --destination $CI_REGISTRY_IMAGE:$CI_COMMIT_TAG</span>
+</code></pre></div><h2 id="使用-helm-安装-gitlab-runner">使用 helm 安装 gitlab-runner</h2>
+<p>使用 gitlab 官方 chart 库进行 gitlab-runner 的安装。因为官方的 chart 使用参数和环境变量注册 gitlab-runner，在使用上会有一定的局限性，可能需要一些修改才能进行高级配置。以下是使用官方 chart 部署 gitlab-runner 的步骤：</p>
+<h3 id="前提">前提</h3>
+<ol>
+<li>安装了 tiller 的 kubernetes 的集群</li>
+<li>初始化完成了的 helm 命令行工具</li>
+</ol>
+<h3 id="1-添加-gitlab-官方-chart-仓库">1. 添加 gitlab 官方 chart 仓库</h3>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">helm repo add gitlab https://charts.gitlab.io/
+helm repo update
+</code></pre></div><h3 id="2-在-gitlab-代码仓库中找到-url-和-runner-的-token">2. 在 gitlab 代码仓库中找到 url 和 runner 的 token</h3>
+<p><img src="/assets/images/posts/devops/find-url-and-token.png" alt="获取 Gitlab 的 URL 和 runner 的 token"></p>
+<h3 id="3-安装-gitlab-runner">3. 安装 gitlab-runner</h3>
+<p>我们可以通过参数以及配置文件的形式为 helm 添加自定义配置。该 Chart 的可配置项可以查阅官方库<a href="https://gitlab.com/gitlab-org/charts/gitlab-runner/blob/master/values.yaml">对于 <code>values.yaml</code> 文件的注释</a>，这里把关键配置提出来说明一下：</p>
+<ul>
+<li><code>gitlabUrl</code>：gitlab 服务的地址，形如：https://gitlab.xxx.com；</li>
+<li><code>runnerRegistrationToken</code>：上一步中得到的 token；</li>
+<li><code>rbac.create</code>：我是没有遇到过没有 <code>rbac</code> 的 kubernetes 集群，所以记得一定填 <code>true</code>，否则创建出的 gitlab-runner 将无权对集群进行操作；</li>
+<li><code>rbac.clusterWideAccess</code>：如果涉及到在不同的 namespace 跑 job，设置为 <code>true</code>，否则置为 <code>false</code>（这只能操作同一 namespace）；</li>
+<li><code>rbac.serviceAccountName</code>：如果不设置默认使用 default，如果 sa 专用则建议另起一个名字，以避免 default 权限过大，其它用 default 的 pod 滥用；</li>
+<li><code>runners.image</code>：默认镜像，在 gitlab-ci.yml 中的 job 未配置 <code>image</code> 时将自动选用；</li>
+<li><code>runners.privileged</code>：一般在该 runner 需要跑 <code>docker:dind</code> 镜像时使用；</li>
+<li><code>runners.namespace</code>: Job 运行的 namespace；</li>
+<li><code>runners.imagePullSecrets</code>：在创建 job 时使用的镜像如果来自于私有仓库则需要配置该字段。注意使用前需要提前创建好对应的 secret；</li>
+<li><code>runners.cache</code>：如果要使用 runner 的 cache 功能，需要对此选项进行配置，不同的持久化方式配置不同，有些方式甚至需要对 chart 进行改造。</li>
+</ul>
+<blockquote>
+<p>注：该 Chart 的多 runner 注册功能受限，对 kubernetes 的高级功能配置支持也有限，后期我将对这个 Chart 进行改造，使其支持。</p>
+</blockquote>
+<h2 id="浅析-gitlab-ciyml-相关配置">浅析 <code>.gitlab-ci.yml</code> 相关配置</h2>
+<p>有关 <code>.gitlab-ci.yml</code> 更详细的配置参照<a href="https://docs.gitlab.com/ee/ci/yaml/README.html">官方文档</a>，在此仅挑部分有特点的东西记录一下。</p>
+<ol>
+<li>image 将确定 job 运行的环境，script 将在该环境中运行；</li>
+<li>service 是环境的依赖，如<code>docker:dind</code> 一般以这种方式注入，具体在 kubernetes 集群中会以 sidecar 的形式与主环境放在一个 pod 中，所以如果 service 提供的是 socket 服务，在主环境中使用 localhost 即可访问；</li>
+<li>注意 only/except 的<a href="https://docs.gitlab.com/ee/ci/yaml/README.html#onlyexcept-advanced">高级用法</a>，可以服务于多种场景；</li>
+<li>使用 <a href="https://docs.gitlab.com/ee/ci/yaml/README.html#rules">rules</a> 对 job 进行合理控制；</li>
+<li><a href="https://docs.gitlab.com/ee/ci/yaml/README.html#environment">environment</a> 跟持续部署相关，主要用于前端项目；</li>
+<li><a href="https://docs.gitlab.com/ee/ci/yaml/README.html#cache">cache</a> 用于在多个 job 间缓存数据；</li>
+<li><a href="https://docs.gitlab.com/ee/ci/yaml/README.html#artifacts">artifacts</a> 将对指定文件（一般是编译产物）进行打包，并上传至 gitlab，供下载使用，这也会在界面进行展示，配合 <a href="https://docs.gitlab.com/ee/ci/yaml/README.html#dependencies">dependencies</a> 使用，可以在不同 stage 的 job 间进行传递；</li>
+<li>使用 <a href="https://docs.gitlab.com/ee/ci/yaml/README.html#coverage">coverage</a> 抓取测试覆盖率</li>
+</ol>
+<h2 id="配置-gitlab-ciyml">配置 <code>.gitlab-ci.yml</code></h2>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#f92672">stages</span>:
+  - <span style="color:#ae81ff">build</span>
+
+<span style="color:#f92672">.build-common</span>: <span style="color:#75715e">&amp;build-common</span>
+  <span style="color:#f92672">image</span>: <span style="color:#ae81ff">docker:latest</span>
+  <span style="color:#f92672">variables</span>:
+    <span style="color:#f92672">DOCKER_HOST</span>: <span style="color:#ae81ff">tcp://localhost:2375</span> <span style="color:#75715e"># kubernetes 集群中使用 localhost 访问</span>
+    <span style="color:#f92672">DOCKER_DRIVER</span>: <span style="color:#ae81ff">overlay2</span>
+  <span style="color:#f92672">services</span>:
+    - <span style="color:#f92672">name</span>: <span style="color:#ae81ff">docker:18-dind</span> <span style="color:#75715e"># 匹配环境中 docker 的版本</span>
+      <span style="color:#f92672">command</span>: [<span style="color:#e6db74">&#34;--registry-mirror=https://mirror.ccs.tencentyun.com&#34;</span>] <span style="color:#75715e"># 这是我找到的在编译镜像时，配置镜像加速器的最好办法</span>
+  <span style="color:#f92672">before_script</span>:
+    - <span style="color:#ae81ff">docker login -u &#34;$CI_REGISTRY_USER&#34; -p &#34;$CI_REGISTRY_PASSWORD&#34; $CI_REGISTRY</span>
+
+<span style="color:#f92672">build-master</span>:
+  <span style="color:#f92672">&lt;&lt;</span>: <span style="color:#75715e">*build-common</span>
+  <span style="color:#f92672">stage</span>: <span style="color:#ae81ff">build</span>
+  <span style="color:#f92672">script</span>:
+    - <span style="color:#ae81ff">docker build -t &#34;$CI_REGISTRY_IMAGE&#34; .</span>
+    - <span style="color:#ae81ff">docker tag &#34;$CI_REGISTRY_IMAGE&#34; &#34;$CI_REGISTRY/$CI_REGISTRY_IMAGE&#34;</span>
+    - <span style="color:#ae81ff">docker tag &#34;$CI_REGISTRY_IMAGE&#34; &#34;$CI_REGISTRY/$CI_REGISTRY_IMAGE:${CI_COMMIT_SHA:0:9}&#34;</span>
+    - <span style="color:#ae81ff">docker push &#34;$CI_REGISTRY/$CI_REGISTRY_IMAGE&#34;</span>
+    - <span style="color:#ae81ff">docker push &#34;$CI_REGISTRY/$CI_REGISTRY_IMAGE:${CI_COMMIT_SHA:0:9}&#34;</span>
+  <span style="color:#f92672">only</span>:
+    - <span style="color:#ae81ff">master</span>
+
+<span style="color:#f92672">build</span>:
+  <span style="color:#f92672">&lt;&lt;</span>: <span style="color:#75715e">*build-common</span>
+  <span style="color:#f92672">stage</span>: <span style="color:#ae81ff">build</span>
+  <span style="color:#f92672">script</span>:
+    - <span style="color:#ae81ff">docker build -t &#34;$CI_REGISTRY_IMAGE:${CI_COMMIT_SHA:0:9}&#34; .</span>
+    - <span style="color:#ae81ff">docker tag &#34;$CI_REGISTRY_IMAGE:${CI_COMMIT_SHA:0:9}&#34; &#34;$CI_REGISTRY/$CI_REGISTRY_IMAGE:${CI_COMMIT_SHA:0:9}&#34;</span>
+    - <span style="color:#ae81ff">docker push &#34;$CI_REGISTRY/$CI_REGISTRY_IMAGE:${CI_COMMIT_SHA:0:9}&#34;</span>
+  <span style="color:#f92672">except</span>:
+    - <span style="color:#ae81ff">master</span>
+</code></pre></div>
+    </div>
+
+    
+    
+      <div class="btn-improve-page">
+          <a href="https://github.com/alphajc/mysite/edit/master/content/posts/devops/Auto%20Devops:%20Auto%20Build.md">
+            <i class="fas fa-code-branch"></i>
+            Improve This Page
+          </a>
+      </div>
+    
+
+    
+  <hr />
+    <div class="row next-prev-navigator">
+
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    
+      
+      <div class="col-md-6 previous-article">
+        <a href="/posts/middleware/zookeeper/deploy-zookeeper-ha-in-kubernetes/" class="btn btn-outline-info">
+          <span><i class="fas fa-chevron-circle-left"></i> 上一篇</span>
+          <br />
+          <span>Kubernetes 中部署高可用的 Zookeeper</span>
+        </a>
+      </div>
+      
+    
+    
+      
+        
+        
+          
+              
+          
+        
+        <div class="col-md-6 next-article">
+          <a href="/posts/tools/modify-the-history-commit-of-git/" class="btn btn-outline-info">
+            <span>下一篇 <i class="fas fa-chevron-circle-right"></i></span>
+            <br />
+            <span>修改 Git 的历史提交</span>
+          </a>
+        </div>
+      
+    
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+</div>
+
+  <hr />
+  
+  
+      <div id="disqus_thread"></div>
+<script type="text/javascript">
+  (function () {
+    
+    
+    if (window.location.hostname == "localhost") return;
+
+    var dsq = document.createElement("script");
+    dsq.type = "text/javascript";
+    dsq.async = true;
+    var disqus_shortname = "mydream-ink";
+    dsq.src = "//" + disqus_shortname + ".disqus.com/embed.js";
+    (
+      document.getElementsByTagName("head")[0] ||
+      document.getElementsByTagName("body")[0]
+    ).appendChild(dsq);
+  })();
+</script>
+<noscript
+  >请开启 JavaScript 功能
+  <a href="https://disqus.com/?ref_noscript"
+    >comments powered by Disqus.</a
+  ></noscript
+>
+<a href="https://disqus.com/" class="dsq-brlink"
+  >通过 <span class="logo-disqus">Disqus</span> 评论</a
+>
+
+  
+</div>
+
+    </div>
+
+    <footer class="container-fluid text-center align-content-center footer pb-2">
+  <div class="container pt-5">
+    <div class="row text-left">
+      <div class="col-md-4 col-sm-12">
+        <h5>导航</h5>
+        
+        <ul>
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#about">关于</a>
+            </li>
+            
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#skills">技能</a>
+            </li>
+            
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#experiences">经历</a>
+            </li>
+            
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#projects">项目</a>
+            </li>
+            
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#recent-posts">最近文章</a>
+            </li>
+            
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#achievements">成就</a>
+            </li>
+            
+        </ul>
+        
+
+      </div>
+      <div class="col-md-4 col-sm-12">
+        <h5>联系我</h5>
+        <ul>
+          
+          <li><span>电话: </span> <span>&#43;8619980414909</span></li>
+          
+          <li><span>邮箱: </span> <span>jerry@mydream.ink</span></li>
+          
+        </ul>
+      </div>
+      <div class="col-md-4 col-sm-12">
+        
+        <p>接收最新的邮件通知</p>
+        <form>
+          <div class="form-group">
+            <input
+              type="email"
+              class="form-control"
+              id="exampleInputEmail1"
+              aria-describedby="emailHelp"
+              placeholder="输入邮箱"
+            />
+            <small id="emailHelp" class="form-text text-muted"
+              >你的邮件地址不会被共享给他人</small
+            >
+          </div>
+          <button type="submit" class="btn btn-info">提交</button>
+        </form>
+      </div>
+    </div>
+  </div>
+  <hr />
+  <div class="container">
+    <div class="row text-left">
+      <div class="col-md-4">
+        <a id="theme" href="/" target="#">
+          <img src="/assets/images/logo-inverted.png">青云卷</a>
+      </div>
+      <div class="col-md-4"><a href="https://beian.miit.gov.cn">蜀ICP备 2021017630号-1</a>© 2021 Copyright.</div>
+    </div>
+  </div>
+</footer>
+
+    <script src="/assets/js/jquery-3.4.1.min.js"></script>
+<script src="/assets/js/bootstrap.min.js"></script>
+
+<script src="/assets/js/navbar.js"></script>
+<script src="/assets/js/jquery.filterizr.min.js"></script>
+
+
+    
+    
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/highlight.min.js"></script>
+<script src="/assets/js/single.js"></script>
+<script>
+  hljs.initHighlightingOnLoad();
+</script>
+
+
+  </body>
+</html>

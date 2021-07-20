@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Gossip on 青云卷</title>
+    <link>https://mydream.ink/tags/gossip/</link>
+    <description>Recent content in Gossip on 青云卷</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh-cn</language>
+    <lastBuildDate>Sun, 07 Jul 2019 11:24:33 +0800</lastBuildDate><atom:link href="https://mydream.ink/tags/gossip/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>consul 支持多数据中心的服务发现与配置共享工具</title>
+      <link>https://mydream.ink/archive/the-consul-of-discovery-and-configure-services/</link>
+      <pubDate>Sun, 07 Jul 2019 11:24:33 +0800</pubDate>
+      
+      <guid>https://mydream.ink/archive/the-consul-of-discovery-and-configure-services/</guid>
+      <description>consul 是一个支持多数据中心分布式高可用，用于服务发现和配置共享的工具。那么，之前已经有了众多的用于服务发现和配置的工具，如：etcd、zookeeper 等，为什么还冒出来个 consul？阅读 Consul vs. Other Software 或许你可以找到答案。
+consul 关键特性   服务发现：支持服务发现。你可以通过 DNS 或 HTTP 的方式获取服务信息。
+  健康检查：支持健康检查。可以提供与给定服务相关联的任何数量的健康检查（如 web 状态码或 cpu 使用率）。
+  K/V 存储：键/值对存储。你可用通过 consul 存储如动态配置之类的相关信息。
+  多数据中心：支持多数据中心，开箱即用。
+  WEB UI：支持 WEB UI。点点点，你就能够了解你的服务现在的运行情况，一目了然，对开发运维是非常友好的。
+  consul 相较与 etcd、zookeeper 最大的特点就是：它整合了用户普遍的需求，开箱即用，降低了使用的门槛。
+consul 术语 首先介绍下在 consul 中会经常见到的术语：
+ node：节点，需要 consul 注册发现或配置管理的服务器。 agent：consul 中的核心程序，它将以守护进程的方式在各个节点运行，有 client 和 server 启动模式。每个 agent 维护一套服务和注册发现以及健康信息。 client：agent 以 client 模式启动的节点。在该模式下，该节点会采集相关信息，通过 RPC 的方式向 server 发送。 server：agent 以 server 模式启动的节点。一个数据中心中至少包含 1 个 server 节点。不过官方建议使用 3 或 5 个 server 节点组建成集群，以保证高可用且不失效率。server 节点参与 Raft、维护会员信息、注册服务、健康检查等功能。 datacenter：数据中心，私有的，低延迟的和高带宽的网络环境。一般的多个数据中心之间的数据是不会被复制的，但可用过 ACL replication 或使用外部工具 onsul-replicate。 Consensus，共识协议，使用它来协商选出 leader。 Gossip：consul 是建立在 Serf，它提供完整的 gossip protocol，维基百科。 LAN Gossip，Lan gossip 池，包含位于同一局域网或数据中心上的节点。 WAN Gossip，只包含 server 的 WAN Gossip 池，这些服务器主要位于不同的数据中心，通常通过互联网或广域网进行通信。 members：成员，对 consul 成员的称呼。提供会员资格，故障检测和事件广播。有兴趣的朋友可以深入研究下。  consul 架构 consul 的架构是什么，官方给出了一个很直观的图片：</description>
+    </item>
+    
+  </channel>
+</rss>

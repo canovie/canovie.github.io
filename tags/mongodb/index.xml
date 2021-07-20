@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>MongoDB on 青云卷</title>
+    <link>https://mydream.ink/tags/mongodb/</link>
+    <description>Recent content in MongoDB on 青云卷</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh-cn</language>
+    <lastBuildDate>Sun, 07 Jul 2019 19:20:18 +0800</lastBuildDate><atom:link href="https://mydream.ink/tags/mongodb/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>MongoDB 复制集原理</title>
+      <link>https://mydream.ink/archive/the-principle-of-the-mongodb-replication-set/</link>
+      <pubDate>Sun, 07 Jul 2019 19:20:18 +0800</pubDate>
+      
+      <guid>https://mydream.ink/archive/the-principle-of-the-mongodb-replication-set/</guid>
+      <description>MongoDB的单实例模式下，一个mongod进程为一个实例，一个实例中包含若干db，每个db包含若干张表。
+MongoDB通过一张特殊的表local.oplog.rs存储oplog，该表的特点是：固定大小，满了会删除最旧记录插入新记录，而且只支持append操作，因此可以理解为一个持久化的ring-buffer。oplog是MongoDB复制集的核心功能点。
+MongoDB复制集是指MongoDB实例通过复制并应用其他实例的oplog达到数据冗余的技术。
+常用的复制集构成一般有下图两种方式 (注意，可以使用mongoshell 手工指定复制源，但mongdb不保证这个指定是持久的，下文会讲到在某些情况下，MongoDB会自动进行复制源切换）。
+MongoDB的复制集技术并不少见，很类似mysql的异步复制模式，这种模式主要有几个技术点：
+ 新节点加入，正常同步前的初始化 Primary节点挂掉后，剩余的Secondary节点如何提供服务 如何保证主节点挂掉后数据不丢失/主节点挂掉后丢失数据的处理  MongoDB作为一个成熟的数据库产品，较好的解决了上述问题，一个完整的复制集包含如下几点功能：
+  数据同步
+ initial-sync steady-sync 异常数据回滚    MongoDB集群心跳与选举
+  一.数据同步 initial_sync 当一个节点刚加入集群时，它需要初始化数据使得 自身与集群中其它节点的数据量差距尽量少，这个过程称为initial-sync。
+一个initial-sync 包括六步（阅读rs_initialSync.cpp:_initialSync函数的逻辑)。
+ 删除本地除local库以外的所有db 选取一个源节点，将源节点中的所有db导入到本地（注意，此处只导入数据，不导入索引） 将2）开始执行到执行结束中源产生的oplog 应用到本地 将3）开始执行到执行结束中源产生的oplog 应用到本地 从源将所有table的索引在本地重建（导入索引） 将5）开始执行到执行结束中源产生的oplog 应用到本地 当第6）步结束后，源和本地的差距足够小，MongoDB进入Secondary（从节点）状态。  第2）步要拷贝所有数据，因此一般第2）步消耗时间最长，第3）与第4）步是一个连续逼近的过程，MongoDB这里做了两次。
+是因为第2）步一般耗时太长，导致第3）步数据量变多，间接受到影响。然而这么做并不是必须的，rs_initialSync.cpp：384 开始的TODO建议使用SyncTail的方式将数据一次性读回来（SyncTail以及TailableCursor的行为与原理如果不熟悉请看官方文档。
+steady-sync 当节点初始化完成后，会进入steady-sync状态，顾名思义，正常情况下，这是一个稳定静默运行于后台的，从复制源不断同步新oplog的过程。该过程一般会出现这两种问题：
+ 复制源写入过快（或者相对的，本地写入速度过慢），复制源的oplog覆盖了 本地用于同步源oplog而维持在源的游标。 本节点在宕机之前是Primary，在重启后本地oplog有和当前Primary不一致的Oplog。  这两种情况分别如下图所示：
+这两种情况在bgsync.cpp:_produce函数中，虽然这两种情况很不一样，但是最终都会进入bgsync.cpp:_rollback函数处理。
+对于第二种情况，处理过程在rs_rollback.cpp中，具体步骤为：
+  维持本地与远程的两个反向游标，以线性的时间复杂度找到LCA（最近公共祖先，上conflict.png中为Record4）
+该过程与经典的两个有序链表找公共节点的过程类似，具体实现在roll_back_local_operations.cpp:syncRollBackLocalOperations中，读者可以自行思考这一过程如何以线性时间复杂度实现。
+  针对本地每个冲突的oplog，枚举该oplog的类型，推断出回滚该oplog需要的逆操作并记录，如下：
+2.1: create_table -&amp;gt; drop_table 2.2: drop_table -&amp;gt; 重新同步该表 2.</description>
+    </item>
+    
+    <item>
+      <title>8种主流NoSQL数据库对比</title>
+      <link>https://mydream.ink/archive/comparison-of-8-mainstream-nosql-databases/</link>
+      <pubDate>Sun, 07 Jul 2019 14:02:44 +0800</pubDate>
+      
+      <guid>https://mydream.ink/archive/comparison-of-8-mainstream-nosql-databases/</guid>
+      <description>简介 NoSQL，是一项全新的数据库革命性运动，NoSQL的拥护者们提倡运用非关系型的数据存储。现今的计算机体系结构在数据存储方面要求具备庞大的水平扩展性，而NoSQL致力于改变这一现状。目前Google的 BigTable 和Amazon 的Dynamo使用的就是NoSQL型数据库。
+但是NoSQL数据库之间的不同，远超过两 SQL数据库之间的差别。这意味着软件架构师更应该在项目开始时就选择好一个适合的 NoSQL数据库。
+针对这种情况，这里对 Cassandra、 Mongodb、CouchDB、Redis、 Riak、 Membase、Neo4j、HBase进行了比较：
+1. CouchDB  所用语言： Erlang 特点：DB一致性，易于使用 使用许可： Apache 协议： HTTP/REST 双向数据复制 持续进行或临时处理 处理时带冲突检查 因此，采用的是master-master复制(见编注2) MVCC – 写操作不阻塞读操作 可保存文件之前的版本 Crash-only(可靠的)设计 需要不时地进行数据压缩 视图：嵌入式 映射/减少 格式化视图：列表显示 支持进行服务器端文档验证 支持认证 根据变化实时更新 支持附件处理 因此，CouchApps(独立的 js应用程序) 需要 jQuery程序库 master-master复制是一种数据库同步方法，允许数据在一组计算机之间共享数据，并且可以通过小组中任意成员在组内进行数据更新。  最佳应用场景：适用于数据变化较少，执行预定义查询，进行数据统计的应用程序。适用于需要提供数据版本支持的应用程序。
+例如： CRM、CMS系统。 master-master复制对于多站点部署是非常有用的。
+2. Redis  所用语言：C/C++ 特点：运行异常快 使用许可： BSD 协议：类 Telnet 有硬盘存储支持的内存数据库， 但自2.0版本以后可以将数据交换到硬盘(注意， 2.4以后版本不支持该特性!) Master-slave复制(见编注3) 虽然采用简单数据或以键值索引的哈希表，但也支持复杂操作，例如 ZREVRANGEBYSCORE。 INCR &amp;amp; co (适合计算极限值或统计数据) 支持 sets(同时也支持 union/diff/inter) 支持列表(同时也支持队列;阻塞式 pop操作) 支持哈希表(带有多个域的对象) 支持排序 sets(高得分表，适用于范围查询) Redis支持事务 支持将数据设置成过期数据(类似快速缓冲区设计) Pub/Sub允许用户实现消息机制 Master-slave复制，如果同一时刻只有一台服务器处理所有的复制请求，通常应用在需要提供高可用性的服务器集群。  最佳应用场景：适用于数据变化快且数据库大小可遇见(适合内存容量)的应用程序。</description>
+    </item>
+    
+    <item>
+      <title>MongoDB3.4副本集分片集群搭建</title>
+      <link>https://mydream.ink/archive/deploy-mongodb-3.4-with-sharded-cluster/</link>
+      <pubDate>Sat, 06 Jul 2019 15:54:35 +0800</pubDate>
+      
+      <guid>https://mydream.ink/archive/deploy-mongodb-3.4-with-sharded-cluster/</guid>
+      <description>mongdb3.4 的副本集搭建与以前的版本有些区别，最主要的区别就是 configdb强制复制集(CSRS)。网上很多的教程都没有注意到这一点，所以在使用3.4版本的时候搭建不成功。
+搭建时遇到不少坑，几乎放弃的情况下，借助谷歌翻译查看了官方文档，问题迎刃而解。
+官方文档：Sharding - MongoDB Manual 3.4
+一、测试环境 操作体统：VMware + ubuntu16.04 + 静态IP mongodb版本：mongodb-3.4
+二、布局预览 三、资源分配 IP分配：
+ 机器1：192.168.80.61 机器2：192.168.80.62 机器3：192.168.80.63 机器4：192.168.80.64 机器5：192.168.80.65 机器6：192.168.80.66  端口分配：
+ mongos：18000 config：17000 shard01：18001 shard02：18002 shard03：18003 shard04：18004 shard05：18005 shard06：18006  表1:
+三台主机分别新建如下目录：
+ /home/ubuntu/data/mongodb/config/data /home/ubuntu/data/mongodb/config/log/ /home/ubuntu/data/mongodb/mongos/log  六台机器分别创建 表1 对应的分片，每台机器三个分片
+ /home/ubuntu/data/mongodb/shard0X/data /home/ubuntu/data/mongodb/shard0X/log  四、启动配置服务器 这是最关键的一步，网上一些教程报错的主要原因就在于congfigsvr配置不是针对版本3.4分别
+  在每一台路由机器上启动配置服务器（非第一次启动加--logappend）
+ mongod –configsvr --replSet cfgsvr –port 17000 –dbpath /home/ubuntu/data/mongodb/config/data --logpath /home/ubuntu/data/mongodb/config/log/config.log –fork    登录任意一台配置服务器，初始化配置副本集</description>
+    </item>
+    
+  </channel>
+</rss>

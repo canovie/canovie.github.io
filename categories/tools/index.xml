@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>tools on 青云卷</title>
+    <link>https://mydream.ink/categories/tools/</link>
+    <description>Recent content in tools on 青云卷</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh-cn</language>
+    <lastBuildDate>Sat, 30 Nov 2019 14:20:59 +0800</lastBuildDate><atom:link href="https://mydream.ink/categories/tools/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>使用LDAP的各种客户端进行统一身份认证</title>
+      <link>https://mydream.ink/posts/tools/ldap-clients-in-everywhere/</link>
+      <pubDate>Sat, 30 Nov 2019 14:20:59 +0800</pubDate>
+      
+      <guid>https://mydream.ink/posts/tools/ldap-clients-in-everywhere/</guid>
+      <description>本文主要讲客户端的配置及部署，不含服务器，这里的一切都是以服务器端正确配置为前提的，有关内容后续会一步步完善，将包括 Linux 登录、gitlab、sonarqube、habor、nginx、pypiserver、verdaccio 等等。
+Linux 篇 前提  一个或一组完备的 LDAP 服务端  步骤 在 linux 上配置 LDAP 认证其实有很多种方式，这里我仅挑一种我认为最简单的方式。以 CentOS 为例:
+  安装依赖
+yum install libselinux-python nss-pam-ldapd -y   客户端配置
+authconfig --enableshadow \ --disablesssd \ --disablesssdauth \ --enableldap \ --enableldapauth \ --ldapserver=LDAP_SERVER \ --ldapbasedn=&amp;#34;BASE_DN&amp;#34; \ --enableldaptls \ --enablecache \ --enablelocauthorize \ --enablemkhomedir \ --updateall  注：将 LDAP_SERVER 替换为真实的地址，如果需要配置多个，则以半角逗号(,)隔开，确保 BASE_DN 为祖先结点，如我们的用户信息存在于ou=People,dc=example,dc=com下，用户分组信息位于ou=Group,dc=example,dc=com下，仔细观察会发现我们需要的认证信息都位于dc=example,dc=com下，所以dc=example,dc=com作为 BASE_DN 是个不错的选择。--enableldaptls视自己的服务端是否配了证书而定。
+   单独配置 sudo
+cat &amp;lt;&amp;lt; EOF &amp;gt;&amp;gt; /etc/sudo-ldap.</description>
+    </item>
+    
+    <item>
+      <title>修改 Git 的历史提交</title>
+      <link>https://mydream.ink/posts/tools/modify-the-history-commit-of-git/</link>
+      <pubDate>Sun, 11 Aug 2019 16:29:00 +0800</pubDate>
+      
+      <guid>https://mydream.ink/posts/tools/modify-the-history-commit-of-git/</guid>
+      <description>现在工作生活中，基本都使用 Git 用作代码的版本控制。我们应该为自己的每次 commit 提供一个合理的 log，以让自己或其他开发者明白对应的 commit 都干了些什么，但有时我们不可避免地会出错，然后就需要修改某些该死的提交。我们大可以新建一个 commit 来干这个事情，但这对于有洁癖的我来讲实在太 low 了，也不利于代码维护。Git 作为一个强大的工具，当然有解决办法啦，下面就让我们来一起探讨该如何修改过去的提交。
+环境说明 我这里有一个 git 项目，进行过 3 次代码提交，日志如下：
+commit 5ae91d0efae757087386c0c4b80e660e97627d22 (HEAD -&amp;gt; master) Author: Jerry Chan &amp;lt;jerry@mydream.ink&amp;gt; Date: Sun Aug 11 20:04:43 2019 +0800 third commit commit 6df839cab26ce48a561192933dc28c0d9fe302db Author: Jerry Chan &amp;lt;jerry@mydream.ink&amp;gt; Date: Sun Aug 11 19:57:46 2019 +0800 second commit commit 61aa39cfbcbab89d8e0d44c03f01f65402bd20e6 Author: Jerry Chan &amp;lt;jerry@mydream.ink&amp;gt; Date: Sun Aug 11 19:56:23 2019 +0800 fist commit   第一次，提交的时候我建了个文件test.txt，并写了一行内容：</description>
+    </item>
+    
+    <item>
+      <title>GNU sed用户手册</title>
+      <link>https://mydream.ink/posts/tools/gnu-sed/</link>
+      <pubDate>Sun, 11 Mar 2018 08:49:39 +0800</pubDate>
+      
+      <guid>https://mydream.ink/posts/tools/gnu-sed/</guid>
+      <description>1 简介 sed是一个流编辑器（Stream EDitor）。流编辑器对输入流（文件或者是来自于管道的输入）进行基本的文件转换。虽然在某些方面类似于脚本化编辑器（例如ed），但是sed通过对输入进行一次遍历来工作，因此更高效。比较大的区别是sed能在管道中筛选文本。
+2 运行 2.1 概述 一般的sed用法：
+sed SCRIPT INPUTFILE... 例，将input.txt中的‘hello’全部替换成‘world’：
+sed &amp;#39;s/hello/world/&amp;#39; input.txt &amp;gt; output.txt 如果已没有指定INPUTFILE或者INPUTFILE是-，sed将处理标准输入的内容，下述命令是等价的：
+sed &amp;#39;s/hello/world/&amp;#39; input.txt &amp;gt; output.txt sed &amp;#39;s/hello/world/&amp;#39; &amp;lt; input.txt &amp;gt; output.txt cat input.txt | sed &amp;#39;s/hello/world/&amp;#39; - &amp;gt; output.txt sed默认是将处理结果写到标准输出。使用-i参数则是直接修改文件。另见W和s///w命令将输出写入到其他文件。下述命令将会修改file.txt文件而不会产生任何输出：
+sed -i &amp;#39;s/hello/world&amp;#39; file.txt 默认情况下，sed打印所有的输入（修改和删除除外，比如命令d）。用-n限制输出，p打印特定行。以下命令只打印输入文件的第45行：
+sed -n &amp;#39;45p&amp;#39; file.txt sed将多个输入文件作为一个长的输入流，在下述例子中，将打印第一个文件（one.txt）的第一行和第三个文件（three.txt）的最后一行。可用-s反转。
+sed -n &amp;#39;1p ; $p&amp;#39; one.txt two.txt three.txt 若没有指定-e或者-f选项，sed使用第一个非选项参数作为执行脚本，接下来的非选项参数作为输入文件。如果使用-e或者-f指定一个执行脚本，其它所有的非参数选项将作为输入文件。-e和-f可以结合使用，并且可以多次出现（最终的执行脚本是这些单独脚本连接后的结果）。 下述例子是等价的：
+sed &amp;#39;s/hello/world/&amp;#39; input.txt &amp;gt; output.txt sed -e &amp;#39;s/hello/world/&amp;#39; input.txt &amp;gt; output.txt sed --expression=&amp;#39;s/hello/world/&amp;#39; input.</description>
+    </item>
+    
+  </channel>
+</rss>

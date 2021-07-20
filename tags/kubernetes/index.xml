@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Kubernetes on 青云卷</title>
+    <link>https://mydream.ink/tags/kubernetes/</link>
+    <description>Recent content in Kubernetes on 青云卷</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh-cn</language>
+    <lastBuildDate>Sat, 13 Jul 2019 13:36:51 +0800</lastBuildDate><atom:link href="https://mydream.ink/tags/kubernetes/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>深入解读 Service Mesh 背后的技术细节</title>
+      <link>https://mydream.ink/archive/the-technicial-detail-of-service-mesh/</link>
+      <pubDate>Sat, 13 Jul 2019 13:36:51 +0800</pubDate>
+      
+      <guid>https://mydream.ink/archive/the-technicial-detail-of-service-mesh/</guid>
+      <description>深入解读 Service Mesh 背后的技术细节 本文由网易云发布。
+作者：刘超，网易云首席解决方案架构师
+在 Kubernetes 称为容器编排的标准之后，Service Mesh 开始火了起来，但是很多文章讲概念的多，讲技术细节的少，所以专门写一篇文章，来解析 Service Mesh 背后的技术细节。
+一、Service Mesh 是 Kubernetes 支撑微服务能力拼图的最后一块 在上一篇文章为什么 kubernetes 天然适合微服务中我们提到，Kubernetes 是一个奇葩所在，他的组件复杂，概念复杂，在没有实施微服务之前，你可能会觉得为什么 Kubernetes 要设计的这么复杂，但是一旦你要实施微服务，你会发现 Kubernetes 中的所有概念，都是有用的。
+在我们微服务设计的是个要点中，我们会发现 Kubernetes 都能够有相应的组件和概念，提供相应的支持。
+其中最后的一块拼图就是服务发现，与熔断限流降级。
+众所周知，Kubernetes 的服务发现是通过 Service 来实现的，服务之间的转发是通过 kube-proxy 下发 iptables 规则来实现的，这个只能实现最基本的服务发现和转发能力，不能满足高并发应用下的高级的服务特性，比较 SpringCloud 和 Dubbo 有一定的差距，于是 Service Mesh 诞生了，他期望讲熔断，限流，降级等特性，从应用层，下沉到基础设施层去实现，从而使得 Kubernetes 和容器全面接管微服务。
+二、以 Istio 为例讲述 Service Mesh 中的技术关键点 就如 SDN 一样，Service Mesh 将服务请求的转发分为控制面和数据面，因而分析他，也是从数据面先分析转发的能力，然后再分析控制面如何下发命令。今天这篇文章重点讲述两个组件 Envoy 和 Pilot
+一切从 Envoy 开始 我们首先来看，如果没有融入 Service Mesh，Envoy 本身能够做什么事情呢？
+Envoy 是一个高性能的 C++写的 proxy 转发器，那 Envoy 如何转发请求呢？需要定一些规则，然后按照这些规则进行转发。</description>
+    </item>
+    
+    <item>
+      <title>Helm的安装和使用</title>
+      <link>https://mydream.ink/archive/about-the-installation-and-use-of-helm/</link>
+      <pubDate>Sun, 07 Jul 2019 08:42:53 +0800</pubDate>
+      
+      <guid>https://mydream.ink/archive/about-the-installation-and-use-of-helm/</guid>
+      <description>Helm 可以理解为 Kubernetes 的包管理工具，可以方便地发现、共享和使用为Kubernetes构建的应用。
+一、基本概念   Helm的三个基本概念
+ Chart：Helm应用（package），包括该应用的所有Kubernetes manifest模版，类似于YUM RPM或Apt dpkg文件 Repository：Helm package存储仓库 Release：chart的部署实例，每个chart可以部署一个或多个release    Helm工作原理
+Helm包括两个部分，helm客户端和tiller服务端。
+the client is responsible for managing charts, and the server is responsible for managing releases.
+  helm客户端
+helm客户端是一个命令行工具，负责管理charts、reprepository和release。它通过gPRC API（使用kubectl port-forward将tiller的端口映射到本地，然后再通过映射后的端口跟tiller通信）向tiller发送请求，并由tiller来管理对应的Kubernetes资源。
+Helm客户端的使用方法参见Helm命令。
+  tiller服务端
+tiller接收来自helm客户端的请求，并把相关资源的操作发送到Kubernetes，负责管理（安装、查询、升级或删除等）和跟踪Kubernetes资源。为了方便管理，tiller把release的相关信息保存在kubernetes的ConfigMap中。
+tiller对外暴露gRPC API，供helm客户端调用。
+  二、安装 环境：kubernetes 1.7 + helm 2.5.0
+  客户端安装：
+下载相应的版本：https://github.com/kubernetes/helm/releases
+解压
+tar -zxvf helm-v2.5.0-linux-amd64.tgz 把helm执行文件放置在：
+mv linux-amd64/helm /usr/local/bin/helm From there, you should be able to run the client: helm help.</description>
+    </item>
+    
+  </channel>
+</rss>

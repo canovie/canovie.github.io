@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>使用 cert-manager 自动管理 tls 证书</title>
+    <meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta http-equiv="X-UA-Compatible" content="ie=edge" />
+
+
+<link rel="stylesheet" href="/assets/css/bootstrap.min.css" />
+<link rel="stylesheet" href="/assets/css/style.css" />
+<link rel="stylesheet" href="/assets/css/navbar.css" />
+
+
+<link href="https://fonts.googleapis.com/css2?family=Muli:wght@300;400;500;600" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" />
+
+
+<link rel="icon" type="image/png" href="/assets/images/favicon.png" />
+
+
+    
+<link
+  rel="stylesheet"
+  href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/styles/atom-one-dark.min.css"
+/>
+<link rel="stylesheet" href="/assets/css/single.css" />
+
+
+    
+    
+      
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'UA-142765126-1', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+
+    
+  </head>
+
+  <body>
+    <div class="container-fluid bg-dimmed wrapper">
+      
+      
+    <nav class="navbar navbar-expand-lg top-navbar final-navbar shadow">
+    <div class="container">
+      <a class="navbar-brand" href="/posts">
+        <img src="/assets/images/logo.png">青云卷</a>
+      <button class="navbar-toggler navbar-light" type="button" >
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <div class="collapse navbar-collapse" id="top-nav-items">
+        <ul class="navbar-nav ml-auto">
+        </ul>
+      </div>
+    </div>
+</nav>
+
+
+
+      
+      
+<div class="container p-0 read-area">
+  
+  <div class="hero-area col-sm-12" style='background-image: url(https://mydream.ink/assets/images/posts/cloud-native/lets-encrypt-ssl.png);'>
+  </div>
+
+  
+  <div class="page-content">
+    <div class="author-profile ml-auto align-self-lg-center">
+      <img class="rounded-circle" src='/assets/images/portrait.jpg'/>
+      <h5 class="author-name">Jerry Chan</h5>
+      <p>November 9, 2019</p>
+    </div>
+
+    <div class="title">
+      <h1>使用 cert-manager 自动管理 tls 证书</h1>
+    </div>
+
+    <div class="post-content" id="post-content">
+      <p>http 协议是一个全明文传输的协议，不加任何处理的 http 报文将在因特网中裸奔，只要有人对监听你的报文，你所有隐私将被人一览无余。Let’s Encrypt 是一家免费、开放、自动化的证书颁发机构（CA），为公众的利益而运行。它是一项由 <a href="https://www.abetterinternet.org/">Internet Security Research Group（ISRG）</a>提供的服务。本着想要创建一个更安全，更尊重隐私的 Web 环境的初衷，Let’s Encrypt 以尽可能对用户友好的方式免费提供为网站启用 HTTPS（SSL/TLS）所需的数字证书。</p>
+<p><img src="/assets/images/posts/cloud-native/http_to_https-1.jpg" alt="http_to_https"></p>
+<p>但是 Let’s Encrypt 颁发的证书有个特点，有效期只有三个月。这意味着我们需要频繁续期证书，倘若手动续期，无疑会增加运维成本。有什么方式可以为我们自动颁发证书吗？当然有！<a href="https://tools.ietf.org/html/rfc8555">ACME</a> 无疑就是我们的最佳选择。</p>
+<p>有一款很好用的 ACME 客户端叫 <a href="https://certbot.eff.org/about/">Certbot</a>，可以帮助自动颁发、续期证书。在 kubernetes 的生态中有没有什么好的工具能帮助我们非常方便地使用证书么？当然有，那就是本期主题——<a href="https://docs.cert-manager.io/en/latest/"><strong>cert-manager</strong></a>。</p>
+<p>cert-manager 是本地 Kubernetes 证书管理控制器。它可以帮助从各种来源颁发证书，例如 Let&rsquo;s Encrypt，HashiCorp Vault，Venafi，简单的签名密钥对或自签名。它将确保证书有效并且是最新的，并在到期前尝试在配置的时间续订证书。</p>
+<p>原理比较简单，本文就不讲了，主要谈谈来安装和使用。</p>
+<h2 id="安装">安装</h2>
+<h3 id="yaml-安装">YAML 安装</h3>
+<ol>
+<li>
+<p>创建 namespace</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">kubectl create namespace cert-manager
+</code></pre></div></li>
+<li>
+<p>安装 crd 和 cert-manager</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/v0.11.0/cert-manager.yaml
+</code></pre></div><blockquote>
+<p>值得说明的是：在 kubernetes 1.15 以前的版本需要在执行<code>kubectl apply</code>时添加一个参数<code>--validate=false</code>，否则在创建 CustomResourceDefinition 资源时会收到与 x-kubernetes-preserve-unknown-fields 字段有关的验证错误。</p>
+</blockquote>
+</li>
+</ol>
+<h3 id="helm-安装">helm 安装</h3>
+<p>依次执行下述命令：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#75715e"># Install the CustomResourceDefinition resources separately</span>
+kubectl apply --validate<span style="color:#f92672">=</span>false -f https://raw.githubusercontent.com/jetstack/cert-manager/release-0.11/deploy/manifests/00-crds.yaml
+
+<span style="color:#75715e"># Create the namespace for cert-manager</span>
+kubectl create namespace cert-manager
+
+<span style="color:#75715e"># Add the Jetstack Helm repository</span>
+helm repo add jetstack https://charts.jetstack.io
+
+<span style="color:#75715e"># Update your local Helm chart repository cache</span>
+helm repo update
+
+<span style="color:#75715e"># Install the cert-manager Helm chart</span>
+helm install <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>  --name cert-manager <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>  --namespace cert-manager <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>  --version v0.11.0 <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>  jetstack/cert-manager
+</code></pre></div><h3 id="确认安装">确认安装</h3>
+<pre><code>kubectl get pods --namespace cert-manager
+
+NAME                                       READY   STATUS    RESTARTS   AGE
+cert-manager-5c6866597-zw7kh               1/1     Running   0          2m
+cert-manager-cainjector-577f6d9fd7-tr77l   1/1     Running   0          2m
+cert-manager-webhook-787858fcdb-nlzsq      1/1     Running   0          2m
+</code></pre><h2 id="使用">使用</h2>
+<h3 id="创建-issuer">创建 issuer</h3>
+<p>在建好 cert-manager 后，我们需要继续创建 issuer 才能颁发证书。有两种 issuer 可供我们选择：ClusterIssuer 和 Issuer，两都配置方式都是一样的，所不同的是作用域。ClusterIssuer，顾名思义是在集群中使用，作用域为所有命名空间，相对应的 Issuer 只作用于所在的命名空间。一般用 ClusterIssuer 比较方便。这里也通过 ClusterIssuer 举例。</p>
+<p>证书的验证方式也有两种，一个是 http-01，另一个是 dns-01，由于 dns-01 需要域名解析服务商的支持，所以，在这里就没有使用了。有关这两种方式的详细说明参照 <a href="https://letsencrypt.org/zh-cn/docs/challenge-types/">https://letsencrypt.org/zh-cn/docs/challenge-types/</a>。</p>
+<ol>
+<li>
+<p>创建一个名叫<code>letsencrypt-staging.yaml</code>的文件，内容是：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#f92672">apiVersion</span>: <span style="color:#ae81ff">cert-manager.io/v1alpha2</span>
+<span style="color:#f92672">kind</span>: <span style="color:#ae81ff">ClusterIssuer</span>
+<span style="color:#f92672">metadata</span>:
+    <span style="color:#f92672">name</span>: <span style="color:#ae81ff">letsencrypt-staging</span>
+<span style="color:#f92672">spec</span>:
+    <span style="color:#f92672">acme</span>:
+        <span style="color:#75715e"># You must replace this email address with your own.</span>
+        <span style="color:#75715e"># Let&#39;s Encrypt will use this to contact you about expiring</span>
+        <span style="color:#75715e"># certificates, and issues related to your account.</span>
+        <span style="color:#f92672">email</span>: <span style="color:#ae81ff">user@example.com</span>
+        <span style="color:#f92672">server</span>: <span style="color:#ae81ff">https://acme-staging-v02.api.letsencrypt.org/directory</span>
+        <span style="color:#f92672">privateKeySecretRef</span>:
+        <span style="color:#75715e"># Secret resource used to store the account&#39;s private key.</span>
+            <span style="color:#f92672">name</span>: <span style="color:#ae81ff">example-issuer-account-key</span>
+        <span style="color:#75715e"># Add a single challenge solver, HTTP01 using nginx</span>
+        <span style="color:#f92672">solvers</span>:
+        - <span style="color:#f92672">http01</span>:
+            <span style="color:#f92672">ingress</span>:
+                <span style="color:#f92672">class</span>: <span style="color:#ae81ff">nginx</span>
+</code></pre></div></li>
+<li>
+<p>通过<code>kubectl</code>安装：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">kubectl apply -f letsencrypt-staging.yaml
+</code></pre></div></li>
+<li>
+<p>确保创建成功</p>
+<pre><code>kubectl describe clusterissuer letsencrypt-staging
+...
+Status:
+Acme:
+    Uri:  https://acme-staging-v02.api.letsencrypt.org/acme/acct/7571319
+Conditions:
+    Last Transition Time:  2019-01-30T14:52:03Z
+    Message:               The ACME account was registered with the ACME server
+    Reason:                ACMEAccountRegistered
+    Status:                True
+    Type:                  Ready
+</code></pre></li>
+</ol>
+<blockquote>
+<p>Let&rsquo;s Encrypt 不支持通过 HTTP-01 的方式颁发通配符证书。要颁发通配符证书，必须使用DNS-01。</p>
+</blockquote>
+<h3 id="单独颁发">单独颁发</h3>
+<p>单独颁发证书，其实是一种手动的方式，一般不这么使用，但这却能加深我们对这整套流程的理解。颁发证书即创建并处理 Certificate 资源的过程。</p>
+<ol>
+<li>
+<p>有如下<code>certificate-example.yaml</code>文件：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#f92672">apiVersion</span>: <span style="color:#ae81ff">cert-manager.io/v1alpha2</span>
+<span style="color:#f92672">kind</span>: <span style="color:#ae81ff">Certificate</span>
+<span style="color:#f92672">metadata</span>:
+    <span style="color:#f92672">name</span>: <span style="color:#ae81ff">acme-crt</span>
+<span style="color:#f92672">spec</span>:
+    <span style="color:#f92672">secretName</span>: <span style="color:#ae81ff">acme-crt-secret</span>
+    <span style="color:#f92672">dnsNames</span>:
+    - <span style="color:#ae81ff">foo.example.com</span>
+    <span style="color:#f92672">issuerRef</span>:
+        <span style="color:#f92672">name</span>: <span style="color:#ae81ff">letsencrypt-stagging</span>
+        <span style="color:#f92672">kind</span>: <span style="color:#ae81ff">ClusterIssuer</span>
+</code></pre></div></li>
+<li>
+<p>使用<code>kubectl</code>创建 Certificate：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">kubectl apply -f certificate-example.yaml
+</code></pre></div><blockquote>
+<p>注：这前提是域名得配置好了</p>
+</blockquote>
+</li>
+<li>
+<p>静待 1-2 分钟：</p>
+<p>执行下述命令，静待<code>READY</code>值变成<code>True</code></p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">kubectl get certificate acme-crt -w
+</code></pre></div></li>
+<li>
+<p>错误排查：</p>
+<p>如果整个颁发过程出现问题导致证书颁发失败，可以利用<code>kubectl describe</code>查看对应的 order 进行排查。<code>order</code>是一个订单，记录了这笔交易（虽然我们并未花钱），这可以告诉我们失败的原因。</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">kubcectl describe order acme-crt
+</code></pre></div></li>
+</ol>
+<h3 id="指定-issuer-颁发">指定 issuer 颁发</h3>
+<p>更多的时候我们不需要手动创建 Certificate，只需要在创建 Ingress 时作好对应的注释，cert-manager 就将自动为我们创建。对应的 yaml 文件大致是长这样的：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#f92672">apiVersion</span>: <span style="color:#ae81ff">extensions/v1beta1</span>
+<span style="color:#f92672">kind</span>: <span style="color:#ae81ff">Ingress</span>
+<span style="color:#f92672">metadata</span>:
+  <span style="color:#f92672">annotations</span>:
+    <span style="color:#f92672">acme.cert-manager.io/http01-edit-in-place</span>: <span style="color:#e6db74">&#34;true&#34;</span>
+    <span style="color:#f92672">cert-manager.io/cluster-issuer</span>: <span style="color:#ae81ff">letsencrypt-stagging</span>
+    <span style="color:#f92672">kubernetes.io/ingress.class</span>: <span style="color:#ae81ff">nginx</span>
+  <span style="color:#f92672">name</span>: <span style="color:#ae81ff">example</span>
+<span style="color:#f92672">spec</span>:
+  <span style="color:#f92672">rules</span>:
+  - <span style="color:#f92672">host</span>: <span style="color:#ae81ff">foo.example.com</span>
+    <span style="color:#f92672">http</span>:
+      <span style="color:#f92672">paths</span>:
+      - <span style="color:#f92672">backend</span>:
+          <span style="color:#f92672">serviceName</span>: <span style="color:#ae81ff">example</span>
+          <span style="color:#f92672">servicePort</span>: <span style="color:#ae81ff">9000</span>
+        <span style="color:#f92672">path</span>: <span style="color:#ae81ff">/</span>
+  <span style="color:#f92672">tls</span>:
+  - <span style="color:#f92672">hosts</span>:
+    - <span style="color:#ae81ff">foo.example.com</span>
+    <span style="color:#f92672">secretName</span>: <span style="color:#ae81ff">acme-crt-secret</span>
+</code></pre></div><p>这将自动创建一个与上一步骤中相同的 Certificate。</p>
+<blockquote>
+<p>注：<code>acme.cert-manager.io/http01-edit-in-place: &quot;true&quot;</code>这明 http-01 验证将就在这个 Ingress 中进行而不会另行创建。</p>
+</blockquote>
+<h3 id="配置默认-issuer">配置默认 issuer</h3>
+<p>在 cert-manager 的启动命令中加上这么两句：</p>
+<pre><code>--set ingressShim.defaultIssuerName=letsencrypt-stagging \
+--set ingressShim.defaultIssuerKind=ClusterIssuer
+</code></pre><p>这就为 cert-manager 设置了一个默认的 Issuer 了，设置成功后，我们就可以把 Ingress 资源中的<code>cert-manager.io/cluster-issuer: letsencrypt-stagging</code>改成<code>kubernetes.io/tls-acme: &quot;true&quot;</code>效果是完全一样的。</p>
+
+    </div>
+
+    
+    
+      <div class="btn-improve-page">
+          <a href="https://github.com/alphajc/mysite/edit/master/content/posts/cloud-native/kubernetes/use-cert-manager-in-kubernetes.md">
+            <i class="fas fa-code-branch"></i>
+            Improve This Page
+          </a>
+      </div>
+    
+
+    
+  <hr />
+    <div class="row next-prev-navigator">
+
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    
+      
+      <div class="col-md-6 previous-article">
+        <a href="/posts/tools/ldap-clients-in-everywhere/" class="btn btn-outline-info">
+          <span><i class="fas fa-chevron-circle-left"></i> 上一篇</span>
+          <br />
+          <span>使用LDAP的各种客户端进行统一身份认证</span>
+        </a>
+      </div>
+      
+    
+    
+      
+        
+        
+          
+              
+          
+        
+        <div class="col-md-6 next-article">
+          <a href="/posts/devops/sonarqube-and-gitlab/" class="btn btn-outline-info">
+            <span>下一篇 <i class="fas fa-chevron-circle-right"></i></span>
+            <br />
+            <span>自动化运维之自动构建</span>
+          </a>
+        </div>
+      
+    
+  
+
+  
+
+  
+
+  
+
+</div>
+
+  <hr />
+  
+  
+      <div id="disqus_thread"></div>
+<script type="text/javascript">
+  (function () {
+    
+    
+    if (window.location.hostname == "localhost") return;
+
+    var dsq = document.createElement("script");
+    dsq.type = "text/javascript";
+    dsq.async = true;
+    var disqus_shortname = "mydream-ink";
+    dsq.src = "//" + disqus_shortname + ".disqus.com/embed.js";
+    (
+      document.getElementsByTagName("head")[0] ||
+      document.getElementsByTagName("body")[0]
+    ).appendChild(dsq);
+  })();
+</script>
+<noscript
+  >请开启 JavaScript 功能
+  <a href="https://disqus.com/?ref_noscript"
+    >comments powered by Disqus.</a
+  ></noscript
+>
+<a href="https://disqus.com/" class="dsq-brlink"
+  >通过 <span class="logo-disqus">Disqus</span> 评论</a
+>
+
+  
+</div>
+
+    </div>
+
+    <footer class="container-fluid text-center align-content-center footer pb-2">
+  <div class="container pt-5">
+    <div class="row text-left">
+      <div class="col-md-4 col-sm-12">
+        <h5>导航</h5>
+        
+        <ul>
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#about">关于</a>
+            </li>
+            
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#skills">技能</a>
+            </li>
+            
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#experiences">经历</a>
+            </li>
+            
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#projects">项目</a>
+            </li>
+            
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#recent-posts">最近文章</a>
+            </li>
+            
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#achievements">成就</a>
+            </li>
+            
+        </ul>
+        
+
+      </div>
+      <div class="col-md-4 col-sm-12">
+        <h5>联系我</h5>
+        <ul>
+          
+          <li><span>电话: </span> <span>&#43;8619980414909</span></li>
+          
+          <li><span>邮箱: </span> <span>jerry@mydream.ink</span></li>
+          
+        </ul>
+      </div>
+      <div class="col-md-4 col-sm-12">
+        
+        <p>接收最新的邮件通知</p>
+        <form>
+          <div class="form-group">
+            <input
+              type="email"
+              class="form-control"
+              id="exampleInputEmail1"
+              aria-describedby="emailHelp"
+              placeholder="输入邮箱"
+            />
+            <small id="emailHelp" class="form-text text-muted"
+              >你的邮件地址不会被共享给他人</small
+            >
+          </div>
+          <button type="submit" class="btn btn-info">提交</button>
+        </form>
+      </div>
+    </div>
+  </div>
+  <hr />
+  <div class="container">
+    <div class="row text-left">
+      <div class="col-md-4">
+        <a id="theme" href="/" target="#">
+          <img src="/assets/images/logo-inverted.png">青云卷</a>
+      </div>
+      <div class="col-md-4"><a href="https://beian.miit.gov.cn">蜀ICP备 2021017630号-1</a>© 2021 Copyright.</div>
+    </div>
+  </div>
+</footer>
+
+    <script src="/assets/js/jquery-3.4.1.min.js"></script>
+<script src="/assets/js/bootstrap.min.js"></script>
+
+<script src="/assets/js/navbar.js"></script>
+<script src="/assets/js/jquery.filterizr.min.js"></script>
+
+
+    
+    
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/highlight.min.js"></script>
+<script src="/assets/js/single.js"></script>
+<script>
+  hljs.initHighlightingOnLoad();
+</script>
+
+
+  </body>
+</html>

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Ubuntu12.04 on 青云卷</title>
+    <link>https://mydream.ink/tags/ubuntu12.04/</link>
+    <description>Recent content in Ubuntu12.04 on 青云卷</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh-cn</language>
+    <lastBuildDate>Sun, 07 Jul 2019 08:02:31 +0800</lastBuildDate><atom:link href="https://mydream.ink/tags/ubuntu12.04/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>LXC的简单用法</title>
+      <link>https://mydream.ink/archive/the-simple-usage-of-lxc/</link>
+      <pubDate>Sun, 07 Jul 2019 08:02:31 +0800</pubDate>
+      
+      <guid>https://mydream.ink/archive/the-simple-usage-of-lxc/</guid>
+      <description>LXC简介 LXC (Linux Containters) 是一种基于内核容器属性的用户空间接口。 它被认为介于chroot和完全虚拟化之间，其目标为创建一个不需要独立内核，但近可能接近标准Linux安装的环境。
+其特性如下：
+ 内核空间（ipc, uts, mount, pid, network和user) 支持Apparmor和SELinux seccomp策略 chroots (使用pivot_root) Kernel capabilities 支持cgroups (Control groups) 由于没有完全虚拟化CPU，也没有虚拟化硬盘，其性能是与物理机接近的。实际经验，我发现在LXC中编译C/C++源码（如构建基于C/C++源码的RPM或DEB）的性能是VirtualBox的3倍。强烈建议使用LXC代替KVM和VirtualBox作为RPM或DEB的构建环境。  以下操作基于Ubuntu 12.04，那么需要安装LXC包：
+sudo apt-get install -y lxc  创建LXC 以创建一个名为precise的Ubuntu 12.04容器为例。
+需要创建一个基础的配置文件。由于创建LXC完成后，不再需要该配置文件（可以删除），故该文件的名字和路径没有特殊要求。这里命名为precise.conf，放在当前路径下：
+lxc.network.type = veth lxc.network.flags = up lxc.network.name = eth0 lxc.network.link = lxcbr0  lxcbr0为由LXC包创建的虚拟网桥，通过ifconfig可以知道其IP地址10.0.3.1，网段10.0.3.1/24，容器将通过lxcbr0与外界通信。
+如此，可以开始创建容器了：
+sudo lxc-create -n precise -f precise.conf -t ubuntu -- -r precise   -n 指定容器名，这里为precise。
+-f 指定基础配置文件，即上一步骤创建的precise.conf。
+-t 指定模板名，这里必须为ubuntu（创建Ubuntu 12.</description>
+    </item>
+    
+  </channel>
+</rss>

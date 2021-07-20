@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>LDAP on 青云卷</title>
+    <link>https://mydream.ink/tags/ldap/</link>
+    <description>Recent content in LDAP on 青云卷</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh-cn</language>
+    <lastBuildDate>Sat, 30 Nov 2019 14:20:59 +0800</lastBuildDate><atom:link href="https://mydream.ink/tags/ldap/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>使用LDAP的各种客户端进行统一身份认证</title>
+      <link>https://mydream.ink/posts/tools/ldap-clients-in-everywhere/</link>
+      <pubDate>Sat, 30 Nov 2019 14:20:59 +0800</pubDate>
+      
+      <guid>https://mydream.ink/posts/tools/ldap-clients-in-everywhere/</guid>
+      <description>本文主要讲客户端的配置及部署，不含服务器，这里的一切都是以服务器端正确配置为前提的，有关内容后续会一步步完善，将包括 Linux 登录、gitlab、sonarqube、habor、nginx、pypiserver、verdaccio 等等。
+Linux 篇 前提  一个或一组完备的 LDAP 服务端  步骤 在 linux 上配置 LDAP 认证其实有很多种方式，这里我仅挑一种我认为最简单的方式。以 CentOS 为例:
+  安装依赖
+yum install libselinux-python nss-pam-ldapd -y   客户端配置
+authconfig --enableshadow \ --disablesssd \ --disablesssdauth \ --enableldap \ --enableldapauth \ --ldapserver=LDAP_SERVER \ --ldapbasedn=&amp;#34;BASE_DN&amp;#34; \ --enableldaptls \ --enablecache \ --enablelocauthorize \ --enablemkhomedir \ --updateall  注：将 LDAP_SERVER 替换为真实的地址，如果需要配置多个，则以半角逗号(,)隔开，确保 BASE_DN 为祖先结点，如我们的用户信息存在于ou=People,dc=example,dc=com下，用户分组信息位于ou=Group,dc=example,dc=com下，仔细观察会发现我们需要的认证信息都位于dc=example,dc=com下，所以dc=example,dc=com作为 BASE_DN 是个不错的选择。--enableldaptls视自己的服务端是否配了证书而定。
+   单独配置 sudo
+cat &amp;lt;&amp;lt; EOF &amp;gt;&amp;gt; /etc/sudo-ldap.</description>
+    </item>
+    
+    <item>
+      <title>在CentOS6.5上布署OpenLDAP</title>
+      <link>https://mydream.ink/archive/deploy-openldap-on-centos-6.5/</link>
+      <pubDate>Sun, 07 Jul 2019 08:19:54 +0800</pubDate>
+      
+      <guid>https://mydream.ink/archive/deploy-openldap-on-centos-6.5/</guid>
+      <description>本文系统：Centos6.5_x64
+ip:192.168.28.139
+客户端：192.168.28.141
+推荐大家可以先了解下AD域的结构，一些概念性的东西，比如树、林、组织单位、资源等
+openldap 可以看作是nis的升级，把他想象成资料库的一种就好了
+一、ldap的部署、用户信息的存储   安装openldap
+ [root@master ~]# yum install openldap openldap-devel openldap-servers openldap-clients -y    配置文件模版
+ [root@master ~]# cp /usr/share/openldap-servers/slapd.conf.obsolete /etc/openldap/slapd.conf  修改配置文件
+ [root@master ~]# vim /etc/openldap/slapd.conf 26 pidfile /var/run/openldap/slapd.pid 27 argsfile /var/run/openldap/slapd.args 28 loglevel 1 115 suffix &amp;quot;dc=lansgg,dc=com&amp;quot; 117 rootdn &amp;quot;cn=admin,dc=lansgg,dc=com&amp;quot; 121 rootpw adminpw  这里管理员的密码使用了明文，也可以使用加密形式，方法如下：
+ [root@master ~]# slappasswd New password: Re-enter new password: {SSHA}7EJGErpaeX3Zd6rxfxVzNVwSm2UC1e/T  将密文串替换成adminpw即可；
+你也可以指定加密方式：</description>
+    </item>
+    
+  </channel>
+</rss>

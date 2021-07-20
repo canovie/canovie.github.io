@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>MongoDB Replication Set on 青云卷</title>
+    <link>https://mydream.ink/tags/mongodb-replication-set/</link>
+    <description>Recent content in MongoDB Replication Set on 青云卷</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh-cn</language>
+    <lastBuildDate>Sun, 07 Jul 2019 19:20:18 +0800</lastBuildDate><atom:link href="https://mydream.ink/tags/mongodb-replication-set/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>MongoDB 复制集原理</title>
+      <link>https://mydream.ink/archive/the-principle-of-the-mongodb-replication-set/</link>
+      <pubDate>Sun, 07 Jul 2019 19:20:18 +0800</pubDate>
+      
+      <guid>https://mydream.ink/archive/the-principle-of-the-mongodb-replication-set/</guid>
+      <description>MongoDB的单实例模式下，一个mongod进程为一个实例，一个实例中包含若干db，每个db包含若干张表。
+MongoDB通过一张特殊的表local.oplog.rs存储oplog，该表的特点是：固定大小，满了会删除最旧记录插入新记录，而且只支持append操作，因此可以理解为一个持久化的ring-buffer。oplog是MongoDB复制集的核心功能点。
+MongoDB复制集是指MongoDB实例通过复制并应用其他实例的oplog达到数据冗余的技术。
+常用的复制集构成一般有下图两种方式 (注意，可以使用mongoshell 手工指定复制源，但mongdb不保证这个指定是持久的，下文会讲到在某些情况下，MongoDB会自动进行复制源切换）。
+MongoDB的复制集技术并不少见，很类似mysql的异步复制模式，这种模式主要有几个技术点：
+ 新节点加入，正常同步前的初始化 Primary节点挂掉后，剩余的Secondary节点如何提供服务 如何保证主节点挂掉后数据不丢失/主节点挂掉后丢失数据的处理  MongoDB作为一个成熟的数据库产品，较好的解决了上述问题，一个完整的复制集包含如下几点功能：
+  数据同步
+ initial-sync steady-sync 异常数据回滚    MongoDB集群心跳与选举
+  一.数据同步 initial_sync 当一个节点刚加入集群时，它需要初始化数据使得 自身与集群中其它节点的数据量差距尽量少，这个过程称为initial-sync。
+一个initial-sync 包括六步（阅读rs_initialSync.cpp:_initialSync函数的逻辑)。
+ 删除本地除local库以外的所有db 选取一个源节点，将源节点中的所有db导入到本地（注意，此处只导入数据，不导入索引） 将2）开始执行到执行结束中源产生的oplog 应用到本地 将3）开始执行到执行结束中源产生的oplog 应用到本地 从源将所有table的索引在本地重建（导入索引） 将5）开始执行到执行结束中源产生的oplog 应用到本地 当第6）步结束后，源和本地的差距足够小，MongoDB进入Secondary（从节点）状态。  第2）步要拷贝所有数据，因此一般第2）步消耗时间最长，第3）与第4）步是一个连续逼近的过程，MongoDB这里做了两次。
+是因为第2）步一般耗时太长，导致第3）步数据量变多，间接受到影响。然而这么做并不是必须的，rs_initialSync.cpp：384 开始的TODO建议使用SyncTail的方式将数据一次性读回来（SyncTail以及TailableCursor的行为与原理如果不熟悉请看官方文档。
+steady-sync 当节点初始化完成后，会进入steady-sync状态，顾名思义，正常情况下，这是一个稳定静默运行于后台的，从复制源不断同步新oplog的过程。该过程一般会出现这两种问题：
+ 复制源写入过快（或者相对的，本地写入速度过慢），复制源的oplog覆盖了 本地用于同步源oplog而维持在源的游标。 本节点在宕机之前是Primary，在重启后本地oplog有和当前Primary不一致的Oplog。  这两种情况分别如下图所示：
+这两种情况在bgsync.cpp:_produce函数中，虽然这两种情况很不一样，但是最终都会进入bgsync.cpp:_rollback函数处理。
+对于第二种情况，处理过程在rs_rollback.cpp中，具体步骤为：
+  维持本地与远程的两个反向游标，以线性的时间复杂度找到LCA（最近公共祖先，上conflict.png中为Record4）
+该过程与经典的两个有序链表找公共节点的过程类似，具体实现在roll_back_local_operations.cpp:syncRollBackLocalOperations中，读者可以自行思考这一过程如何以线性时间复杂度实现。
+  针对本地每个冲突的oplog，枚举该oplog的类型，推断出回滚该oplog需要的逆操作并记录，如下：
+2.1: create_table -&amp;gt; drop_table 2.2: drop_table -&amp;gt; 重新同步该表 2.</description>
+    </item>
+    
+  </channel>
+</rss>

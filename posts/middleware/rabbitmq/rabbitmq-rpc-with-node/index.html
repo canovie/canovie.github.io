@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Node使用RabbitMQ：远程过程调用（RPC）</title>
+    <meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta http-equiv="X-UA-Compatible" content="ie=edge" />
+
+
+<link rel="stylesheet" href="/assets/css/bootstrap.min.css" />
+<link rel="stylesheet" href="/assets/css/style.css" />
+<link rel="stylesheet" href="/assets/css/navbar.css" />
+
+
+<link href="https://fonts.googleapis.com/css2?family=Muli:wght@300;400;500;600" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" />
+
+
+<link rel="icon" type="image/png" href="/assets/images/favicon.png" />
+
+
+    
+<link
+  rel="stylesheet"
+  href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/styles/atom-one-dark.min.css"
+/>
+<link rel="stylesheet" href="/assets/css/single.css" />
+
+
+    
+    
+      
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'UA-142765126-1', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+
+    
+  </head>
+
+  <body>
+    <div class="container-fluid bg-dimmed wrapper">
+      
+      
+    <nav class="navbar navbar-expand-lg top-navbar final-navbar shadow">
+    <div class="container">
+      <a class="navbar-brand" href="/posts">
+        <img src="/assets/images/logo.png">青云卷</a>
+      <button class="navbar-toggler navbar-light" type="button" >
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <div class="collapse navbar-collapse" id="top-nav-items">
+        <ul class="navbar-nav ml-auto">
+        </ul>
+      </div>
+    </div>
+</nav>
+
+
+
+      
+      
+<div class="container p-0 read-area">
+  
+  <div class="hero-area col-sm-12" style='background-image: url(https://mydream.ink/assets/images/posts/middleware/rabbitmq_node.jpg);'>
+  </div>
+
+  
+  <div class="page-content">
+    <div class="author-profile ml-auto align-self-lg-center">
+      <img class="rounded-circle" src='/assets/images/portrait.jpg'/>
+      <h5 class="author-name">Jerry Chan</h5>
+      <p>February 16, 2018</p>
+    </div>
+
+    <div class="title">
+      <h1>Node使用RabbitMQ：远程过程调用（RPC）</h1>
+    </div>
+
+    <div class="post-content" id="post-content">
+      <h1 id="前提条件">前提条件</h1>
+<p>本教程假定RabbitMQ已安装并在标准端口（5672）上的本地主机上运行。如果您使用不同的主机，端口或凭据，连接设置将需要调整。</p>
+<h1 id="使用amqpnode客户端">（使用amqp.node客户端）</h1>
+<p>在第二个教程中，我们学习了如何使用工作队列在多个Worker之间分配耗时的任务。 但是如果我们需要在远程计算机上运行一个函数并等待结果呢？那么，这是件不同的事。这种模式通常被称为远程过程调用或RPC。 在本教程中，我们将使用RabbitMQ构建一个RPC系统：一个客户端和一个可扩展的RPC服务器。由于我们没有任何值得分发的耗时任务，所以我们将创建一个返回斐波那契数列的虚拟RPC服务。</p>
+<h2 id="回调队列">回调队列</h2>
+<p>一般来讲，通过RabbitMQ使用RPC是非常容易的。客户端发送请求消息，服务器回复响应消息。为了收到回应，请求时，我们需要发送一个<code>callback</code>队列地址。我们可以使用默认队列。让我们试试看：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-js" data-lang="js"><span style="color:#a6e22e">ch</span>.<span style="color:#a6e22e">assertQueue</span>(<span style="color:#e6db74">&#39;&#39;</span>, {<span style="color:#a6e22e">exclusive</span><span style="color:#f92672">:</span> <span style="color:#66d9ef">true</span>});
+
+<span style="color:#a6e22e">ch</span>.<span style="color:#a6e22e">sendToQueue</span>(<span style="color:#e6db74">&#39;rpc_queue&#39;</span>,<span style="color:#66d9ef">new</span> <span style="color:#a6e22e">Buffer</span>(<span style="color:#e6db74">&#39;10&#39;</span>), { <span style="color:#a6e22e">replyTo</span><span style="color:#f92672">:</span> <span style="color:#a6e22e">queue_name</span> });
+
+<span style="color:#960050;background-color:#1e0010">#</span> ... <span style="color:#a6e22e">then</span> <span style="color:#a6e22e">code</span> <span style="color:#a6e22e">to</span> <span style="color:#a6e22e">read</span> <span style="color:#a6e22e">a</span> <span style="color:#a6e22e">response</span> <span style="color:#a6e22e">message</span> <span style="color:#a6e22e">from</span> <span style="color:#a6e22e">the</span> <span style="color:#a6e22e">callback</span> <span style="color:#a6e22e">queue</span> ...
+</code></pre></div><blockquote>
+<p><strong>消息属性</strong> AMQP 0-9-1协议预定义了一组与消息一起的14个属性。除了以下属性，大多数属性很少使用： <code>persistent</code>：将消息标记为persistent（值为true）或transient（false）。您可能会从第二个教程中了解到这个属性。 <code>content_type</code>：用于描述编码的MIME类型。例如，对于经常使用的JSON编码，将此属性设置为<code>application/json</code>是一个很好的习惯。 <code>reply_to</code>：通常用于命名回调队列。 <code>correlation_id</code>：用于将RPC响应与请求相关联。</p>
+</blockquote>
+<h2 id="关联标识correlation-id">关联标识（correlation id）</h2>
+<p>在上面介绍的方法中，我们建议为每个RPC请求创建一个回调队列。这是非常低效的，但幸运的是有一个更好的方法——让我们创建一个单一的客户端回调队列。 这引发了一个新的问题，在该队列中收到回复，不清楚回复属于哪个请求。什么时候使用<code>correlation_id</code>属性？我们将把它设置为每个请求的唯一值。之后，当我们在回调队列中收到一条消息时，我们将查看这个属性，并基于这个属性，我们可以将响应与请求进行匹配。如果我们看到一个未知的<code>correlation_id</code>值，我们可以放心地丢弃这个消息——这不属于我们的请求。 您可能会问，为什么我们应该忽略回调队列中的未知消息，而不是失败并报一个错误？这是由于在服务器端的竞争条件的可能性。虽然不太可能，但在发送给我们答复之后，在发送请求的确认消息之前，RPC服务器可能会死亡。如果发生这种情况，重新启动的RPC服务器将再次处理该请求。这就是为什么在客户端，我们必须优雅地处理重复的响应，理想情况下RPC应该是幂等的。</p>
+<h2 id="总结">总结</h2>
+<p><img src="/assets/images/posts/middleware/python-six.png" alt=""></p>
+<p>我们的RPC调用像这样： 当客户端启动的时候，它创建一个匿名的独占式回调队列。 对于一个RPC请求，客户端会发送具有这两个属性的消息：<code>reply_to</code>，用于设置回调队列；<code>correlation_id</code>，作为请求标识。 请求被发送到一个<code>rpc_queue</code>队列。 RPC Worker（又名：服务器）在队列上等待请求。当出现一个请求时，它执行这个工作，并使用reply_to字段中的队列将结果发送回客户端。 客户端在回调队列中等待数据。出现消息时，会检查<code>correlation_id</code>属性。如果它匹配来自请求的值，则返回对应用程序的响应。</p>
+<h2 id="全部代码">全部代码</h2>
+<p>斐波那契函数：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-js" data-lang="js"><span style="color:#66d9ef">function</span> <span style="color:#a6e22e">fibonacci</span>(<span style="color:#a6e22e">n</span>) {
+  <span style="color:#66d9ef">if</span> (<span style="color:#a6e22e">n</span> <span style="color:#f92672">==</span> <span style="color:#ae81ff">0</span> <span style="color:#f92672">||</span> <span style="color:#a6e22e">n</span> <span style="color:#f92672">==</span> <span style="color:#ae81ff">1</span>)
+    <span style="color:#66d9ef">return</span> <span style="color:#a6e22e">n</span>;
+  <span style="color:#66d9ef">else</span>
+    <span style="color:#66d9ef">return</span> <span style="color:#a6e22e">fibonacci</span>(<span style="color:#a6e22e">n</span> <span style="color:#f92672">-</span> <span style="color:#ae81ff">1</span>) <span style="color:#f92672">+</span> <span style="color:#a6e22e">fibonacci</span>(<span style="color:#a6e22e">n</span> <span style="color:#f92672">-</span> <span style="color:#ae81ff">2</span>);
+}
+</code></pre></div><p>我们声明斐波那契函数。它只假定有效的正整数输入（不要指望这个函数可以使用大数字，因为这可能是最慢的递归实现）。 我们的RPC服务器<code>rpc_server.js</code>的代码如下所示：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-js" data-lang="js"><span style="color:#75715e">#!/usr/bin/env node
+</span><span style="color:#75715e"></span>
+<span style="color:#66d9ef">var</span> <span style="color:#a6e22e">amqp</span> <span style="color:#f92672">=</span> <span style="color:#a6e22e">require</span>(<span style="color:#e6db74">&#39;amqplib/callback_api&#39;</span>);
+
+<span style="color:#a6e22e">amqp</span>.<span style="color:#a6e22e">connect</span>(<span style="color:#e6db74">&#39;amqp://localhost&#39;</span>, <span style="color:#66d9ef">function</span>(<span style="color:#a6e22e">err</span>, <span style="color:#a6e22e">conn</span>) {
+  <span style="color:#a6e22e">conn</span>.<span style="color:#a6e22e">createChannel</span>(<span style="color:#66d9ef">function</span>(<span style="color:#a6e22e">err</span>, <span style="color:#a6e22e">ch</span>) {
+    <span style="color:#66d9ef">var</span> <span style="color:#a6e22e">q</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;rpc_queue&#39;</span>;
+
+    <span style="color:#a6e22e">ch</span>.<span style="color:#a6e22e">assertQueue</span>(<span style="color:#a6e22e">q</span>, {<span style="color:#a6e22e">durable</span><span style="color:#f92672">:</span> <span style="color:#66d9ef">false</span>});
+    <span style="color:#a6e22e">ch</span>.<span style="color:#a6e22e">prefetch</span>(<span style="color:#ae81ff">1</span>);
+    <span style="color:#a6e22e">console</span>.<span style="color:#a6e22e">log</span>(<span style="color:#e6db74">&#39; [x] Awaiting RPC requests&#39;</span>);
+    <span style="color:#a6e22e">ch</span>.<span style="color:#a6e22e">consume</span>(<span style="color:#a6e22e">q</span>, <span style="color:#66d9ef">function</span> <span style="color:#a6e22e">reply</span>(<span style="color:#a6e22e">msg</span>) {
+      <span style="color:#66d9ef">var</span> <span style="color:#a6e22e">n</span> <span style="color:#f92672">=</span> parseInt(<span style="color:#a6e22e">msg</span>.<span style="color:#a6e22e">content</span>.<span style="color:#a6e22e">toString</span>());
+
+      <span style="color:#a6e22e">console</span>.<span style="color:#a6e22e">log</span>(<span style="color:#e6db74">&#34; [.] fib(%d)&#34;</span>, <span style="color:#a6e22e">n</span>);
+
+      <span style="color:#66d9ef">var</span> <span style="color:#a6e22e">r</span> <span style="color:#f92672">=</span> <span style="color:#a6e22e">fibonacci</span>(<span style="color:#a6e22e">n</span>);
+
+      <span style="color:#a6e22e">ch</span>.<span style="color:#a6e22e">sendToQueue</span>(<span style="color:#a6e22e">msg</span>.<span style="color:#a6e22e">properties</span>.<span style="color:#a6e22e">replyTo</span>,
+        <span style="color:#66d9ef">new</span> <span style="color:#a6e22e">Buffer</span>(<span style="color:#a6e22e">r</span>.<span style="color:#a6e22e">toString</span>()),
+        {<span style="color:#a6e22e">correlationId</span><span style="color:#f92672">:</span> <span style="color:#a6e22e">msg</span>.<span style="color:#a6e22e">properties</span>.<span style="color:#a6e22e">correlationId</span>});
+
+      <span style="color:#a6e22e">ch</span>.<span style="color:#a6e22e">ack</span>(<span style="color:#a6e22e">msg</span>);
+    });
+  });
+});
+
+<span style="color:#66d9ef">function</span> <span style="color:#a6e22e">fibonacci</span>(<span style="color:#a6e22e">n</span>) {
+  <span style="color:#66d9ef">if</span> (<span style="color:#a6e22e">n</span> <span style="color:#f92672">==</span> <span style="color:#ae81ff">0</span> <span style="color:#f92672">||</span> <span style="color:#a6e22e">n</span> <span style="color:#f92672">==</span> <span style="color:#ae81ff">1</span>)
+    <span style="color:#66d9ef">return</span> <span style="color:#a6e22e">n</span>;
+  <span style="color:#66d9ef">else</span>
+    <span style="color:#66d9ef">return</span> <span style="color:#a6e22e">fibonacci</span>(<span style="color:#a6e22e">n</span> <span style="color:#f92672">-</span> <span style="color:#ae81ff">1</span>) <span style="color:#f92672">+</span> <span style="color:#a6e22e">fibonacci</span>(<span style="color:#a6e22e">n</span> <span style="color:#f92672">-</span> <span style="color:#ae81ff">2</span>);
+}
+</code></pre></div><p>服务器代码非常简单:</p>
+<ol>
+<li>像往常一样，我们首先建立连接，通道和声明队列。</li>
+<li>我们可能想要运行多个服务器进程。为了在多个服务器上平均分配负载，我们需要在通道上设置<code>prefetch</code>设置。</li>
+<li>我们使用<code>Channel.consume</code>来消费队列中的消息。然后我们进入回调函数，在那里做工作，并发回响应。</li>
+</ol>
+<p>我们的RPC客户端<code>rpc_client.js</code>的代码：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-js" data-lang="js"><span style="color:#75715e">#!/usr/bin/env node
+</span><span style="color:#75715e"></span>
+<span style="color:#66d9ef">var</span> <span style="color:#a6e22e">amqp</span> <span style="color:#f92672">=</span> <span style="color:#a6e22e">require</span>(<span style="color:#e6db74">&#39;amqplib/callback_api&#39;</span>);
+
+<span style="color:#66d9ef">var</span> <span style="color:#a6e22e">args</span> <span style="color:#f92672">=</span> <span style="color:#a6e22e">process</span>.<span style="color:#a6e22e">argv</span>.<span style="color:#a6e22e">slice</span>(<span style="color:#ae81ff">2</span>);
+
+<span style="color:#66d9ef">if</span> (<span style="color:#a6e22e">args</span>.<span style="color:#a6e22e">length</span> <span style="color:#f92672">==</span> <span style="color:#ae81ff">0</span>) {
+  <span style="color:#a6e22e">console</span>.<span style="color:#a6e22e">log</span>(<span style="color:#e6db74">&#34;Usage: rpc_client.js num&#34;</span>);
+  <span style="color:#a6e22e">process</span>.<span style="color:#a6e22e">exit</span>(<span style="color:#ae81ff">1</span>);
+}
+
+<span style="color:#a6e22e">amqp</span>.<span style="color:#a6e22e">connect</span>(<span style="color:#e6db74">&#39;amqp://localhost&#39;</span>, <span style="color:#66d9ef">function</span>(<span style="color:#a6e22e">err</span>, <span style="color:#a6e22e">conn</span>) {
+  <span style="color:#a6e22e">conn</span>.<span style="color:#a6e22e">createChannel</span>(<span style="color:#66d9ef">function</span>(<span style="color:#a6e22e">err</span>, <span style="color:#a6e22e">ch</span>) {
+    <span style="color:#a6e22e">ch</span>.<span style="color:#a6e22e">assertQueue</span>(<span style="color:#e6db74">&#39;&#39;</span>, {<span style="color:#a6e22e">exclusive</span><span style="color:#f92672">:</span> <span style="color:#66d9ef">true</span>}, <span style="color:#66d9ef">function</span>(<span style="color:#a6e22e">err</span>, <span style="color:#a6e22e">q</span>) {
+      <span style="color:#66d9ef">var</span> <span style="color:#a6e22e">corr</span> <span style="color:#f92672">=</span> <span style="color:#a6e22e">generateUuid</span>();
+      <span style="color:#66d9ef">var</span> <span style="color:#a6e22e">num</span> <span style="color:#f92672">=</span> parseInt(<span style="color:#a6e22e">args</span>[<span style="color:#ae81ff">0</span>]);
+
+      <span style="color:#a6e22e">console</span>.<span style="color:#a6e22e">log</span>(<span style="color:#e6db74">&#39; [x] Requesting fib(%d)&#39;</span>, <span style="color:#a6e22e">num</span>);
+
+      <span style="color:#a6e22e">ch</span>.<span style="color:#a6e22e">consume</span>(<span style="color:#a6e22e">q</span>.<span style="color:#a6e22e">queue</span>, <span style="color:#66d9ef">function</span>(<span style="color:#a6e22e">msg</span>) {
+        <span style="color:#66d9ef">if</span> (<span style="color:#a6e22e">msg</span>.<span style="color:#a6e22e">properties</span>.<span style="color:#a6e22e">correlationId</span> <span style="color:#f92672">==</span> <span style="color:#a6e22e">corr</span>) {
+          <span style="color:#a6e22e">console</span>.<span style="color:#a6e22e">log</span>(<span style="color:#e6db74">&#39; [.] Got %s&#39;</span>, <span style="color:#a6e22e">msg</span>.<span style="color:#a6e22e">content</span>.<span style="color:#a6e22e">toString</span>());
+          <span style="color:#a6e22e">setTimeout</span>(<span style="color:#66d9ef">function</span>() { <span style="color:#a6e22e">conn</span>.<span style="color:#a6e22e">close</span>(); <span style="color:#a6e22e">process</span>.<span style="color:#a6e22e">exit</span>(<span style="color:#ae81ff">0</span>) }, <span style="color:#ae81ff">500</span>);
+        }
+      }, {<span style="color:#a6e22e">noAck</span><span style="color:#f92672">:</span> <span style="color:#66d9ef">true</span>});
+
+      <span style="color:#a6e22e">ch</span>.<span style="color:#a6e22e">sendToQueue</span>(<span style="color:#e6db74">&#39;rpc_queue&#39;</span>,
+      <span style="color:#66d9ef">new</span> <span style="color:#a6e22e">Buffer</span>(<span style="color:#a6e22e">num</span>.<span style="color:#a6e22e">toString</span>()),
+      { <span style="color:#a6e22e">correlationId</span><span style="color:#f92672">:</span> <span style="color:#a6e22e">corr</span>, <span style="color:#a6e22e">replyTo</span><span style="color:#f92672">:</span> <span style="color:#a6e22e">q</span>.<span style="color:#a6e22e">queue</span> });
+    });
+  });
+});
+
+<span style="color:#66d9ef">function</span> <span style="color:#a6e22e">generateUuid</span>() {
+  <span style="color:#66d9ef">return</span> Math.<span style="color:#a6e22e">random</span>().<span style="color:#a6e22e">toString</span>() <span style="color:#f92672">+</span>
+          Math.<span style="color:#a6e22e">random</span>().<span style="color:#a6e22e">toString</span>() <span style="color:#f92672">+</span>
+          Math.<span style="color:#a6e22e">random</span>().<span style="color:#a6e22e">toString</span>();
+}
+</code></pre></div><p>我们的RPC服务已经准备就绪。我们可以启动服务器：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">./rpc_server.js
+<span style="color:#75715e"># =&gt; [x] Awaiting RPC requests</span>
+</code></pre></div><p>运行客户端去请求一个斐波那契数字：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">./rpc_client.js <span style="color:#ae81ff">30</span>
+<span style="color:#75715e"># =&gt; [x] Requesting fib(30)</span>
+</code></pre></div><p>这里介绍的设计不是RPC服务的唯一可能的实现，但它有一些重要的优点：</p>
+<ul>
+<li>如果RPC服务器速度太慢，可以通过运行另一个来扩展。尝试在新的控制台中运行第二个<code>rpc_server.js</code>。</li>
+<li>在客户端，RPC需要发送和接收一条消息。因此，RPC客户端只需要一次网络往返就可以获得一个RPC请求。</li>
+</ul>
+<p>我们的代码仍然非常简单，并不试图解决更复杂（但重要）的问题，如：</p>
+<ul>
+<li>如果没有服务器运行，客户端应该如何应对？</li>
+<li>客户端是否应该对RPC有某种超时？</li>
+<li>如果服务器发生故障并引发异常，是否应将其转发给客户端？</li>
+<li>在处理之前防止无效的传入消息（例如检查边界，类型）。</li>
+</ul>
+
+    </div>
+
+    
+    
+      <div class="btn-improve-page">
+          <a href="https://github.com/alphajc/mysite/edit/master/content/posts/middleware/rabbitmq/RabbitMQ%20RPC%20with%20Node.md">
+            <i class="fas fa-code-branch"></i>
+            Improve This Page
+          </a>
+      </div>
+    
+
+    
+  <hr />
+    <div class="row next-prev-navigator">
+
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    
+      
+      <div class="col-md-6 previous-article">
+        <a href="/posts/cloud-native/kubernetes/kubeadm/" class="btn btn-outline-info">
+          <span><i class="fas fa-chevron-circle-left"></i> 上一篇</span>
+          <br />
+          <span>使用 kubeadm 安装 Kubernetes 1.10.0</span>
+        </a>
+      </div>
+      
+    
+    
+      
+        
+        
+          
+              
+          
+        
+        <div class="col-md-6 next-article">
+          <a href="/posts/middleware/rabbitmq/rabbitmq-exchange-with-node/" class="btn btn-outline-info">
+            <span>下一篇 <i class="fas fa-chevron-circle-right"></i></span>
+            <br />
+            <span>Node使用RabbitMQ：主题交换器</span>
+          </a>
+        </div>
+      
+    
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+</div>
+
+  <hr />
+  
+  
+      <div id="disqus_thread"></div>
+<script type="text/javascript">
+  (function () {
+    
+    
+    if (window.location.hostname == "localhost") return;
+
+    var dsq = document.createElement("script");
+    dsq.type = "text/javascript";
+    dsq.async = true;
+    var disqus_shortname = "mydream-ink";
+    dsq.src = "//" + disqus_shortname + ".disqus.com/embed.js";
+    (
+      document.getElementsByTagName("head")[0] ||
+      document.getElementsByTagName("body")[0]
+    ).appendChild(dsq);
+  })();
+</script>
+<noscript
+  >请开启 JavaScript 功能
+  <a href="https://disqus.com/?ref_noscript"
+    >comments powered by Disqus.</a
+  ></noscript
+>
+<a href="https://disqus.com/" class="dsq-brlink"
+  >通过 <span class="logo-disqus">Disqus</span> 评论</a
+>
+
+  
+</div>
+
+    </div>
+
+    <footer class="container-fluid text-center align-content-center footer pb-2">
+  <div class="container pt-5">
+    <div class="row text-left">
+      <div class="col-md-4 col-sm-12">
+        <h5>导航</h5>
+        
+        <ul>
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#about">关于</a>
+            </li>
+            
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#skills">技能</a>
+            </li>
+            
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#experiences">经历</a>
+            </li>
+            
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#projects">项目</a>
+            </li>
+            
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#recent-posts">最近文章</a>
+            </li>
+            
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#achievements">成就</a>
+            </li>
+            
+        </ul>
+        
+
+      </div>
+      <div class="col-md-4 col-sm-12">
+        <h5>联系我</h5>
+        <ul>
+          
+          <li><span>电话: </span> <span>&#43;8619980414909</span></li>
+          
+          <li><span>邮箱: </span> <span>jerry@mydream.ink</span></li>
+          
+        </ul>
+      </div>
+      <div class="col-md-4 col-sm-12">
+        
+        <p>接收最新的邮件通知</p>
+        <form>
+          <div class="form-group">
+            <input
+              type="email"
+              class="form-control"
+              id="exampleInputEmail1"
+              aria-describedby="emailHelp"
+              placeholder="输入邮箱"
+            />
+            <small id="emailHelp" class="form-text text-muted"
+              >你的邮件地址不会被共享给他人</small
+            >
+          </div>
+          <button type="submit" class="btn btn-info">提交</button>
+        </form>
+      </div>
+    </div>
+  </div>
+  <hr />
+  <div class="container">
+    <div class="row text-left">
+      <div class="col-md-4">
+        <a id="theme" href="/" target="#">
+          <img src="/assets/images/logo-inverted.png">青云卷</a>
+      </div>
+      <div class="col-md-4"><a href="https://beian.miit.gov.cn">蜀ICP备 2021017630号-1</a>© 2021 Copyright.</div>
+    </div>
+  </div>
+</footer>
+
+    <script src="/assets/js/jquery-3.4.1.min.js"></script>
+<script src="/assets/js/bootstrap.min.js"></script>
+
+<script src="/assets/js/navbar.js"></script>
+<script src="/assets/js/jquery.filterizr.min.js"></script>
+
+
+    
+    
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/highlight.min.js"></script>
+<script src="/assets/js/single.js"></script>
+<script>
+  hljs.initHighlightingOnLoad();
+</script>
+
+
+  </body>
+</html>

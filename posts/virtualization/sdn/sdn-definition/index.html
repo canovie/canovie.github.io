@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>SDN的定义</title>
+    <meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta http-equiv="X-UA-Compatible" content="ie=edge" />
+
+
+<link rel="stylesheet" href="/assets/css/bootstrap.min.css" />
+<link rel="stylesheet" href="/assets/css/style.css" />
+<link rel="stylesheet" href="/assets/css/navbar.css" />
+
+
+<link href="https://fonts.googleapis.com/css2?family=Muli:wght@300;400;500;600" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" />
+
+
+<link rel="icon" type="image/png" href="/assets/images/favicon.png" />
+
+
+    
+<link
+  rel="stylesheet"
+  href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/styles/atom-one-dark.min.css"
+/>
+<link rel="stylesheet" href="/assets/css/single.css" />
+
+
+    
+    
+      
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'UA-142765126-1', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+
+    
+  </head>
+
+  <body>
+    <div class="container-fluid bg-dimmed wrapper">
+      
+      
+    <nav class="navbar navbar-expand-lg top-navbar final-navbar shadow">
+    <div class="container">
+      <a class="navbar-brand" href="/posts">
+        <img src="/assets/images/logo.png">青云卷</a>
+      <button class="navbar-toggler navbar-light" type="button" >
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <div class="collapse navbar-collapse" id="top-nav-items">
+        <ul class="navbar-nav ml-auto">
+        </ul>
+      </div>
+    </div>
+</nav>
+
+
+
+      
+      
+<div class="container p-0 read-area">
+  
+  <div class="hero-area col-sm-12" style='background-image: url(https://mydream.ink/assets/images/posts/virtualization/sdn.jpg);'>
+  </div>
+
+  
+  <div class="page-content">
+    <div class="author-profile ml-auto align-self-lg-center">
+      <img class="rounded-circle" src='/assets/images/portrait.jpg'/>
+      <h5 class="author-name">Jerry Chan</h5>
+      <p>October 21, 2017</p>
+    </div>
+
+    <div class="title">
+      <h1>SDN的定义</h1>
+    </div>
+
+    <div class="post-content" id="post-content">
+      <h1 id="sdnsoftware-defined-networking软件定义网络的定义httpswwwopennetworkingorgsdn-resourcessdn-definition"><a href="https://www.opennetworking.org/sdn-resources/sdn-definition">SDN（Software-Defined Networking，软件定义网络）的定义</a></h1>
+<h2 id="什么是sdn">什么是SDN？</h2>
+<p>转发层与网络控制层的物理分离以及控制多设备的控制层</p>
+<p>软件定义网络（SDN）是一种新兴的体系结构，具有动态，可管理性，成本效益和适应性，使其成为当今应用的高带宽，动态性能的理想选择。该架构解耦了网络控制和转发功能，使网络控制成为可直接编程的，底层基础设施将被抽象出来，用于应用和网络服务。OpenFlow®协议是构建SDN解决方案的基础元素。 SDN架构是：</p>
+<ul>
+<li><strong>可直接编程</strong>：网络控制是直接可编程的，因为它与转发功能分离开来。</li>
+<li><strong>敏捷</strong>：来自转发的抽象控制使管理员可以动态调整网络流量，以满足不断变化的需求。</li>
+<li><strong>集中管理</strong>：网络智能（在逻辑上）集中在基于软件的SDN控制器中，其维护网络的全局视图，其将应用和策略引擎看作是单个逻辑交换机。</li>
+<li><strong>编程配置</strong>：SDN使网络管理员通过动态，自动化的SDN程序非常快速地配置，管理，保护和优化网络资源，他们可以自己编写，因为程序不依赖于专有软件。</li>
+<li><strong>开放标准和厂商中立</strong>：通过开放标准实现，SDN简化了网络设计和操作，因为SDN控制器提供了指令，而不是多个供应商特定的设备和协议。
+![image](<a href="https://images.weserv.nl/?url=https://www.opennetworking.org/images/stories/sdn-resources/meet-sdn/sdn-3layers.gif">https://images.weserv.nl/?url=https://www.opennetworking.org/images/stories/sdn-resources/meet-sdn/sdn-3layers.gif</a></li>
+</ul>
+<h2 id="计算趋势正在推动网络变革">计算趋势正在推动网络变革</h2>
+<p>SDN解决了传统网络的静态架构不适合当今数据中心、校园和运营商环境的动态计算和存储需求的事实。推动新网络范式需求的关键计算趋势包括：</p>
+<ul>
+<li><strong>改变传输模式</strong>：通过公共和私有云通常访问地理分布式数据库和服务器的应用程序需要极其灵活的流量管理和按需访问带宽。</li>
+<li><strong>“消费化信息技术”</strong>：BYOD（Bring Your Own Device，携带您自己的设备）趋势需要既灵活又安全的网络。 - <strong>云服务的兴起</strong>：用户期望按需访问应用程序，基础架构和其他IT资源。</li>
+<li><strong>大数据意味着更大带宽</strong>：处理今天的大型数据集需要大量的并行处理，这将加剧对额外容量和任何到任何连接的不断需求。 为了满足不断变化的计算趋势所带来的网络需求，网络设计师发现自己受到当前网络的限制：</li>
+<li><strong>过于复杂</strong>：添加或移动设备和实施全网络策略是复杂，耗时的，主要是手动尝试风险的服务中断，阻止网络更改。</li>
+<li><strong>无法缩放</strong>：链接超额订购对提供可扩展性的历史悠久的方法对于虚拟化网络中的动态流量模式是无效的，这是在整个计算池中具有大规模并行处理算法和相关数据集的服务提供商网络中更为显着的问题。</li>
+<li><strong>厂商依赖</strong>：冗长的供应商设备产品周期和缺乏标准的开放接口限制了网络运营商将网络定制到各自环境的能力。</li>
+</ul>
+
+    </div>
+
+    
+    
+      <div class="btn-improve-page">
+          <a href="https://github.com/alphajc/mysite/edit/master/content/posts/virtualization/sdn/SDN%20Definition.md">
+            <i class="fas fa-code-branch"></i>
+            Improve This Page
+          </a>
+      </div>
+    
+
+    
+  <hr />
+    <div class="row next-prev-navigator">
+
+
+  
+
+  
+
+  
+    
+      
+      <div class="col-md-6 previous-article">
+        <a href="/posts/cloud-native/container/install-docker-on-ubuntu/" class="btn btn-outline-info">
+          <span><i class="fas fa-chevron-circle-left"></i> 上一篇</span>
+          <br />
+          <span>Ubuntu安装 Docker 社区版</span>
+        </a>
+      </div>
+      
+    
+    
+      
+        
+        
+          
+              
+          
+        
+        <div class="col-md-6 next-article">
+          <a href="/posts/virtualization/sdn/sdn-architecture/" class="btn btn-outline-info">
+            <span>下一篇 <i class="fas fa-chevron-circle-right"></i></span>
+            <br />
+            <span>SDN架构组件</span>
+          </a>
+        </div>
+      
+    
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+</div>
+
+  <hr />
+  
+  
+      <div id="disqus_thread"></div>
+<script type="text/javascript">
+  (function () {
+    
+    
+    if (window.location.hostname == "localhost") return;
+
+    var dsq = document.createElement("script");
+    dsq.type = "text/javascript";
+    dsq.async = true;
+    var disqus_shortname = "mydream-ink";
+    dsq.src = "//" + disqus_shortname + ".disqus.com/embed.js";
+    (
+      document.getElementsByTagName("head")[0] ||
+      document.getElementsByTagName("body")[0]
+    ).appendChild(dsq);
+  })();
+</script>
+<noscript
+  >请开启 JavaScript 功能
+  <a href="https://disqus.com/?ref_noscript"
+    >comments powered by Disqus.</a
+  ></noscript
+>
+<a href="https://disqus.com/" class="dsq-brlink"
+  >通过 <span class="logo-disqus">Disqus</span> 评论</a
+>
+
+  
+</div>
+
+    </div>
+
+    <footer class="container-fluid text-center align-content-center footer pb-2">
+  <div class="container pt-5">
+    <div class="row text-left">
+      <div class="col-md-4 col-sm-12">
+        <h5>导航</h5>
+        
+        <ul>
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#about">关于</a>
+            </li>
+            
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#skills">技能</a>
+            </li>
+            
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#experiences">经历</a>
+            </li>
+            
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#projects">项目</a>
+            </li>
+            
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#recent-posts">最近文章</a>
+            </li>
+            
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#achievements">成就</a>
+            </li>
+            
+        </ul>
+        
+
+      </div>
+      <div class="col-md-4 col-sm-12">
+        <h5>联系我</h5>
+        <ul>
+          
+          <li><span>电话: </span> <span>&#43;8619980414909</span></li>
+          
+          <li><span>邮箱: </span> <span>jerry@mydream.ink</span></li>
+          
+        </ul>
+      </div>
+      <div class="col-md-4 col-sm-12">
+        
+        <p>接收最新的邮件通知</p>
+        <form>
+          <div class="form-group">
+            <input
+              type="email"
+              class="form-control"
+              id="exampleInputEmail1"
+              aria-describedby="emailHelp"
+              placeholder="输入邮箱"
+            />
+            <small id="emailHelp" class="form-text text-muted"
+              >你的邮件地址不会被共享给他人</small
+            >
+          </div>
+          <button type="submit" class="btn btn-info">提交</button>
+        </form>
+      </div>
+    </div>
+  </div>
+  <hr />
+  <div class="container">
+    <div class="row text-left">
+      <div class="col-md-4">
+        <a id="theme" href="/" target="#">
+          <img src="/assets/images/logo-inverted.png">青云卷</a>
+      </div>
+      <div class="col-md-4"><a href="https://beian.miit.gov.cn">蜀ICP备 2021017630号-1</a>© 2021 Copyright.</div>
+    </div>
+  </div>
+</footer>
+
+    <script src="/assets/js/jquery-3.4.1.min.js"></script>
+<script src="/assets/js/bootstrap.min.js"></script>
+
+<script src="/assets/js/navbar.js"></script>
+<script src="/assets/js/jquery.filterizr.min.js"></script>
+
+
+    
+    
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/highlight.min.js"></script>
+<script src="/assets/js/single.js"></script>
+<script>
+  hljs.initHighlightingOnLoad();
+</script>
+
+
+  </body>
+</html>

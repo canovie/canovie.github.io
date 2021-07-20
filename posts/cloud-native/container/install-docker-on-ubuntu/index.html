@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Ubuntu安装 Docker 社区版</title>
+    <meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta http-equiv="X-UA-Compatible" content="ie=edge" />
+
+
+<link rel="stylesheet" href="/assets/css/bootstrap.min.css" />
+<link rel="stylesheet" href="/assets/css/style.css" />
+<link rel="stylesheet" href="/assets/css/navbar.css" />
+
+
+<link href="https://fonts.googleapis.com/css2?family=Muli:wght@300;400;500;600" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" />
+
+
+<link rel="icon" type="image/png" href="/assets/images/favicon.png" />
+
+
+    
+<link
+  rel="stylesheet"
+  href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/styles/atom-one-dark.min.css"
+/>
+<link rel="stylesheet" href="/assets/css/single.css" />
+
+
+    
+    
+      
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'UA-142765126-1', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+
+    
+  </head>
+
+  <body>
+    <div class="container-fluid bg-dimmed wrapper">
+      
+      
+    <nav class="navbar navbar-expand-lg top-navbar final-navbar shadow">
+    <div class="container">
+      <a class="navbar-brand" href="/posts">
+        <img src="/assets/images/logo.png">青云卷</a>
+      <button class="navbar-toggler navbar-light" type="button" >
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <div class="collapse navbar-collapse" id="top-nav-items">
+        <ul class="navbar-nav ml-auto">
+        </ul>
+      </div>
+    </div>
+</nav>
+
+
+
+      
+      
+<div class="container p-0 read-area">
+  
+  <div class="hero-area col-sm-12" style='background-image: url(https://mydream.ink/assets/images/posts/cloud-native/docker.jpg);'>
+  </div>
+
+  
+  <div class="page-content">
+    <div class="author-profile ml-auto align-self-lg-center">
+      <img class="rounded-circle" src='/assets/images/portrait.jpg'/>
+      <h5 class="author-name">Jerry Chan</h5>
+      <p>October 22, 2017</p>
+    </div>
+
+    <div class="title">
+      <h1>Ubuntu安装 Docker 社区版</h1>
+    </div>
+
+    <div class="post-content" id="post-content">
+      <h2 id="准备">准备</h2>
+<h1 id="系统要求">系统要求</h1>
+<p>要安装Docker CE，我们需要这些64位版本的Ubuntu：</p>
+<ul>
+<li>Artful 17.10 (Docker CE 17.11 Edge and higher only)</li>
+<li>Zesty 17.04</li>
+<li>Xenial 16.04 (LTS)</li>
+<li>Trusty 14.04 (LTS)</li>
+</ul>
+<p>在Ubuntu <code>x86_64</code>、<code>armhf</code>、<code>s390x</code>（IBM Z）和<code>ppc64le</code>（IBM Power）架构上支持Docker CE。</p>
+<blockquote>
+<p><code>ppc64le</code>和<code>s390x</code>限制：IBM Z和Power体系结构的软件包仅在Ubuntu Xenial及更高版本上可用。</p>
+</blockquote>
+<h1 id="卸载旧版本">卸载旧版本</h1>
+<p>老版本的Docker被称为docker或者docker-engine。如果安装了这些，请将其卸载：</p>
+<pre><code>sudo apt-get remove docker docker-engine docker.io
+</code></pre>
+<p>如果<code>apt-get</code>报告没有安装这些软件包，则可以直接跳过这一步。</p>
+<p><code>/var/lib/docker/</code>的内容（包括映像，容器，卷和网络）将被保留。 Docker CE包现在称为<code>docker-ce</code>。</p>
+<h2 id="安装docker-ce">安装Docker CE</h2>
+<p>您可以根据您的需要以不同的方式安装Docker CE：</p>
+<ul>
+<li>大多数用户设置Docker的存储库并从中进行安装，以方便安装和升级任务。这是推荐的方法。</li>
+<li>有些用户下载deb软件包手动安装，并完全手动管理升级。这很适合在诸如没有互联网访问的封闭系统上安装Docker。</li>
+<li>在测试和开发环境中，有些用户选择使用自动便捷脚本来安装Docker。</li>
+</ul>
+<h1 id="使用软件仓库安装">使用软件仓库安装</h1>
+<p>首次在新的主机上安装Docker CE之前，需要设置Docker软件仓库。之后，您可以从该库安装和更新Docker。</p>
+<h2 id="设置软件仓库">设置软件仓库</h2>
+<ol>
+<li>
+<p>更新apt包索引：</p>
+<pre><code>sudo apt-get update
+</code></pre>
+</li>
+<li>
+<p>安装软件包以允许apt通过HTTPS使用存储库：</p>
+<pre><code>sudo apt-get install \
+    apt-transport-https \
+    ca-certificates \
+    curl \
+    software-properties-common
+</code></pre>
+</li>
+<li>
+<p>添加Docker的官方GPG密钥：</p>
+<pre><code>curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+</code></pre>
+<p>通过查看指纹的最后8个字符，确认您现在已经拥有指纹<code>9DC8 5822 9FC7 DD38 854A E2D8 8D81 803C 0EBF CD88</code>的密钥。</p>
+<pre><code>sudo apt-key fingerprint 0EBFCD88
+</code></pre>
+<blockquote>
+<p>pub 4096R/0EBFCD88 2017-02-22<br>
+Key fingerprint = 9DC8 5822 9FC7 DD38 854A E2D8 8D81 803C 0EBF CD88<br>
+uid Docker Release (CE deb) <a href="mailto:docker@docker.com">docker@docker.com</a><br>
+sub 4096R/F273FCD8 2017-02-22</p>
+</blockquote>
+</li>
+<li>
+<p>使用以下命令来设置<code>stable</code>存储库。即使您想从<code>edge</code>或<code>test</code>存储库安装构建，也总是需要<code>stable</code>存储库。要添加<code>edge</code>或<code>test</code>存储库，请在下面的命令中在单词<code>stable</code>之后添加<code>edge</code>或<code>test</code>（或两者）。</p>
+<blockquote>
+<p><strong>注意</strong>：下面的<code>lsb_release -cs</code>子命令返回你的Ubuntu发行版的名字，比如<code>xenial</code>。有时候，在像Linux Mint这样的发行版中，您可能必须将<code>$(lsb_release -cs)</code>更改为您的父级Ubuntu发行版。例如，如果您使用Linux Mint Rafaela，则可以使用<code>trusty</code>。</p>
+</blockquote>
+<ul>
+<li>Duplicate Widget</li>
+<li>Remove Widget</li>
+</ul>
+<p>x86_64 / amd64</p>
+<p>armhf</p>
+<p>IBM Power (ppc64le)</p>
+<p>IBM Z (s390x)</p>
+<p>x86_64 / amd64</p>
+<pre><code>sudo add-apt-repository \
+   &quot;deb [arch=amd64] https://download.docker.com/linux/ubuntu \
+   $(lsb_release -cs) \
+   stable&quot;
+</code></pre>
+<p>armhf</p>
+<pre><code>sudo add-apt-repository \
+   &quot;deb [arch=armhf] https://download.docker.com/linux/ubuntu \
+   $(lsb_release -cs) \
+   stable&quot;
+</code></pre>
+<p>IBM Power (ppc64le)</p>
+<pre><code>sudo add-apt-repository \
+   &quot;deb [arch=ppc64le] https://download.docker.com/linux/ubuntu \
+   $(lsb_release -cs) \
+   stable&quot;
+</code></pre>
+<p>IBM Z (s390x)</p>
+<pre><code>sudo add-apt-repository \
+   &quot;deb [arch=s390x] https://download.docker.com/linux/ubuntu \
+   $(lsb_release -cs) \
+   stable&quot;
+</code></pre>
+</li>
+</ol>
+
+    </div>
+
+    
+    
+      <div class="btn-improve-page">
+          <a href="https://github.com/alphajc/mysite/edit/master/content/posts/cloud-native/container/Install%20Docker%20on%20Ubuntu.md">
+            <i class="fas fa-code-branch"></i>
+            Improve This Page
+          </a>
+      </div>
+    
+
+    
+  <hr />
+    <div class="row next-prev-navigator">
+
+
+  
+
+  
+
+  
+
+  
+
+  
+    
+      
+      <div class="col-md-6 previous-article">
+        <a href="/posts/virtualization/sdn/sdn-development/" class="btn btn-outline-info">
+          <span><i class="fas fa-chevron-circle-left"></i> 上一篇</span>
+          <br />
+          <span>SDN发展必然</span>
+        </a>
+      </div>
+      
+    
+    
+      
+        
+        
+          
+              
+          
+        
+        <div class="col-md-6 next-article">
+          <a href="/posts/virtualization/sdn/sdn-definition/" class="btn btn-outline-info">
+            <span>下一篇 <i class="fas fa-chevron-circle-right"></i></span>
+            <br />
+            <span>SDN的定义</span>
+          </a>
+        </div>
+      
+    
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+</div>
+
+  <hr />
+  
+  
+      <div id="disqus_thread"></div>
+<script type="text/javascript">
+  (function () {
+    
+    
+    if (window.location.hostname == "localhost") return;
+
+    var dsq = document.createElement("script");
+    dsq.type = "text/javascript";
+    dsq.async = true;
+    var disqus_shortname = "mydream-ink";
+    dsq.src = "//" + disqus_shortname + ".disqus.com/embed.js";
+    (
+      document.getElementsByTagName("head")[0] ||
+      document.getElementsByTagName("body")[0]
+    ).appendChild(dsq);
+  })();
+</script>
+<noscript
+  >请开启 JavaScript 功能
+  <a href="https://disqus.com/?ref_noscript"
+    >comments powered by Disqus.</a
+  ></noscript
+>
+<a href="https://disqus.com/" class="dsq-brlink"
+  >通过 <span class="logo-disqus">Disqus</span> 评论</a
+>
+
+  
+</div>
+
+    </div>
+
+    <footer class="container-fluid text-center align-content-center footer pb-2">
+  <div class="container pt-5">
+    <div class="row text-left">
+      <div class="col-md-4 col-sm-12">
+        <h5>导航</h5>
+        
+        <ul>
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#about">关于</a>
+            </li>
+            
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#skills">技能</a>
+            </li>
+            
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#experiences">经历</a>
+            </li>
+            
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#projects">项目</a>
+            </li>
+            
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#recent-posts">最近文章</a>
+            </li>
+            
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#achievements">成就</a>
+            </li>
+            
+        </ul>
+        
+
+      </div>
+      <div class="col-md-4 col-sm-12">
+        <h5>联系我</h5>
+        <ul>
+          
+          <li><span>电话: </span> <span>&#43;8619980414909</span></li>
+          
+          <li><span>邮箱: </span> <span>jerry@mydream.ink</span></li>
+          
+        </ul>
+      </div>
+      <div class="col-md-4 col-sm-12">
+        
+        <p>接收最新的邮件通知</p>
+        <form>
+          <div class="form-group">
+            <input
+              type="email"
+              class="form-control"
+              id="exampleInputEmail1"
+              aria-describedby="emailHelp"
+              placeholder="输入邮箱"
+            />
+            <small id="emailHelp" class="form-text text-muted"
+              >你的邮件地址不会被共享给他人</small
+            >
+          </div>
+          <button type="submit" class="btn btn-info">提交</button>
+        </form>
+      </div>
+    </div>
+  </div>
+  <hr />
+  <div class="container">
+    <div class="row text-left">
+      <div class="col-md-4">
+        <a id="theme" href="/" target="#">
+          <img src="/assets/images/logo-inverted.png">青云卷</a>
+      </div>
+      <div class="col-md-4"><a href="https://beian.miit.gov.cn">蜀ICP备 2021017630号-1</a>© 2021 Copyright.</div>
+    </div>
+  </div>
+</footer>
+
+    <script src="/assets/js/jquery-3.4.1.min.js"></script>
+<script src="/assets/js/bootstrap.min.js"></script>
+
+<script src="/assets/js/navbar.js"></script>
+<script src="/assets/js/jquery.filterizr.min.js"></script>
+
+
+    
+    
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/highlight.min.js"></script>
+<script src="/assets/js/single.js"></script>
+<script>
+  hljs.initHighlightingOnLoad();
+</script>
+
+
+  </body>
+</html>

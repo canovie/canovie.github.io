@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>docker 容器网络方案：calico 网络模型</title>
+    <meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta http-equiv="X-UA-Compatible" content="ie=edge" />
+
+
+<link rel="stylesheet" href="/assets/css/bootstrap.min.css" />
+<link rel="stylesheet" href="/assets/css/style.css" />
+<link rel="stylesheet" href="/assets/css/navbar.css" />
+
+
+<link href="https://fonts.googleapis.com/css2?family=Muli:wght@300;400;500;600" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" />
+
+
+<link rel="icon" type="image/png" href="/assets/images/favicon.png" />
+
+
+    
+<link
+  rel="stylesheet"
+  href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/styles/atom-one-dark.min.css"
+/>
+<link rel="stylesheet" href="/assets/css/single.css" />
+
+
+    
+    
+      
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'UA-142765126-1', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+
+    
+  </head>
+
+  <body>
+    <div class="container-fluid bg-dimmed wrapper">
+      
+      
+    <nav class="navbar navbar-expand-lg top-navbar final-navbar shadow">
+    <div class="container">
+      <a class="navbar-brand" href="/posts">
+        <img src="/assets/images/logo.png">青云卷</a>
+      <button class="navbar-toggler navbar-light" type="button" >
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <div class="collapse navbar-collapse" id="top-nav-items">
+        <ul class="navbar-nav ml-auto">
+        </ul>
+      </div>
+    </div>
+</nav>
+
+
+
+      
+      
+<div class="container p-0 read-area">
+  
+  <div class="hero-area col-sm-12" style='background-image: url(https://mydream.ink/assets/images/default-hero.jpg);'>
+  </div>
+
+  
+  <div class="page-content">
+    <div class="author-profile ml-auto align-self-lg-center">
+      <img class="rounded-circle" src='/assets/images/default-avatar.png'/>
+      <h5 class="author-name">John Doe</h5>
+      <p>July 18, 2019</p>
+    </div>
+
+    <div class="title">
+      <h1>docker 容器网络方案：calico 网络模型</h1>
+    </div>
+
+    <div class="post-content" id="post-content">
+      <h2 id="calico-简介">calico 简介</h2>
+<p>calico 是容器网络的又一种解决方案，和其他虚拟网络最大的不同是，它没有采用 overlay 网络做报文的转发，提供了纯 3 层的网络模型。三层通信模型表示每个容器都通过 IP 直接通信，中间通过路由转发找到对方。在这个过程中，容器所在的节点类似于传统的路由器，提供了路由查找的功能。</p>
+<p>要想路由工作能够正常，每个虚拟路由器（容器所在的主机节点）必须有某种方法知道整个集群的路由信息，calico 采用的是 <a href="https://en.wikipedia.org/wiki/Border_Gateway_Protocol">BGP 路由协议</a>，全称是 <code>Border Gateway Protocol</code>。</p>
+<p>除了能用于 docker 这样的容器外，它还能集成到容器集群平台 kubernetes、共有云平台 AWS、GCE 等， 而且也能很容易地集成到 openstack 等 Iaas 平台。</p>
+<p>这篇文章就介绍 calico 是如何实现 docker 跨主机网络的。</p>
+<h2 id="calico-集群安装和实验">calico 集群安装和实验</h2>
+<p>这部分我会在自己的 virtualbox 环境中运行多节点 docker，并使用 calico 实现跨主机的容器网络通信功能。实验环境一共启动了三台 centos7 虚拟机：</p>
+<ul>
+<li><code>node00</code>: 172.17.8.100</li>
+<li><code>node01</code>: 172.17.8.101</li>
+<li><code>node02</code>: 172.17.8.102</li>
+</ul>
+<p>这三台机器可以通过上面的 IP 地址进行通信，并且<strong>有不同的 hostname</strong>，推荐使用 vagrant 运行虚拟机集群。</p>
+<p>这部分我们会手动安装 calico 集群，以加深理解，在生产环境中推荐使用自动化安装。</p>
+<h3 id="1-安装-docker">1. 安装 docker</h3>
+<p>既然要在 docker 集群中测试 calico 网络，当然要有一个能正常工作的 docker 环境。docker 的安装这里就不说了，请参考<a href="https://docs.docker.com/engine/installation/">官网上的安装手册</a>选择适合自己的方式。</p>
+<h3 id="2-安装-etcd">2. 安装 etcd</h3>
+<p>calico 集群的信息需要保存在 etcd 中，因此我们首先要安装 etcd 服务，关于 etcd 的安装可以参考我<a href="https://cizixs.com/2016/08/02/intro-to-etcd">之前的文章</a>或者 etcd 官方网站。</p>
+<p>因为是用来测试，所以我创建了一个单点的 etcd 集群。</p>
+<h3 id="3-配置安装-docker-参数">3. 配置安装 docker 参数</h3>
+<p>要想让 docker 支持多节点网络，需要添加 <code>cluster-store</code> 参数，修改 <code>/etc/docker/daemon.json</code> 文件（如果文件不存在需要创建），添加一行内容：</p>
+<pre><code>{
+  &quot;cluster-store&quot;: &quot;etcd://172.17.8.100:2379&quot;
+}
+</code></pre><p>然后重启 docker 服务，比如 <code>systemctl restart docker</code>，保证 docker 正常运行。</p>
+<h3 id="4-下载-calicoctl-命令行">4. 下载 calicoctl 命令行</h3>
+<p>calico 提供的 <code>calicoctl</code> 命令行工具能简化安装的过程，所以我们需要先下载这个程序：</p>
+<pre><code>[~]# wget -O /usr/local/bin/calicoctl https://github.com/projectcalico/calicoctl/releases/download/v1.6.1/calicoctl
+[~]# chmod +x /usr/local/bin/calicoctl
+</code></pre><p>上述命令下载的是 1.6.1 版本，如果需要其他版本请按照<a href="https://github.com/projectcalico/calicoctl/releases">官方指导</a>下载。</p>
+<h3 id="5-配置-calicoctl-文件">5. 配置 calicoctl 文件</h3>
+<p>运行的 calico 需要和 etcd 进行交互，因此要事先配置 etcd 的地址以便 calicoctl 使用。calicoctl 有一个配置文件 <code>/etc/calico/calicoctl.cfg</code>，往里面写入如下内容，etcd 地址根据需求更改：</p>
+<pre><code># cat /etc/calico/calicoctl.cfg 
+apiVersion: v1
+kind: calicoApiConfig
+metadata:
+spec:
+  datastoreType: &quot;etcdv2&quot;
+  etcdEndpoints: &quot;http://172.17.8.100:2379&quot;
+</code></pre><h3 id="6-运行-calico-节点容器">6. 运行 calico 节点容器</h3>
+<p>calicoctl 会运行一个 docker 容器来运行 calico，容器镜像默认放在 <code>quay.io/calico/node:latest</code> 上面，在国内需要代理访问，也可以自行创建维护镜像或者事先下载好，这样的话就要把容器镜像指向自己维护的版本：</p>
+<pre><code>[root@localhost ~]# calicoctl node run --ip=172.17.8.101 --name node01 --node-image 172.16.1.41:5000/calico/node:v2.6.0
+Running command to load modules: modprobe -a xt_set ip6_tables
+Enabling IPv4 forwarding
+Enabling IPv6 forwarding
+Increasing conntrack limit
+Removing old calico-node container (if running).
+Running the following command to start calico-node:
+
+docker run --net=host --privileged --name=calico-node -d --restart=always -e CALICO_LIBNETWORK_ENABLED=true -e IP=172.17.8.101 -e ETCD_ENDPOINTS=http://172.17.8.100:2379 -e NODENAME=node01 -e CALICO_NETWORKING_BACKEND=bird -v /var/log/calico:/var/log/calico -v /var/run/calico:/var/run/calico -v /lib/modules:/lib/modules -v /run:/run -v /run/docker/plugins:/run/docker/plugins -v /var/run/docker.sock:/var/run/docker.sock 172.16.1.41:5000/calico/node:v2.6.0
+
+Image may take a short time to download if it is not available locally.
+Container started, checking progress logs.
+
+Skipping datastore connection test
+Using IPv4 address from environment: IP=172.17.8.101
+IPv4 address 172.17.8.101 discovered on interface enp0s8
+No AS number configured on node resource, using global value
+Created default IPv4 pool (192.168.0.0/16) with NAT outgoing true. IPIP mode: off
+Created default IPv6 pool (fd80:24e2:f998:72d6::/64) with NAT outgoing false. IPIP mode: off
+Using node name: node01
+Starting libnetwork service
+Calico node started successfully
+</code></pre><p>运行的命令指定了三个参数：</p>
+<ul>
+<li><code>--ip</code>：集群内节点用来互相通信的 IP 地址，如果要多个网卡或者网卡有多个 ip 地址最好手动指定。calicoctl 默认会自动选择这个 IP 地址，要实现自动化可以参考它的 IP 选择配置</li>
+<li><code>--name</code>：唯一标识该节点的字符串，如果没有提供会使用 hostname，因此<strong>务必要保证 hostname 的唯一性</strong></li>
+<li><code>--node-image</code>：calico node 的镜像地址，默认会从 <code>quay.io</code> 下载最新版本，如果想使用特定版本或者其他地址的镜像，需要手动指定</li>
+</ul>
+<p>从命令的输出可以看到，calicoctl 在运行容器之前还做了很多初始化的工作，比如加载需要的模块、配置系统参数、删除已经运行的 calico 容器（如果存在的话）；然后还会打印出来要运行的容器命令，所以理论上也可以手动执行这个命令；最后是运行使用的参数说明。</p>
+<h3 id="7-创建网络并测试连通性">7. 创建网络并测试连通性</h3>
+<p>在每个节点运行都不部署 calico 容器之后，calico 网络集群就搭建好了。接下来我们会创建两个网络，并测试 calico 跨主机网络的连通性，最终的网络示意图如下：</p>
+<p><img src="https://images.weserv.nl/?url=https://ws1.sinaimg.cn/large/006tNc79gy1fkgfg04nwbj31hc0u0qb0.jpg" alt=""></p>
+<p>图中只展示了两个节点，每个节点有两个容器，其中蓝色容器在同一个网络，红色容器在另外一个网络。</p>
+<p>先创建两个网络：</p>
+<pre><code># docker network create --driver calico --ipam-driver calico-ipam net1
+# docker network create --driver calico --ipam-driver calico-ipam net2
+</code></pre><p>docker 创建网络的时候，会调用 calico 的网络驱动，由驱动完成具体的工作。注意这个网络是跨主机的，因此无论在哪台机器创建，在其他机器上都能看到：</p>
+<pre><code>[root@localhost ~]# docker network ls
+NETWORK ID          NAME                DRIVER              SCOPE
+ea7007efb6d1        bridge              bridge              local
+f76e9fe0eacc        host                host                local
+c9bc43f8c601        net1                calico              global
+ecda22cb8142        net2                calico              global
+</code></pre><p>然后分别在网络中运行容器：</p>
+<p>node00:</p>
+<pre><code># docker run --net net1 --name containerA -tid busybox
+# docker run --net net2 --name containerB -tid busybox
+</code></pre><p>node01：</p>
+<pre><code># docker run --net net1 --name containerC -tid busybox
+# docker run --net net2 --name containerD -tid busybox
+</code></pre><p>可以测试 containerA 和 containerC 能互相通信，containerB 和 containerD 能互相通信：</p>
+<pre><code>[root@localhost ~]# docker exec -it containerA ping -c 3 containerC
+PING containerC (192.168.196.129): 56 data bytes
+64 bytes from 192.168.196.129: seq=0 ttl=62 time=50.587 ms
+64 bytes from 192.168.196.129: seq=1 ttl=62 time=50.921 ms
+64 bytes from 192.168.196.129: seq=2 ttl=62 time=51.688 ms
+
+--- containerC ping statistics ---
+3 packets transmitted, 3 packets received, 0% packet loss
+round-trip min/avg/max = 50.587/51.065/51.688 ms
+</code></pre><p>同一个网络 docker 会保存各自的名字和 IP 的对应关系，而不同网络的容器无法解析，而且不能相互通信：</p>
+<pre><code>[root@localhost ~]# docker exec -it containerA ping -c 3 192.168.196.128
+PING 192.168.196.128 (192.168.196.128): 56 data bytes
+
+--- 192.168.196.128 ping statistics ---
+3 packets transmitted, 0 packets received, 100% packet loss
+</code></pre><h2 id="报文流程">报文流程</h2>
+<p>我们来分析同个网络不同节点的容器是怎么通信的，借此还原 calico 的实现原理。以 containerA ping containerC 为例，先进入 containerA 中查看它的网络配置和路由表：</p>
+<pre><code>[root@localhost ~]# docker exec -it containerA sh
+/ # ip addr
+1: lo: &lt;LOOPBACK,UP,LOWER_UP&gt; mtu 65536 qdisc noqueue 
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+    inet 127.0.0.1/8 scope host lo
+       valid_lft forever preferred_lft forever
+5: cali0: &lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt; mtu 1500 qdisc noqueue 
+    link/ether ee:ee:ee:ee:ee:ee brd ff:ff:ff:ff:ff:ff
+    inet 192.168.18.64/32 scope global cali0
+       valid_lft forever preferred_lft forever
+</code></pre><p>可以看到 containerA 的 ip 地址为 <code>192.168.18.64/32</code>，需要注意的是它的 MAC 地址为 <code>ee:ee:ee:ee:ee:ee</code>，很明显是个固定的特殊地址（事实上所有 calico 生成的容器 MAC 地址都一样），这么做的是因为 calico 只关心三层的 IP 地址，根本不关心二层 MAC 地址。为什么这么说？等我们分析完，你就知道了。</p>
+<p>要 ping 的目的地址为 <code>192.168.196.129/32</code>，两者不再同一个网络中，所以会查看路由获取下一跳的地址：</p>
+<pre><code>/ # ip route
+default via 169.254.1.1 dev cali0 
+169.254.1.1 dev cali0
+</code></pre><p>容器的路由表非常有趣，和一般服务器创建的规则不同，所有的报文都会经过 <code>cali0</code> 发送到下一跳 <code>169.254.1.1</code>（这是预留的本地 IP 网段），这是 calico 为了简化网络配置做的选择，容器里的路由规则都是一样的，不需要动态更新。知道下一跳之后，容器会查询下一跳 <code>168.254.1.1</code> 的 MAC 地址，这个 ARP 请求发到哪里了呢？要回答这个问题，就要知道 <code>cali0</code> 是 veth pair 的一端，其对端是主机上 <code>caliXXXX</code> 命名的 interface，可以通过 <code>ethtool -S cali0</code> 列出对端的 interface idnex。</p>
+<pre><code># ethtool -S cali0
+NIC statistics:
+     peer_ifindex: 6
+</code></pre><p>而主机上 index 为 6 的 interface 为：</p>
+<pre><code># ip addr
+6: calif24874aae57: &lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt; mtu 1500 qdisc noqueue state UP 
+    link/ether a2:ff:0a:99:57:d2 brd ff:ff:ff:ff:ff:ff
+    inet6 fe80::a0ff:aff:fe99:57d2/64 scope link 
+       valid_lft forever preferred_lft forever
+</code></pre><p>报文会发送到这个 interface，这个 interface 有一个随机分配的 MAC 地址，但是没有<br></br>IP地址，接收到想要 <code>169.254.1.1</code> MAC 地址的 ARP 请求报文，它会怎么做呢？这个又不是它的 IP，而且它又没有和任何的 bridge 相连可以广播 ARP 报文。</p>
+<p>只能抓包看看了，记住要先删除容器中 <code>169.254.1.1</code> 对应的 ARP 表项（使用 <code>ip neigh del</code> 命令），然后运行 ping 的时候在主机上抓包：</p>
+<pre><code>[root@localhost ~]# tcpdump -nn -i calif24874aae57 -e
+tcpdump: verbose output suppressed, use -v or -vv for full protocol decode
+listening on calif24874aae57, link-type EN10MB (Ethernet), capture size 262144 bytes
+13:54:28.280252 ee:ee:ee:ee:ee:ee &gt; ff:ff:ff:ff:ff:ff, ethertype ARP (0x0806), length 42: Request who-has 169.254.1.1 tell 192.168.18.64, length 28
+13:54:28.280274 a2:ff:0a:99:57:d2 &gt; ee:ee:ee:ee:ee:ee, ethertype ARP (0x0806), length 42: Reply 169.254.1.1 is-at a2:ff:0a:99:57:d2, length 28
+13:54:28.280280 ee:ee:ee:ee:ee:ee &gt; a2:ff:0a:99:57:d2, ethertype IPv4 (0x0800), length 98: 192.168.18.64 &gt; 192.168.196.129: ICMP echo request, id 25581, seq 1, length 64
+13:54:28.280669 a2:ff:0a:99:57:d2 &gt; ee:ee:ee:ee:ee:ee, ethertype IPv4 (0x0800), length 98: 192.168.196.129 &gt; 192.168.18.64: ICMP echo reply, id 25581, seq 1, length 64
+</code></pre><p>从前面两个报文可以看到，接收到 ARP 请求后，它直接进行了应答，应答报文中 MAC 地址是 <code>a2:ff:0a:99:57:d2</code>，这正是该 interface 自己的 MAC 地址。换句话说，它把自己的 MAC 地址作为应答返回给容器。容器的后续报文 IP 地址还是目的容器，但是 MAC 地址就变成了主机上该 interface 的地址，也就是说所有的报文都会发给主机，然后主机根据 IP 地址进行转发。</p>
+<p>主机这个 interface 不管 ARP 请求的内容，直接用自己的 MAC 地址作为应答的行为被成为 <code>ARP proxy</code>，是 calico 开启的，可以通过下面的命令确认：</p>
+<pre><code># cat /proc/sys/net/ipv4/conf/calif24874aae57/proxy_arp
+1
+</code></pre><p>总的来说，可以认为 calico 把主机作为容器的默认网关来使用，所有的报文发到主机，然后主机根据路由表进行转发。和经典的网络架构不同的是，calico 并没有给默认网络配置一个 IP 地址（这样每个网络都会额外消耗一个 IP 资源，而且主机上也会增加对应的 IP 地址和路由信息），而是通过 arp proxy 和修改容器路由表来实现。</p>
+<p>主机的 interface 接收到报文之后，下面的事情就容易理解了，所有的报文会根据路由表来走：</p>
+<pre><code>[root@localhost ~]# ip route
+169.254.0.0/16 dev enp0s3  scope link  metric 1002 
+169.254.0.0/16 dev enp0s8  scope link  metric 1003 
+192.168.18.64 dev calif24874aae57  scope link 
+blackhole 192.168.18.64/26  proto bird 
+192.168.18.65 dev cali4e5ed993aed  scope link 
+192.168.196.128/26 via 172.17.8.101 dev enp0s8  proto bird
+</code></pre><p>而我们的 ping 报文目的地址是 <code>192.168.196.129</code>，匹配的是最后一个表项，把 <code>172.17.8.101</code> 作为下一跳地址，并通过 <code>enp0s8</code> 发出去。这个路由规则匹配的是一个网段，也就是说该网段所有的容器 IP 都在目的主机上，可以推测 calico 为每个主机默认分配了一段子网。</p>
+<p><strong>NOTE</strong>：在发送到另一台主机之前，报文还会经过 iptables，calico 设置的 ACL 规则还会过滤报文。这个步骤暂时先跳过，我们先认为报文能够被继续转发。</p>
+<p>报文到达容器所在的主机 <code>172.17.8.101</code>，下一步怎么走呢？当然是看路由器（这里还是跳过 iptables 的检查步骤）：</p>
+<pre><code>[root@localhost ~]# ip route
+169.254.0.0/16 dev enp0s3  scope link  metric 1002 
+169.254.0.0/16 dev enp0s8  scope link  metric 1003 
+192.168.18.64/26 via 172.17.8.100 dev enp0s8  proto bird 
+192.168.196.128 dev cali4907e793262  scope link 
+blackhole 192.168.196.128/26  proto bird 
+192.168.196.129 dev cali69b2b8c106c  scope link
+</code></pre><p>同样的，这个报文会匹配最后一个路由规则，这个规则匹配的是一个 IP 地址，而不是网段，也就是说主机上每个容器都会有一个对应的路由表项。报文发送到 <code>cali69b2b8c106c</code> 这个 veth pair，然后从另一端发送给容器，容器接收到报文之后，发送目的地址是自己，就做出 ping 应答，应答报文的返回路径和之前类似。</p>
+<p>总体的报文路径就是按照下图中的数字顺序，回来的报文按照原路返回：</p>
+<p><img src="https://images.weserv.nl/?url=https://ws3.sinaimg.cn/large/006tNc79gy1fkgfhzbl9kj31hc0u047e.jpg" alt="calico-packet-flow"></p>
+<h2 id="组件和架构">组件和架构</h2>
+<p>看完 calico 的报文流程，大致也能分析出 calico 做的事情：</p>
+<ul>
+<li>分配和管理 IP</li>
+<li>配置上容器的 veth pair 和容器内默认路由</li>
+<li>根据集群网络情况实时更新节点上路由表</li>
+</ul>
+<p>从部署过程可以知道，除了 etcd 保存了数据之外，节点上也就只运行了一个 calico-node 的容器，所以推测是这个容器实现了上面所有的功能。calico/node 这个容器运行了多个组件：</p>
+<pre><code>[root@localhost ~]# docker exec -it calico-node sh
+/ # ps aux
+PID   USER     TIME   COMMAND
+    1 root       0:01 /sbin/runsvdir -P /etc/service/enabled
+   75 root       0:00 runsv felix
+   76 root       0:00 runsv bird
+   77 root       0:00 runsv bird6
+   78 root       0:00 runsv confd
+   79 root       0:00 runsv libnetwork
+   80 root       0:02 svlogd /var/log/calico/felix
+   81 root      30:49 calico-felix
+   82 root       0:00 svlogd /var/log/calico/confd
+   83 root       0:05 confd -confdir=/etc/calico/confd -interval=5 -watch --log-level=debug -node=http://172.17.8.100:2379 -client-key= -client-cert= -client-ca-keys=
+   84 root       0:00 svlogd -tt /var/log/calico/bird
+   85 root       0:20 bird -R -s /var/run/calico/bird.ctl -d -c /etc/calico/confd/config/bird.cfg
+   86 root       0:00 svlogd -tt /var/log/calico/bird6
+   87 root       0:18 bird6 -R -s /var/run/calico/bird6.ctl -d -c /etc/calico/confd/config/bird6.cfg
+   94 root       0:00 svlogd /var/log/calico/libnetwork
+   95 root       0:04 libnetwork-plugin
+</code></pre><p><a href="http://smarden.org/runit/runsv.8.html">runsv</a> 是一个 minimal 的 init 系统提供的命令，用来管理多个进程，可以看到它运行的进程包括：<code>felix</code>、<code>bird</code>、<code>bird6</code>、<code>confd</code> 和 <code>libnetwork</code>，这部分就介绍各个进程的功能。</p>
+<h3 id="libnetwork-plugin">libnetwork plugin</h3>
+<p><a href="https://github.com/projectcalico/libnetwork-plugin">libnetwork-plugin</a> 是 calico 提供的 docker 网络插件，主要提供的是 IP 管理和网络管理的功能。</p>
+<p>默认情况下，当网络中出现第一个容器时，calico 会为容器所在的节点分配一段子网（子网掩码为 <code>/26</code>，比如<code>192.168.196.128/26</code>），后续出现在该节点上的容器都从这个子网中分配 IP 地址。这样做的好处是能够缩减节点上的路由表的规模，按照这种方式节点上 <code>2^6 = 64</code> 个 IP 地址只需要一个路由表项就行，而不是为每个 IP 单独创建一个路由表项。节点上创建的子网段可以在etcd 中 <code>/calico/ipam/v2/host/&lt;node_name&gt;/ipv4/block/</code> 看到。</p>
+<p>calico 还允许创建容器的时候指定 IP 地址，如果用户指定的 IP 地址不在节点分配的子网段中，calico 会专门为该地址添加一个 <code>/32</code> 的网段。</p>
+<h3 id="bird">BIRD</h3>
+<p><a href="http://bird.network.cz/">BIRD</a>（BIRD Internet Routing Daemon） 是一个常用的网络路由软件，支持很多路由协议（BGP、RIP、OSPF等），calico 用它在节点之间共享路由信息。</p>
+<p>关于 BIRD 如何配置 BGP 协议，可以参考<a href="http://bird.network.cz/?get_doc&amp;f=bird-6.html#ss6.3">官方文档</a>，对应的配置文件在 <code>/etc/calico/confd/config/</code> 目录。</p>
+<p><strong>NOTE</strong>：至于为什么选择 BGP 协议而不是其他的路由协议，官网上也有介绍: <a href="https://www.projectcalico.org/why-bgp/">Why BGP?</a></p>
+<p>默认所有的节点使用相同的 AS number 64512，因为 AS number 是一个32 比特的字段，所以有效取值范围是 <code>[0-4294967295]</code>，可以通过 <code>calicoctl config get asNumber</code> 命令查看当前节点使用的 AS number。</p>
+<p>默认情况下，每个 calico 节点会和集群中其他所有节点建立 BGP peer 连接，也就是说这是一个 O(n^2) 的增长趋势。在集群规模比较小的情况下，这种模式是可以接受的，但是当集群规模扩展到百个节点、甚至更多的时候，这样的连接数无疑会带来很大的负担。为了解决集群规模较大情况下 BGP client 连接数膨胀的问题，calico 引入了 RR（Router Reflector） 的功能。</p>
+<p>RR 的基本思想是选择一部分节点（一个或者多个）作为 Global BGP Peer，它们和所有的其他节点互联来交换路由信息，其他的节点只需要和 Global BGP Peer 相连就行，不需要之间再两两连接。更多的组网模式也是支持的，不管怎么组网，最核心的思想就是所有的节点能获取到整个集群的路由信息。</p>
+<p>calico 对 BGP 的使用还是相对简单的，BGP 协议的原理不是一两句话能解释清楚的，以后有机会单独写篇文章来说吧。</p>
+<h3 id="confd">confd</h3>
+<p>因为 bird 的配置文件会根据用户设置的变化而变化，因此需要一种动态的机制来实时维护配置文件并通知 bird 使用最新的配置，这就是 confd 的工作。<code>confd</code> 监听 etcd 的数据，用来更新 bird 的配置文件，并重新启动 bird 进程让它加载最新的配置文件。<code>confd</code> 的工作目录是 <code>/etc/calico/confd</code>，里面有三个目录：</p>
+<ul>
+<li><code>conf.d</code>：<code>confd</code> 需要读取的配置文件，每个配置文件告诉 confd 模板文件在什么，最终生成的文件应该放在什么地方，更新时要执行哪些操作等</li>
+<li><code>config</code>：生成的配置文件最终放的目录</li>
+<li><code>templates</code>：模板文件，里面包括了很多变量占位符，最终会替换成 etcd 中具体的数据</li>
+</ul>
+<p>具体的配置文件很多，我们只看一个例子：</p>
+<pre><code>/ # cat /etc/calico/confd/conf.d/bird.toml
+[template]
+src = &quot;bird.cfg.mesh.template&quot;
+dest = &quot;/etc/calico/confd/config/bird.cfg&quot;
+prefix = &quot;/calico/bgp/v1&quot;
+keys = [
+    &quot;/host&quot;,
+    &quot;/global&quot;
+]
+check_cmd = &quot;bird -p -c {{.src}}&quot;
+reload_cmd = &quot;pkill -HUP bird || true&quot;
+</code></pre><p>它会监听 etcd 的 <code>/calico/bgp/v1</code> 路径，一旦发现更新，就用其中的内容更新模板文件 <code>bird.cfg.mesh.template</code>，把新生成的文件放在 <code>/etc/calico/confd/config/bird.cfg</code>，文件改变之后还会运行 <code>reload_cmd</code> 指定的命令重启 bird 程序。</p>
+<p><strong>NOTE</strong>：关于 confd 的使用和工作原理请参考<a href="https://github.com/kelseyhightower/confd">它的官方 repo</a>。</p>
+<h3 id="felix">felix</h3>
+<p>felix 负责最终网络相关的配置，也就是容器网络在 linux 上的配置工作，比如：</p>
+<ul>
+<li>更新节点上的路由表项</li>
+<li>更新节点上的 iptables 表项</li>
+</ul>
+<p>它的主要工作是从 etcd 中读取网络的配置，然后根据配置更新节点的路由和 iptables，felix 的代码在 <a href="https://github.com/projectcalico/felix">github projectcalico/felix</a>。</p>
+<h3 id="etcd">etcd</h3>
+<p>etcd 已经在前面多次提到过，它是一个分布式的键值存储数据库，保存了 calico 网络元数据，用来协调 calico 网络多个节点。可以使用 etcdctl 命令行来读取 calico 在 etcd 中保存的数据：</p>
+<pre><code># etcdctl -C 172.17.8.100:2379 ls /calico
+/calico/ipam
+/calico/v1
+/calico/bgp
+</code></pre><p>每个目录保存的数据大致功能如下：</p>
+<ul>
+<li><code>/calico/ipam</code>：IP 地址分配管理，保存了节点上分配的各个子网段以及网段中 IP 地址的分配情况</li>
+<li><code>/calico/v1</code>：profile 和 policy 的配置信息，节点上运行的容器 endpoint 信息（IP 地址、veth pair interface 的名字等），</li>
+<li><code>/calico/bgp</code>：和 BGP 相关的信息，包括 mesh 是否开启，每个节点作为 gateway 通信的 IP 地址，AS number 等</li>
+</ul>
+<h2 id="强大的防火墙功能">强大的防火墙功能</h2>
+<p>从前面的实验我们不仅知道了 calico 容器网络的报文流程是怎样的，还发现了一个事实：<strong>默认情况下，同一个网络的容器能通信（不管容器是不是在同一个主机上），不同网络的容器是无法通信的。</strong></p>
+<p>这个行为是 calico 强大的防火墙实现的，默认情况下 calico 为每个网络创建一个 profile：</p>
+<pre><code>[root@localhost ~]# calicoctl get profile net2 -o yaml
+- apiVersion: v1
+  kind: profile
+  metadata:
+    name: net2
+    tags:
+    - net2
+  spec:
+    egress:
+    - action: allow
+      destination: {}
+      source: {}
+    ingress:
+    - action: allow
+      destination: {}
+      source:
+        tag: net2
+</code></pre><ul>
+<li>profile 是和网络对应的，比如上面 <code>metadata.name</code> 的值是 <code>net2</code>，代表它匹配 <code>net2</code> 网络，并应用到所有的 <code>net2</code> 网络容器中</li>
+<li>calico 使用 label 来增加防火墙规则的灵活性，源地址和目的地址都可以通过 label 匹配</li>
+<li>profile 中 <code>metadata.tags</code> 会应用到网络中所有的容器上</li>
+<li>如果有定义，profile中的 <code>metadata.labels</code> 也会应用到网络中所有的容器上</li>
+<li>spec 指定 profile 默认的网络规则，egress 没有限制，ingress 表示只运行 tag 为 net2 容器（也就是同一个网络的容器）的访问</li>
+</ul>
+<p>每一个加入到网络的容器都会加上这个 profile，以此来实现网络之间的隔离。可以通过查看 endpoints 的详情得到它上面绑定的 <code>profiles</code>：</p>
+<pre><code>[root@localhost ~]# calicoctl get workloadEndpoint 4e5ed993aed9e7c89bd5514fa67a2a8346295238801974d77eac8b444ae2afb0 -o yaml
+- apiVersion: v1
+  kind: workloadEndpoint
+  metadata:
+    name: 4e5ed993aed9e7c89bd5514fa67a2a8346295238801974d77eac8b444ae2afb0
+    node: node00
+    orchestrator: libnetwork
+    workload: libnetwork
+  spec:
+    interfaceName: cali4e5ed993aed
+    ipNetworks:
+    - 192.168.18.65/32
+    mac: ee:ee:ee:ee:ee:ee
+    profiles:
+    - net2
+</code></pre><p>用户也可以根据需求修改 profile 和 policy，可以参考<a href="https://docs.projectcalico.org/v2.6/getting-started/docker/tutorials/security-using-calico-profiles-and-policy">官方教程</a>。</p>
+<p>不过上面的防火墙都是针对网络的（网络中的容器的规则都是相同的），不能精细化到容器，也就是说只能做到网络之间的隔离和连通。不过 calico 也提供了对容器级别防火墙的支持，它主要是借助 docker 容器上的 label，通过匹配这些键值对来精细化控制防火墙。启动 docker label 支持需要在 <code>calicoctl node run</code> 命令运行时加上 <code>--use-docker-networking-container-labels</code> 参数，而且一旦启用后原来的 profile 就被废弃不能用了（可以用纯 policy 实现原来的 profile 功能）。容器启动的时候需要添加上 label 用来作为 policy 的标识，比如 <code>--label org.projectcalico.label.role=frontend</code>，具体的使用案例请参考<a href="https://docs.projectcalico.org/v2.6/getting-started/docker/tutorials/security-using-docker-labels-and-calico-policy">这个教程</a>。</p>
+<p>如果只要提供网络之间的隔离，可以使用 profile 和 policy；如果要实现精细化的容器之间的隔离，就需要启用容器的 label 功能了。在底层，calico 的 flelix 组件会实时跟踪 profile 和 policy 的内容，并更新各个节点的 iptables。</p>
+<h2 id="总结">总结</h2>
+<p>calico 的核心是通过维护路由规则实现容器的通信，路由信息的传播是 BIRD 软件通过 BGP 协议完成的，而节点上路由和防火墙规则是 felix 维护的。</p>
+<p>从 calico 本身的特性来说，它没有办法实现 VPC 网络，并且需要维护大量的路由表项和 iptables 表项，如果要部署在规模很大的生产环境中，需要预先规划系统的 iptables 和路由表项的上限。</p>
+<p>在我看来，calico 最大的优点有两个：直接三层互联的网络，不需要报文封装，因此性能更好而且能和原来的网络设施直接融合；强大的防火墙规则，利用 label 机制灵活地匹配容器，几乎可以设置任何需求的防火墙。</p>
+<p>但 calico 并非没有缺点，首先是它引入了 BGP 协议，虽然 bird 的配置很简单，但是运维这个系统需要熟悉 BGP 协议，这无疑会增加了人力、时间和金钱方面的投入；其次，calico 能支持的网络规模也有上限，虽然可以通过 Router Reflector 来缓解，但这么做又大大增加了网络规划、使用和排查的复杂度；最后 calico 无法用来实现 VPC 网络，IP 地址空间是所有租户共享的，租户之间是通过防火墙隔离的。</p>
+<h2 id="参考资料">参考资料</h2>
+<ul>
+<li><a href="http://www.lijiaocn.com/%E9%A1%B9%E7%9B%AE/2017/04/11/calico-usage.html">Calico网络的原理、组网方式与使用</a></li>
+<li><a href="http://leebriggs.co.uk/blog/2017/02/18/kubernetes-networking-calico.html">Kubernetes Networking: Part 2 - Calico</a></li>
+<li><a href="https://docs.projectcalico.org/v2.6/usage/troubleshooting/faq">calico: Frequently Asked Questions</a></li>
+</ul>
+
+    </div>
+
+    
+    
+      <div class="btn-improve-page">
+          <a href="https://github.com/alphajc/mysite/edit/master/content/archive/Docker%20Calico%20Network.md">
+            <i class="fas fa-code-branch"></i>
+            Improve This Page
+          </a>
+      </div>
+    
+
+    
+  <hr />
+    <div class="row next-prev-navigator">
+
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+</div>
+
+  <hr />
+  
+  
+      <div id="disqus_thread"></div>
+<script type="text/javascript">
+  (function () {
+    
+    
+    if (window.location.hostname == "localhost") return;
+
+    var dsq = document.createElement("script");
+    dsq.type = "text/javascript";
+    dsq.async = true;
+    var disqus_shortname = "mydream-ink";
+    dsq.src = "//" + disqus_shortname + ".disqus.com/embed.js";
+    (
+      document.getElementsByTagName("head")[0] ||
+      document.getElementsByTagName("body")[0]
+    ).appendChild(dsq);
+  })();
+</script>
+<noscript
+  >请开启 JavaScript 功能
+  <a href="https://disqus.com/?ref_noscript"
+    >comments powered by Disqus.</a
+  ></noscript
+>
+<a href="https://disqus.com/" class="dsq-brlink"
+  >通过 <span class="logo-disqus">Disqus</span> 评论</a
+>
+
+  
+</div>
+
+    </div>
+
+    <footer class="container-fluid text-center align-content-center footer pb-2">
+  <div class="container pt-5">
+    <div class="row text-left">
+      <div class="col-md-4 col-sm-12">
+        <h5>导航</h5>
+        
+        <ul>
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#about">关于</a>
+            </li>
+            
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#skills">技能</a>
+            </li>
+            
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#experiences">经历</a>
+            </li>
+            
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#projects">项目</a>
+            </li>
+            
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#recent-posts">最近文章</a>
+            </li>
+            
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#achievements">成就</a>
+            </li>
+            
+        </ul>
+        
+
+      </div>
+      <div class="col-md-4 col-sm-12">
+        <h5>联系我</h5>
+        <ul>
+          
+          <li><span>电话: </span> <span>&#43;8619980414909</span></li>
+          
+          <li><span>邮箱: </span> <span>jerry@mydream.ink</span></li>
+          
+        </ul>
+      </div>
+      <div class="col-md-4 col-sm-12">
+        
+        <p>接收最新的邮件通知</p>
+        <form>
+          <div class="form-group">
+            <input
+              type="email"
+              class="form-control"
+              id="exampleInputEmail1"
+              aria-describedby="emailHelp"
+              placeholder="输入邮箱"
+            />
+            <small id="emailHelp" class="form-text text-muted"
+              >你的邮件地址不会被共享给他人</small
+            >
+          </div>
+          <button type="submit" class="btn btn-info">提交</button>
+        </form>
+      </div>
+    </div>
+  </div>
+  <hr />
+  <div class="container">
+    <div class="row text-left">
+      <div class="col-md-4">
+        <a id="theme" href="/" target="#">
+          <img src="/assets/images/logo-inverted.png">青云卷</a>
+      </div>
+      <div class="col-md-4"><a href="https://beian.miit.gov.cn">蜀ICP备 2021017630号-1</a>© 2021 Copyright.</div>
+    </div>
+  </div>
+</footer>
+
+    <script src="/assets/js/jquery-3.4.1.min.js"></script>
+<script src="/assets/js/bootstrap.min.js"></script>
+
+<script src="/assets/js/navbar.js"></script>
+<script src="/assets/js/jquery.filterizr.min.js"></script>
+
+
+    
+    
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/highlight.min.js"></script>
+<script src="/assets/js/single.js"></script>
+<script>
+  hljs.initHighlightingOnLoad();
+</script>
+
+
+  </body>
+</html>

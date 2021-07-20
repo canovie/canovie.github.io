@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>vCenter Server 组件和服务</title>
+    <meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta http-equiv="X-UA-Compatible" content="ie=edge" />
+
+
+<link rel="stylesheet" href="/assets/css/bootstrap.min.css" />
+<link rel="stylesheet" href="/assets/css/style.css" />
+<link rel="stylesheet" href="/assets/css/navbar.css" />
+
+
+<link href="https://fonts.googleapis.com/css2?family=Muli:wght@300;400;500;600" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" />
+
+
+<link rel="icon" type="image/png" href="/assets/images/favicon.png" />
+
+
+    
+<link
+  rel="stylesheet"
+  href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/styles/atom-one-dark.min.css"
+/>
+<link rel="stylesheet" href="/assets/css/single.css" />
+
+
+    
+    
+      
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'UA-142765126-1', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+
+    
+  </head>
+
+  <body>
+    <div class="container-fluid bg-dimmed wrapper">
+      
+      
+    <nav class="navbar navbar-expand-lg top-navbar final-navbar shadow">
+    <div class="container">
+      <a class="navbar-brand" href="/posts">
+        <img src="/assets/images/logo.png">青云卷</a>
+      <button class="navbar-toggler navbar-light" type="button" >
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <div class="collapse navbar-collapse" id="top-nav-items">
+        <ul class="navbar-nav ml-auto">
+        </ul>
+      </div>
+    </div>
+</nav>
+
+
+
+      
+      
+<div class="container p-0 read-area">
+  
+  <div class="hero-area col-sm-12" style='background-image: url(https://mydream.ink/assets/images/posts/virtualization/vmware_horizon.jpg);'>
+  </div>
+
+  
+  <div class="page-content">
+    <div class="author-profile ml-auto align-self-lg-center">
+      <img class="rounded-circle" src='/assets/images/portrait.jpg'/>
+      <h5 class="author-name">Jerry Chan</h5>
+      <p>January 21, 2018</p>
+    </div>
+
+    <div class="title">
+      <h1>vCenter Server 组件和服务</h1>
+    </div>
+
+    <div class="post-content" id="post-content">
+      <p>摘自于VMware官方文档，移至自己博客方便阅读，如有侵权，请联系我删除</p>
+<p>vCenter Server 为虚拟机和主机的管理、操作、资源置备和性能评估提供了一个集中式平台。 安装具有嵌入式 Platform Services Controller 的 vCenter Server 或部署具有嵌入式 Platform Services Controller 的 vCenter Server Appliance 时，vCenter Server、vCenter Server 组件以及 Platform Services Controller 中包含的服务将部署在同一个系统上。 安装具有外部 Platform Services Controller 的 vCenter Server 或部署具有外部 Platform Services Controller 的 vCenter Server Appliance 时，vCenter Server 和 vCenter Server 组件将部署在一个系统上，而 Platform Services Controller 中包含的服务将部署在另一个系统上。 以下组件包含在 vCenter Server 和 vCenter Server Appliance 安装中：</p>
+<ol>
+<li>VMware Platform Services Controller 基础架构服务组包含 vCenter Single Sign-On、License Service、Lookup Service 和 VMware Certificate Authority。</li>
+<li>vCenter Server 服务组包含 vCenter Server、vSphere Web Client、vSphere Auto Deploy 和 vSphere ESXi Dump Collector。适用于 Windows 的 vCenter Server 还包含 VMware vSphere Syslog Collector。vCenter Server Appliance 还包含 VMware vSphere Update Manager 扩展服务。</li>
+</ol>
+<blockquote>
+<p>注：从 vSphere 6.5 开始，所有 vCenter Server 服务和部分 Platform Services Controller 服务作为 VMware Service Lifecycle Manager 服务的子进程运行。</p>
+</blockquote>
+<h1 id="随-vmware-platform-services-controller-一起安装的服务">随 VMware Platform Services Controller 一起安装的服务</h1>
+<p><strong>vCenter Single Sign-On</strong></p>
+<p>vCenter Single Sign-On 身份验证服务为 vSphere 软件组件提供了安全身份验证服务。使用 vCenter Single Sign-On，vSphere 组件可通过安全的令牌交换机制相互通信，而无需每个组件使用目录服务（如 Active Directory）分别对用户进行身份验证。vCenter Single Sign-On 可构建内部安全域（如 vsphere.local），vSphere 解决方案和组件将在安装或升级期间在该域中进行注册，从而提供基础架构资源。vCenter Single Sign-On 可以通过其自己的内部用户和组对用户进行身份验证，或者可以连接到受信任的外部目录服务（如 Microsoft Active Directory）。然后，可以在 vSphere 环境中为经过身份验证的用户分配基于注册的解决方案的权限或角色。 vCenter Server 需要 vCenter Single Sign-On。</p>
+<p><strong>vSphere License Service</strong></p>
+<p>vSphere License Service 为连接到单个 Platform Services Controller 或多个链接的 Platform Services Controller 的所有 vCenter Server 系统提供公共许可证清单和管理功能。</p>
+<p><strong>VMware Certificate Authority</strong></p>
+<p>默认情况下，VMware Certificate Authority (VMCA) 将使用以 VMCA 作为 root 证书颁发机构的签名证书置备每个 ESXi 主机。以显式方式将 ESXi 主机添加到 vCenter Server 时进行置备，或在 ESXi 主机安装过程中进行置备。所有 ESXi 证书都存储在本地主机上。 有关所有 Platform Services Controller 服务和功能的信息，请参见Platform Services Controller 管理。</p>
+<h1 id="随-vcenter-server-一起安装的服务">随 vCenter Server 一起安装的服务</h1>
+<p>安装 vCenter Server 时，将以静默方式安装这些附加组件。这些组件不能单独安装，因为它们没有其自己的安装程序。 PostgreSQL VMware 分发的用于 vSphere 和 vCloud Hybrid Service 的 PostgreSQL 数据库捆绑版本。 vSphere Web Client 通过 vSphere Web Client，可以使用 Web 浏览器连接到 vCenter Server 实例，以便管理 vSphere 基础架构。 vSphere Client 通过新用户界面，可以使用 Web 浏览器连接到 vCenter Server 实例。术语、拓扑及工作流与 vSphere Web Client 用户界面的相同方面和元素保持高度一致。</p>
+<blockquote>
+<p>注：在 vSphere 6.5 版本中，并未针对 vSphere Client 实现 vSphere Web Client 中的所有功能。有关不受支持的功能的最新列表，请参见《vSphere Client 功能更新指南》，网址为 <a href="https://www.vmware.com/info?id=1413">https://www.vmware.com/info?id=1413</a>。</p>
+</blockquote>
+<p><strong>vSphere ESXi Dump Collector</strong></p>
+<p>vCenter Server 支持工具。可以将 ESXi 配置为在系统发生严重故障时将 VMkernel 内存保存到网络服务器而非磁盘。vSphere ESXi Dump Collector 将通过网络收集这些内存转储。</p>
+<p><strong>VMware vSphere Syslog Collector</strong></p>
+<p>Windows 上的 vCenter Server 支持工具，支持网络日志记录，并可将多台主机的日志合并。您可以使用 vSphere Syslog Collector 将 ESXi 系统日志定向到网络服务器而非本地磁盘。对于支持的从中收集日志的主机，建议的最大数目为 30 个。有关配置 vSphere Syslog Collector 的信息，请参见 <a href="https://kb.vmware.com/kb/2021652">https://kb.vmware.com/kb/2021652</a>。 vCenter Server Appliance 使用 Linux OS 内置的 Rsyslog 服务。有关如何通过设备管理界面将日志文件重定向到其他计算机的信息，请参见vCenter Server Appliance 配置。</p>
+<p><strong>vSphere Auto Deploy</strong></p>
+<p>vCenter Server 支持工具，能够使用 ESXi 软件置备大量物理主机。可以指定要部署的映像以及要使用此映像置备的主机。也可以指定应用到主机的主机配置文件，并且为每个主机指定 vCenter Server 位置（文件夹或群集）。</p>
+<p><strong>VMware vSphere Update Manager 扩展</strong></p>
+<p>Update Manager 可让 VMware vSphere 执行集中式自动修补程序和版本管理，并提供对 VMware ESXi 主机、虚拟机和虚拟设备的支持。VMware vSphere Update Manager 扩展是单独使用的 vCenter Server Appliance 6.5 的可选服务。</p>
+
+    </div>
+
+    
+    
+      <div class="btn-improve-page">
+          <a href="https://github.com/alphajc/mysite/edit/master/content/posts/virtualization/vmware/Vmware%20vcenter%20component.md">
+            <i class="fas fa-code-branch"></i>
+            Improve This Page
+          </a>
+      </div>
+    
+
+    
+  <hr />
+    <div class="row next-prev-navigator">
+
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    
+      
+      <div class="col-md-6 previous-article">
+        <a href="/posts/virtualization/vmware/vmware-vcenter-vsphere/" class="btn btn-outline-info">
+          <span><i class="fas fa-chevron-circle-left"></i> 上一篇</span>
+          <br />
+          <span>vSphere 和 vCenter Server</span>
+        </a>
+      </div>
+      
+    
+    
+      
+        
+        
+          
+              
+          
+        
+        <div class="col-md-6 next-article">
+          <a href="/posts/virtualization/openstack/openstack-ironic/" class="btn btn-outline-info">
+            <span>下一篇 <i class="fas fa-chevron-circle-right"></i></span>
+            <br />
+            <span>Ironic裸机服务——OpenStack</span>
+          </a>
+        </div>
+      
+    
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+</div>
+
+  <hr />
+  
+  
+      <div id="disqus_thread"></div>
+<script type="text/javascript">
+  (function () {
+    
+    
+    if (window.location.hostname == "localhost") return;
+
+    var dsq = document.createElement("script");
+    dsq.type = "text/javascript";
+    dsq.async = true;
+    var disqus_shortname = "mydream-ink";
+    dsq.src = "//" + disqus_shortname + ".disqus.com/embed.js";
+    (
+      document.getElementsByTagName("head")[0] ||
+      document.getElementsByTagName("body")[0]
+    ).appendChild(dsq);
+  })();
+</script>
+<noscript
+  >请开启 JavaScript 功能
+  <a href="https://disqus.com/?ref_noscript"
+    >comments powered by Disqus.</a
+  ></noscript
+>
+<a href="https://disqus.com/" class="dsq-brlink"
+  >通过 <span class="logo-disqus">Disqus</span> 评论</a
+>
+
+  
+</div>
+
+    </div>
+
+    <footer class="container-fluid text-center align-content-center footer pb-2">
+  <div class="container pt-5">
+    <div class="row text-left">
+      <div class="col-md-4 col-sm-12">
+        <h5>导航</h5>
+        
+        <ul>
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#about">关于</a>
+            </li>
+            
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#skills">技能</a>
+            </li>
+            
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#experiences">经历</a>
+            </li>
+            
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#projects">项目</a>
+            </li>
+            
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#recent-posts">最近文章</a>
+            </li>
+            
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#achievements">成就</a>
+            </li>
+            
+        </ul>
+        
+
+      </div>
+      <div class="col-md-4 col-sm-12">
+        <h5>联系我</h5>
+        <ul>
+          
+          <li><span>电话: </span> <span>&#43;8619980414909</span></li>
+          
+          <li><span>邮箱: </span> <span>jerry@mydream.ink</span></li>
+          
+        </ul>
+      </div>
+      <div class="col-md-4 col-sm-12">
+        
+        <p>接收最新的邮件通知</p>
+        <form>
+          <div class="form-group">
+            <input
+              type="email"
+              class="form-control"
+              id="exampleInputEmail1"
+              aria-describedby="emailHelp"
+              placeholder="输入邮箱"
+            />
+            <small id="emailHelp" class="form-text text-muted"
+              >你的邮件地址不会被共享给他人</small
+            >
+          </div>
+          <button type="submit" class="btn btn-info">提交</button>
+        </form>
+      </div>
+    </div>
+  </div>
+  <hr />
+  <div class="container">
+    <div class="row text-left">
+      <div class="col-md-4">
+        <a id="theme" href="/" target="#">
+          <img src="/assets/images/logo-inverted.png">青云卷</a>
+      </div>
+      <div class="col-md-4"><a href="https://beian.miit.gov.cn">蜀ICP备 2021017630号-1</a>© 2021 Copyright.</div>
+    </div>
+  </div>
+</footer>
+
+    <script src="/assets/js/jquery-3.4.1.min.js"></script>
+<script src="/assets/js/bootstrap.min.js"></script>
+
+<script src="/assets/js/navbar.js"></script>
+<script src="/assets/js/jquery.filterizr.min.js"></script>
+
+
+    
+    
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/highlight.min.js"></script>
+<script src="/assets/js/single.js"></script>
+<script>
+  hljs.initHighlightingOnLoad();
+</script>
+
+
+  </body>
+</html>

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>netfilter on 青云卷</title>
+    <link>https://mydream.ink/tags/netfilter/</link>
+    <description>Recent content in netfilter on 青云卷</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh-cn</language>
+    <lastBuildDate>Sun, 06 Dec 2020 17:14:02 +0800</lastBuildDate><atom:link href="https://mydream.ink/tags/netfilter/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>记一次 IPVS 引起的 kubernetes 服务异常</title>
+      <link>https://mydream.ink/posts/cloud-native/kubernetes/record-a-kubernetes-service-exception-caused-by-ipvs/</link>
+      <pubDate>Sun, 06 Dec 2020 17:14:02 +0800</pubDate>
+      
+      <guid>https://mydream.ink/posts/cloud-native/kubernetes/record-a-kubernetes-service-exception-caused-by-ipvs/</guid>
+      <description>问题描述 在我们的环境中，业务 A 会访问业务 B（也即 B 是 A 的上游服务），当 B 发版时，A 的请求偶尔会出现 timeout。现象看起来是流量路由到了已经不能提供服务的老的 pod 中。
+问题处理 排查点一 当 pod 下线时，endpoint controller 未及时将 pod 从 endpoint 中取出，导致流量进入了旧的 pod。
+由于集群 master 是托管部署的，所以我们没有办法查看相关日志和负载，求助于腾讯云的同时，自己这边也在排查。排查分两步进行，监控服务 B endpoint 的变化，同时滚动重启该服务。
+  监控 ep 变化
+watch -n 1 kubectl -n production describe ep wk-dispatcher   重启服务
+kubectl -n production rollout restart deployment wk-dispatcher   通过排查发现，跟 endpoint controller 并没有关系，因为 ep 变化很及时，加上至少 30 秒的优雅终止时间，基本可以确定在服务结束前，pod 是从 ep 中移除了的。</description>
+    </item>
+    
+  </channel>
+</rss>

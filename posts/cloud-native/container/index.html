@@ -1,0 +1,1211 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>容器</title>
+    <meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta http-equiv="X-UA-Compatible" content="ie=edge" />
+
+
+<link rel="stylesheet" href="/assets/css/bootstrap.min.css" />
+<link rel="stylesheet" href="/assets/css/style.css" />
+<link rel="stylesheet" href="/assets/css/navbar.css" />
+
+
+<link href="https://fonts.googleapis.com/css2?family=Muli:wght@300;400;500;600" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" />
+
+
+<link rel="icon" type="image/png" href="/assets/images/favicon.png" />
+
+
+    
+    <link rel="stylesheet" href="/assets/css/list.css">
+
+
+    
+    
+      
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'UA-142765126-1', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+
+    
+  </head>
+
+  <body>
+    <div class="container-fluid bg-dimmed wrapper">
+      
+      
+    <nav class="navbar navbar-expand-lg top-navbar final-navbar shadow">
+    <div class="container">
+      <a class="navbar-brand" href="https://mydream.ink">
+        <img src="/assets/images/logo.png">青云卷</a>
+      <button class="navbar-toggler navbar-light" type="button" onclick="toggleSidebar()">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <div class="collapse navbar-collapse" id="top-nav-items">
+        <ul class="navbar-nav ml-auto">
+        </ul>
+      </div>
+    </div>
+</nav>
+
+
+
+      
+      
+<div class="sidebar" id="sidebar">
+    <div class="sidebar-tree">
+      <input type="text" name="filtr-search" value="" placeholder="Search" data-search="" id="search-box" />
+      <ul class="tree" id="tree">
+        <li id="list-heading"><a href="#" data-filter="all">容器</a></li>
+        <div class="subtree">
+            
+
+        </div>
+      </ul>
+    </div>
+  </div>
+  <div class="content container-fluid" id="content">
+    <div class="content-cards">
+      <div class="container-fluid filtr-container post-cards" id="post-cards">
+        
+          <div class="filtr-item" data-category='cloud-native,kubernetes'>
+  <a href="/posts/cloud-native/kubernetes/pyflink-in-kubernetes/" class="post-card-link">
+    <div class="card">
+      <div class="card-head">
+        <img class="card-img-top" src='/assets/images/posts/cloud-native/apache-flink.png'/>
+      </div>
+      <div class="card-body">
+        <h5 class="card-title">Pyflink in Kubernetes</h5>
+        <p class="card-text post-summary">pyFlink on kubernetes  在 TKE 环境下
+ 准备工作 为 flink 创建专用的命名空间、ServiceAccount，并设置好资源配额
+kubectl create ns flink kubectl -n flink create sa flink kubectl -n flink create role flink --verb=* --resource=*.* kubectl -n flink create rolebinding flink --role=flink --serviceaccount=flink:flink cat &lt;&lt; EOF &gt; apiserver.crt # base 集群 apiserver 证书 -----BEGIN CERTIFICATE----- MIICyDCCAbCgAwIBAgIBADANBgkqhkiG9w0BAQsFADAVMRMwEQYDVQQDEwprdWJl cm5ldGVzMB4XDTIwMDMwNTA4MjYzOFoXDTMwMDMwMzA4MjYzOFowFTETMBEGA1UE AxMKa3ViZXJuZXRlczCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAMq/ 6ae6qIZbchBK7b0AaP2714K+tuxtGnl7p3yNwlCgVEnZjfytAr8cvkIzxCBH8xBc vqV2vtDOy0r6HecbIPTkd0bGn6BXjqPp6XZY0ffFgyBhGv6/DD7x7aJIG+A8uSVk /yTGcahGQ9WOQ6CDWDjZvC+K9zkeNqhtj1wm9P/hQcECAQkQbkIqLUF/P8SF4b8N QlodYsrZIg9MDqgQDq744AoFPm/F6G2GfHs1DfesYMoSYQs6ECec0+N/Nf5Kx7XX KW+ARAGEZxC3X7bJmxWr5JSRmmS46rmrN/MUDpMBaWUwtxubVxtIwt1FIFlFqCYz MR9UtvZkTaL6oSd6Q18CAwEAAaMjMCEwDgYDVR0PAQH/BAQDAgKUMA8GA1UdEwEB /wQFMAMBAf8wDQYJKoZIhvcNAQELBQADggEBABXd9WbwOlhlqyFsr/2s9wgf86+/ oo05gZhybHtuKHYvSwzoxAeyaMFGn4b7S2okcLoo3EwjmAN2Pup/qhTtiqM9xNfa +GuN+NX4zjkra+T2NEywIykwhodaFiYB+r6xM0LIHANlKKT7kRtgzkq/s8ui6Wkt b94T8BpE5U3f6YGz/4NtbqpYS6XVjIIjfP5MxoHRCh8H2LXmWs9A2RlmuZAwo0M2 FJjxcfIgvHrgCerPogVcXYT23BavOhMFlx7Jck2GAbDg0HYTabZuLNkj9T1//raL aknXJxuLYHbZe6I1cbsIdXJjav5c83YgqGDKetcJdkQqMgk8lVWW7RIdLb0= -----END CERTIFICATE----- EOF kubectl config --kubeconfig=flink-kubeconfig set-cluster base --server=https://cls-xxxxxxx.</p>
+      </div>
+      <div class="card-footer">
+        <span class="float-left">January 6, 2021</span>
+        <a
+        href="/posts/cloud-native/kubernetes/pyflink-in-kubernetes/"
+        class="float-right btn btn-outline-info btn-sm"
+        >Read</a
+        >
+      </div>
+    </div>
+  </a>
+</div>
+
+        
+          <div class="filtr-item" data-category='cloud-native,kubernetes'>
+  <a href="/posts/cloud-native/kubernetes/record-a-kubernetes-service-exception-caused-by-ipvs/" class="post-card-link">
+    <div class="card">
+      <div class="card-head">
+        <img class="card-img-top" src='/assets/images/posts/cloud-native/ipvs-p1.png'/>
+      </div>
+      <div class="card-body">
+        <h5 class="card-title">记一次 IPVS 引起的 kubernetes 服务异常</h5>
+        <p class="card-text post-summary">问题描述 在我们的环境中，业务 A 会访问业务 B（也即 B 是 A 的上游服务），当 B 发版时，A 的请求偶尔会出现 timeout。现象看起来是流量路由到了已经不能提供服务的老的 pod 中。
+问题处理 排查点一 当 pod 下线时，endpoint controller 未及时将 pod 从 endpoint 中取出，导致流量进入了旧的 pod。
+由于集群 master 是托管部署的，所以我们没有办法查看相关日志和负载，求助于腾讯云的同时，自己这边也在排查。排查分两步进行，监控服务 B endpoint 的变化，同时滚动重启该服务。
+  监控 ep 变化
+watch -n 1 kubectl -n production describe ep wk-dispatcher   重启服务
+kubectl -n production rollout restart deployment wk-dispatcher   通过排查发现，跟 endpoint controller 并没有关系，因为 ep 变化很及时，加上至少 30 秒的优雅终止时间，基本可以确定在服务结束前，pod 是从 ep 中移除了的。</p>
+      </div>
+      <div class="card-footer">
+        <span class="float-left">December 6, 2020</span>
+        <a
+        href="/posts/cloud-native/kubernetes/record-a-kubernetes-service-exception-caused-by-ipvs/"
+        class="float-right btn btn-outline-info btn-sm"
+        >Read</a
+        >
+      </div>
+    </div>
+  </a>
+</div>
+
+        
+          <div class="filtr-item" data-category='tools'>
+  <a href="/posts/tools/ldap-clients-in-everywhere/" class="post-card-link">
+    <div class="card">
+      <div class="card-head">
+        <img class="card-img-top" src='/assets/images/posts/tools/LDAP-Injection.jpg'/>
+      </div>
+      <div class="card-body">
+        <h5 class="card-title">使用LDAP的各种客户端进行统一身份认证</h5>
+        <p class="card-text post-summary">本文主要讲客户端的配置及部署，不含服务器，这里的一切都是以服务器端正确配置为前提的，有关内容后续会一步步完善，将包括 Linux 登录、gitlab、sonarqube、habor、nginx、pypiserver、verdaccio 等等。
+Linux 篇 前提  一个或一组完备的 LDAP 服务端  步骤 在 linux 上配置 LDAP 认证其实有很多种方式，这里我仅挑一种我认为最简单的方式。以 CentOS 为例:
+  安装依赖
+yum install libselinux-python nss-pam-ldapd -y   客户端配置
+authconfig --enableshadow \ --disablesssd \ --disablesssdauth \ --enableldap \ --enableldapauth \ --ldapserver=LDAP_SERVER \ --ldapbasedn=&#34;BASE_DN&#34; \ --enableldaptls \ --enablecache \ --enablelocauthorize \ --enablemkhomedir \ --updateall  注：将 LDAP_SERVER 替换为真实的地址，如果需要配置多个，则以半角逗号(,)隔开，确保 BASE_DN 为祖先结点，如我们的用户信息存在于ou=People,dc=example,dc=com下，用户分组信息位于ou=Group,dc=example,dc=com下，仔细观察会发现我们需要的认证信息都位于dc=example,dc=com下，所以dc=example,dc=com作为 BASE_DN 是个不错的选择。--enableldaptls视自己的服务端是否配了证书而定。
+   单独配置 sudo
+cat &lt;&lt; EOF &gt;&gt; /etc/sudo-ldap.</p>
+      </div>
+      <div class="card-footer">
+        <span class="float-left">November 30, 2019</span>
+        <a
+        href="/posts/tools/ldap-clients-in-everywhere/"
+        class="float-right btn btn-outline-info btn-sm"
+        >Read</a
+        >
+      </div>
+    </div>
+  </a>
+</div>
+
+        
+          <div class="filtr-item" data-category='cloud-native,kubernetes'>
+  <a href="/posts/cloud-native/kubernetes/use-cert-manager-in-kubernetes/" class="post-card-link">
+    <div class="card">
+      <div class="card-head">
+        <img class="card-img-top" src='/assets/images/posts/cloud-native/lets-encrypt-ssl.png'/>
+      </div>
+      <div class="card-body">
+        <h5 class="card-title">使用 cert-manager 自动管理 tls 证书</h5>
+        <p class="card-text post-summary">http 协议是一个全明文传输的协议，不加任何处理的 http 报文将在因特网中裸奔，只要有人对监听你的报文，你所有隐私将被人一览无余。Let’s Encrypt 是一家免费、开放、自动化的证书颁发机构（CA），为公众的利益而运行。它是一项由 Internet Security Research Group（ISRG）提供的服务。本着想要创建一个更安全，更尊重隐私的 Web 环境的初衷，Let’s Encrypt 以尽可能对用户友好的方式免费提供为网站启用 HTTPS（SSL/TLS）所需的数字证书。
+但是 Let’s Encrypt 颁发的证书有个特点，有效期只有三个月。这意味着我们需要频繁续期证书，倘若手动续期，无疑会增加运维成本。有什么方式可以为我们自动颁发证书吗？当然有！ACME 无疑就是我们的最佳选择。
+有一款很好用的 ACME 客户端叫 Certbot，可以帮助自动颁发、续期证书。在 kubernetes 的生态中有没有什么好的工具能帮助我们非常方便地使用证书么？当然有，那就是本期主题——cert-manager。
+cert-manager 是本地 Kubernetes 证书管理控制器。它可以帮助从各种来源颁发证书，例如 Let&rsquo;s Encrypt，HashiCorp Vault，Venafi，简单的签名密钥对或自签名。它将确保证书有效并且是最新的，并在到期前尝试在配置的时间续订证书。
+原理比较简单，本文就不讲了，主要谈谈来安装和使用。
+安装 YAML 安装   创建 namespace
+kubectl create namespace cert-manager   安装 crd 和 cert-manager
+kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/v0.11.0/cert-manager.yaml  值得说明的是：在 kubernetes 1.15 以前的版本需要在执行kubectl apply时添加一个参数--validate=false，否则在创建 CustomResourceDefinition 资源时会收到与 x-kubernetes-preserve-unknown-fields 字段有关的验证错误。
+   helm 安装 依次执行下述命令：</p>
+      </div>
+      <div class="card-footer">
+        <span class="float-left">November 9, 2019</span>
+        <a
+        href="/posts/cloud-native/kubernetes/use-cert-manager-in-kubernetes/"
+        class="float-right btn btn-outline-info btn-sm"
+        >Read</a
+        >
+      </div>
+    </div>
+  </a>
+</div>
+
+        
+          <div class="filtr-item" data-category='devops'>
+  <a href="/posts/devops/sonarqube-and-gitlab/" class="post-card-link">
+    <div class="card">
+      <div class="card-head">
+        <img class="card-img-top" src='/assets/images/posts/devops/sonarqube.png'/>
+      </div>
+      <div class="card-body">
+        <h5 class="card-title">自动化运维之自动构建</h5>
+        <p class="card-text post-summary">版本说明  gitlab: 11.4.5 sonarqube: 8.0-community-beta helm: v3.0.0-rc.2 sonar-gitlab-plugin: 4.1.0-SNAPSHOT chart: 3.2.2  预处理  可用的 ingress controller 域名：确保对应的域名sonar.example.com 能够访问到 ingress 已经有 gitlab，并且配置好了一个全局可用的 Kubernetes 环境的 runner  安装 sonarqube 没有已经存在的数据库用于相关数据存取，所以在安装 sonarqube 的同时，还将根据依赖安装 postgresql。
+自定义变量 进入stable/sonarqube，创建 custom.yaml 文件：
+image: tag: 8.0-community-beta ingress: enabled: true hosts: - name: sonar.example.com annotations: kubernetes.io/ingress.class: nginx # 选择指定的 ingress controller cert-manager.io/cluster-issuer: letsencrypt-stagging # 使用提前创建好的可用的 Issue/ClusterIssue acme.cert-manager.io/http01-edit-in-place: &#34;true&#34; # 颁发证书时依托原原有的 ingress 而不新建 tls: - hosts: - sonar.example.com secretName: sonar-tls persistence: enabled: true accessMode: ReadWriteOnce size: 10Gi plugins: install: # 预装 sonar-gitlab-plugin 插件 - &#34;https://github.</p>
+      </div>
+      <div class="card-footer">
+        <span class="float-left">November 9, 2019</span>
+        <a
+        href="/posts/devops/sonarqube-and-gitlab/"
+        class="float-right btn btn-outline-info btn-sm"
+        >Read</a
+        >
+      </div>
+    </div>
+  </a>
+</div>
+
+        
+          <div class="filtr-item" data-category='middleware,zookeeper'>
+  <a href="/posts/middleware/zookeeper/deploy-zookeeper-observer-across-vpc/" class="post-card-link">
+    <div class="card">
+      <div class="card-head">
+        <img class="card-img-top" src='/assets/images/posts/middleware/zookeeper.png'/>
+      </div>
+      <div class="card-body">
+        <h5 class="card-title">跨 VPC 部署 zookeeper observer</h5>
+        <p class="card-text post-summary">场景说明 某云提供商网络技术更新迭代，遗留下了基础网络和 VPC 网络两种网络架构，我们公司目前的服务器还大多都在基础网络中。我在新环境中搭建了 kubernetes 集群，并在上面部署了高可用的 zookeeper 集群。配置中心方案是一个全局方案，公司大大小小的项目陆陆续续都会上，为了便于维护与迁移，我们采用一套环境统一管理。此时，集群内的 zookeeper 已经由 helm 部署完成。
+需求  一台已经安装了 docker 和 docker-compose 的位于基础网络服务器（作为 zookeeper observer，为避免单点故障最好备两台及以上) 已经安装好三个结点的 zookeeper 的 kubernetes 的集群  操作流程 1. 基础网络互通 这个步骤具体怎么做我就不提了，每个云服务商可能不同，但并不是什么难点。达到的效果就是将 kubernetes 集群所在的 VPC 和 observer 服务器可以互联互通
+2. 向内网暴露 zk 集群相关服务 利用 statefulSet 会为每个 pod 生成的一个特殊的 label，为每一个 zookeeper 的 pod 建立内网 LB 类型的 Service。
+这里有一个创建其中一个 svc 的例子：
+apiVersion: v1 kind: Service metadata: annotations: # 这里边是与云服务商强相关的一些配置，不具备通用性但仍然具有参考价值，这里需要配置不然默认是公网 LB service.kubernetes.io/qcloud-loadbalancer-clusterid: cls-xxxxxx # 确定 tke 集群 service.</p>
+      </div>
+      <div class="card-footer">
+        <span class="float-left">November 2, 2019</span>
+        <a
+        href="/posts/middleware/zookeeper/deploy-zookeeper-observer-across-vpc/"
+        class="float-right btn btn-outline-info btn-sm"
+        >Read</a
+        >
+      </div>
+    </div>
+  </a>
+</div>
+
+        
+          <div class="filtr-item" data-category='middleware,zookeeper'>
+  <a href="/posts/middleware/zookeeper/deploy-zookeeper-ha-in-kubernetes/" class="post-card-link">
+    <div class="card">
+      <div class="card-head">
+        <img class="card-img-top" src='/assets/images/posts/middleware/zookeeper.png'/>
+      </div>
+      <div class="card-body">
+        <h5 class="card-title">Kubernetes 中部署高可用的 Zookeeper</h5>
+        <p class="card-text post-summary">本文主要使用 helm chart 进行 zookeeper 的高可用部署。
+环境说明 本文使用的是 TKE 托管环境，在该环境中安中了 cbs-csi 的 operator，为了方便持久卷备份，后文中的持久化存储会统一采用。CSI的解决方案在各种环境中都会有，我仅描述 cbs。
+  kubernetes 版本：v1.14.3-tke.4
+  helm 版本：v2.10.0（TKE控制台支持的版本）
+  按步骤安装好的 cbs-csi
+ 值得说明的是 cbs 存储不可跨可用区挂载，默认情况下先建存储再建 pod 的方式无法满足生产需要，所以才引入的 cbs-csi。但在建立 storageClass 时要注意加入 volumeBindingMode: WaitForFirstConsumer 以保证 pod 完成调度之后再创建卷，从而使得存储不用影响 pod 的调度。sc 参考如下：
+ apiVersion: storage.k8s.io/v1 kind: StorageClass metadata: annotations: storageclass.beta.kubernetes.io/is-default-class: &#34;true&#34; name: cbs-csi-topo parameters: diskType: CLOUD_PREMIUM provisioner: com.tencent.cloud.csi.cbs reclaimPolicy: Delete volumeBindingMode: WaitForFirstConsumer   已经部署好了的 prometheus 的监控方案，包括 serviceMonitor 这样的 CRD</p>
+      </div>
+      <div class="card-footer">
+        <span class="float-left">November 2, 2019</span>
+        <a
+        href="/posts/middleware/zookeeper/deploy-zookeeper-ha-in-kubernetes/"
+        class="float-right btn btn-outline-info btn-sm"
+        >Read</a
+        >
+      </div>
+    </div>
+  </a>
+</div>
+
+        
+          <div class="filtr-item" data-category='devops'>
+  <a href="/posts/devops/auto-devops-auto-build/" class="post-card-link">
+    <div class="card">
+      <div class="card-head">
+        <img class="card-img-top" src='/assets/images/posts/devops/GitLab-Kubernetes-Running-CI-Runners-in-Kubernetes.png'/>
+      </div>
+      <div class="card-body">
+        <h5 class="card-title">自动化运维之自动构建</h5>
+        <p class="card-text post-summary">本文供自己记录学习，我会尽量保证文章准确无误，但因本人水平有限，如果不幸产生任何错误，望读者不吝赐教。
+浅析 gitlab-runner 相关配置 在 gitlab-runner 中每个 runner 都需要指定 executor，executor 有以下几种类型：
+ SSH Shell Parallels VirtualBox Docker Docker Machine (auto-scaling) Kubernetes Custom  我们会将 gitlab-runner 部署在 kubernetes 集群中，所以此处选用 kubernetes 作为 executor。有关该 executor 的配置方式，在官方文档中有详细说明，此处就此次配置所需要的进行简单说明，其它的再视情况进行补充。
+与其它类型的 executor 一样，kubernetes 也需要根据 gitlab 仓库的 url 和 token 对 runner 进行注册方可使用。注册后会有一个常驻的 pod （我姑且叫它 runner 服务端）对来自于 gitlab 的 pipeline 任务进行监听，当监听到有新的任务需要执行时，就会创建新的 pipeline 跑 .gitlab-ci.yml 上对应的job。所以 runner 服务端相关联的 ServieAccount 一定需要具备对应的 namespace 的 pod 的创建的权限。
+配置一个 runner 有多种方式，包括启动参数、环境变量、配置文件等。这其中配置文件的功能最强，参数可配置项较环境变量稍多（或许它们具有相同的能力，只是我没有发现，如果你知道欢迎帮忙补充）。通过gitlab-runner help register命令我们可以找到所有的启动参数和环境变量，参数与环境变量之间的关系请参照参数与环境变量对照表。</p>
+      </div>
+      <div class="card-footer">
+        <span class="float-left">September 8, 2019</span>
+        <a
+        href="/posts/devops/auto-devops-auto-build/"
+        class="float-right btn btn-outline-info btn-sm"
+        >Read</a
+        >
+      </div>
+    </div>
+  </a>
+</div>
+
+        
+          <div class="filtr-item" data-category='tools'>
+  <a href="/posts/tools/modify-the-history-commit-of-git/" class="post-card-link">
+    <div class="card">
+      <div class="card-head">
+        <img class="card-img-top" src='/assets/images/posts/tools/git.jpg'/>
+      </div>
+      <div class="card-body">
+        <h5 class="card-title">修改 Git 的历史提交</h5>
+        <p class="card-text post-summary">现在工作生活中，基本都使用 Git 用作代码的版本控制。我们应该为自己的每次 commit 提供一个合理的 log，以让自己或其他开发者明白对应的 commit 都干了些什么，但有时我们不可避免地会出错，然后就需要修改某些该死的提交。我们大可以新建一个 commit 来干这个事情，但这对于有洁癖的我来讲实在太 low 了，也不利于代码维护。Git 作为一个强大的工具，当然有解决办法啦，下面就让我们来一起探讨该如何修改过去的提交。
+环境说明 我这里有一个 git 项目，进行过 3 次代码提交，日志如下：
+commit 5ae91d0efae757087386c0c4b80e660e97627d22 (HEAD -&gt; master) Author: Jerry Chan &lt;jerry@mydream.ink&gt; Date: Sun Aug 11 20:04:43 2019 +0800 third commit commit 6df839cab26ce48a561192933dc28c0d9fe302db Author: Jerry Chan &lt;jerry@mydream.ink&gt; Date: Sun Aug 11 19:57:46 2019 +0800 second commit commit 61aa39cfbcbab89d8e0d44c03f01f65402bd20e6 Author: Jerry Chan &lt;jerry@mydream.ink&gt; Date: Sun Aug 11 19:56:23 2019 +0800 fist commit   第一次，提交的时候我建了个文件test.txt，并写了一行内容：</p>
+      </div>
+      <div class="card-footer">
+        <span class="float-left">August 11, 2019</span>
+        <a
+        href="/posts/tools/modify-the-history-commit-of-git/"
+        class="float-right btn btn-outline-info btn-sm"
+        >Read</a
+        >
+      </div>
+    </div>
+  </a>
+</div>
+
+        
+          <div class="filtr-item" data-category='cloud-native,kubernetes'>
+  <a href="/posts/cloud-native/kubernetes/use-kubernetes-from-docker-on-mac/" class="post-card-link">
+    <div class="card">
+      <div class="card-head">
+        <img class="card-img-top" src='/assets/images/posts/cloud-native/docker-tutorial.png'/>
+      </div>
+      <div class="card-body">
+        <h5 class="card-title">在 Mac 上使用 Docker 自带的 Kubernetes</h5>
+        <p class="card-text post-summary">Mac 安装 Docker 的方法不再赘述，很简单，官方下载安装即可。
+安装完成后，kubectl的二进制文件就已经存在了。我们仅需要下载镜像，开启 kubernetes。
+下载镜像 查看一下你的 Docker 和 Kubernetes 版本：
+使用以下脚本，记得将镜像版本改成你所需要的🍁
+#!/bin/bash  set -e KUBE_VERSION=v1.10.11 KUBE_PAUSE_VERSION=3.1 ETCD_VERSION=3.1.12 DNS_VERSION=1.14.8 DOCKER_TOOL_VERSION=v0.4.12 GCR_URL=k8s.gcr.io ALIYUN_URL=registry.cn-hangzhou.aliyuncs.com/google_containers images=(kube-proxy-amd64:${KUBE_VERSION} kube-scheduler-amd64:${KUBE_VERSION} kube-controller-manager-amd64:${KUBE_VERSION} kube-apiserver-amd64:${KUBE_VERSION} pause-amd64:${KUBE_PAUSE_VERSION} etcd-amd64:${ETCD_VERSION} k8s-dns-sidecar-amd64:${DNS_VERSION} k8s-dns-kube-dns-amd64:${DNS_VERSION} k8s-dns-dnsmasq-nanny-amd64:${DNS_VERSION}) for image in ${images[@]} ; do docker pull ${ALIYUN_URL}/${image} docker tag ${ALIYUN_URL}/${image} ${GCR_URL}/${image} docker rmi ${ALIYUN_URL}/${image} done # 拉取 Docker 相关镜像 docker pull docker/kube-compose-api-server:${DOCKER_TOOL_VERSION} docker pull docker/kube-compose-controller:${DOCKER_TOOL_VERSION} 执行该脚本，将从阿里镜像库获得所需镜像。
+启动 Kubernetes 功能 打开 Docker 配置面板，请至少勾选 Enable Kubernetes 以开启 Kubernetes 服务。</p>
+      </div>
+      <div class="card-footer">
+        <span class="float-left">July 12, 2019</span>
+        <a
+        href="/posts/cloud-native/kubernetes/use-kubernetes-from-docker-on-mac/"
+        class="float-right btn btn-outline-info btn-sm"
+        >Read</a
+        >
+      </div>
+    </div>
+  </a>
+</div>
+
+        
+          <div class="filtr-item" data-category='cloud-native,container'>
+  <a href="/posts/cloud-native/container/install-docker-on-centos7/" class="post-card-link">
+    <div class="card">
+      <div class="card-head">
+        <img class="card-img-top" src='/assets/images/posts/cloud-native/docker-tutorial.png'/>
+      </div>
+      <div class="card-body">
+        <h5 class="card-title">在 CentOS7 上安装新版 Docker CE（使用国内源）</h5>
+        <p class="card-text post-summary">卸载老版本 $ sudo yum remove docker \  docker-client \  docker-client-latest \  docker-common \  docker-latest \  docker-latest-logrotate \  docker-logrotate \  docker-engine 如果曾经安装过，/var/lib/docker/中会有原来的镜像、容器、卷以及网络残留，如果不需要可将之一并删除。
+安装 Docker CE 安装 Docker 国内源   安装 yum 配置管理工具
+$ sudo yum install -y yum-utils \ device-mapper-persistent-data \ lvm2   安装清华大学的 Docker 安装源（本网站有效，该命令就有效）
+$ sudo yum-config-manager \ --add-repo \ https://mydream.ink/utils/container/docker-ce.repo 你可能会遇到如下问题：
+ adding repo from: https://mydream.ink/utils/container/docker-ce.repo grabbing file https://mydream.ink/utils/container/docker-ce.repo to /etc/yum.</p>
+      </div>
+      <div class="card-footer">
+        <span class="float-left">July 12, 2019</span>
+        <a
+        href="/posts/cloud-native/container/install-docker-on-centos7/"
+        class="float-right btn btn-outline-info btn-sm"
+        >Read</a
+        >
+      </div>
+    </div>
+  </a>
+</div>
+
+        
+          <div class="filtr-item" data-category='experiences'>
+  <a href="/posts/experiences/first-startup/" class="post-card-link">
+    <div class="card">
+      <div class="card-head">
+        <img class="card-img-top" src='/assets/images/posts/experiences/first_startup_1.jpg'/>
+      </div>
+      <div class="card-body">
+        <h5 class="card-title">初尝创业</h5>
+        <p class="card-text post-summary">本文记录了自己的个人生活经历及其感悟，以回忆为主，文中所有姓名均为化名，无心对任何人或者是公司造成影响，如果可能发生，请联系我进行修改
+ 正如我告诉别人的那样，我也这样告诉自己：我从未怀疑过这辈子可以取得成功，不过同时我也非常清楚的是成功之路将充满坎坷与艰辛！
+尝试 上一份工作于我而言确实是一个比较大的打击，我会因此感到郁闷，但很快也就过去了『👊沉浸于过去的悲痛是无能的表现』。对于实现自己的梦想，我最初的想法是，先认真工作几年，工作过程中多少会认识些志同道合的伙伴，然后就可以一起去做一些了不起的事情了。然而，两份工作都始终没有发现一个这样的伙伴，我觉得我快失去前进方向了，我特别好奇到底是哪里没对。因此，我特想看看自己离梦想有多远，现在好了，都不用选择就可以离开舒适区了。而这一次的尝试，无论结果如何，都是一种收获：要么创造奇迹，要么认清自己。
+我是一个山里长大的孩子，泥巴就是我从小到大的玩具。深耕互联网，心系乡土情，我觉得利用互联网促进我国小农经济发展像是我的一种使命。我认为，农者，国之根本也。有关该项目详情就不在此赘述了，相关资料有点多。
+创业，一个感觉上多么超凡脱俗的名词啊。它因大多数人不愿企及而神圣，然只有亲历者才知其艰辛，我曾想象过前路坎坷，但未曾想到还未出发便遭遇阻力。追逐自己的梦想本是一件无可厚非的事，但创业似乎就成了一件千夫所指之事。亲人、朋友、爱人，不是所有人都能理解你的雄心壮志，更不是所有人都支持你的所作所为。在这条道路上，我最先感受到的是孤独，所以，拥有战友在我看来是件多么可贵的事。
+ 我妈妈是残疾人，老爸能力有限，而我是祖上五代往下数第一个大学生。可以想象他们是经历了怎样的艰辛才把我送进大学校园，读的几乎最贵的软件工程专业。当辛苦供养出来的大学生决定创业时，妈妈便再也坐不住了。她不求我大富大贵，但求我一生顺遂，所以每次电话都无法抑制住内心的恐惧😢。
+ 然而，为了自己的梦想，背负着父母的期待和女友的等待，我还是自私地出发了。我知道我除了自己什么都没有，所以目标也比较明确，边寻找创业伙伴，边打磨自己的 idea，只要找到战友，我就有理由相信这件事情能成。一方面，我开始不断地参加各种线上线下的交流活动，想尽可能地去认识一些以梦想为轴的人，希望能够找到合适的创业伙伴；另一方面，与各行各业的朋友交流我的想法，在此过程中，我们经常发现项目中还有很多缺陷，所以，找到问题并提出相应的解决方案，便成为了那时候我最为享受的事了。为了得到政策支持，我曾多次拜访省农业厅，给他们出示并讲解我的计划。为了更了解这个行业，我曾跟种植大户深入交流。
+每日醒来沐浴着清晨的第一缕阳光时，我会觉得一切都充满了希望，因为梦就在前方，不过很快又会回到现实中打滚。当事情毫无进展时，我会非常怀疑自己，偶尔还能和上妈妈“不怀好意”的问候，让自己切实体会一把什么是在夹缝中求生存。为了检验一下我想做的东西是否是伪需求，也为了证明自己还活着😱，我学着做了款微信小程序并给种子用户进行试用。为了给自己找个伙伴，我几乎去了活动行和 Meetup 上所有免费的活动。不放过任何机会的我还在国内外各大专业论坛和职场交友网站发帖，希望能求得一志趣相投的伙伴，还因为这个天真的行动被诸多网友讽刺得不要不要的，不过还好我有心里准备。很快，为梦想而努力的那种快感生生地被淹没在了现实的残酷之中。因为寻找创业伙伴的事情，一直没有进展。
+三月中旬，我偶然发现有人曾引用了我关于梦想的描述，莫非是有『共鸣』之人？此人35岁，传统行业人士，不懂技术，却是一个足以让我感到热血沸腾的人。我把自己的项目放在一边，加入了他已经有了一定投入的项目；我把他的项目看做自己的，帮他重写之前的商业计划书，并作为技术负责人验收、整理他曾外包出去的项目，我在 Github 上建了个组织，现在还管理着他的项目呢。自始自终，我从未提过利益分配的问题，这源于我对于一个热血团队的渴望。然而，跟他共事了一个月之久，我居然摸不透他哪句话是真哪句话是假，所以我最后还是选择了离开。
+重新回到了一个人，此时，我已经深刻地明白，想要通过这样的方式在短时间内找到创业伙伴根本就不可能了。『路遥知马力，日久见人心。』很真实的一堂课，且不说，满足自己期望的人少有，就算是有也不会是通过三两次的吃饭、聊天或者喝茶结交的。所以，后来当同样的机会摆在我面前的时候，我拒绝了。没有人脉、没有伙伴也没有金钱，我缺乏了太多的资源了。最终，我认清了我自己，积累资源成为了我所能够倚仗的唯一途径。
+抉择 之前想要不计一切后果去创业的时候，认为自己本来也都一无所有，所以也不怕失去什么。可真正走到那一步时，我才发现我有亲人、有爱人，发现我除了梦想，还有一份责任。我在做任何决定的时候也必须为他们考虑些什么。我有责任让我的父母不再为我操心，也有责任许我女友一个美好的未来，一个真正成功的男人应当学会责任与梦想一肩挑。创业是一辈子的事情，我无需急于这一时，我本来起跑线就落后了别人一大截，更应该先积累一定的社会地位，也不至于让父母为我操心、让女友为我等待。既然已经认清了自己的方向，那就应当坚定不移地走下去。如何积累资源便成为了我首先需要考虑的问题。
+『不积跬步无以至千里』
+我曾考虑过很多种未来的可能性，最终还是认为从技术做起才是最适合我的。如今，我也为此正准备着。💪💪💪</p>
+      </div>
+      <div class="card-footer">
+        <span class="float-left">July 1, 2019</span>
+        <a
+        href="/posts/experiences/first-startup/"
+        class="float-right btn btn-outline-info btn-sm"
+        >Read</a
+        >
+      </div>
+    </div>
+  </a>
+</div>
+
+        
+          <div class="filtr-item" data-category='experiences'>
+  <a href="/posts/experiences/job2/" class="post-card-link">
+    <div class="card">
+      <div class="card-head">
+        <img class="card-img-top" src='/assets/images/posts/experiences/job2_1.png'/>
+      </div>
+      <div class="card-body">
+        <h5 class="card-title">第二份工作</h5>
+        <p class="card-text post-summary">本文记录了自己的个人生活经历及其感悟，以回忆为主，文中所有姓名均为化名，无心对任何人或者是公司造成影响，如果可能发生，请联系我进行修改
+ 找工作 为什么这段经历要从找工作说起呢？我主要是回忆起了那时候的彷徨与迷茫。从上一家公司离职后，我有点不知所措。就像我之前所诉一样，我不知道我能够匹配什么样的工作，明明感觉自己充满能量，但又觉得前路黯淡。
+ 我明白我的特点是技术广度、快速上手能力以及发散性思维，其实这样的特点在什么岗位都是比较实用的，这在解决问题上是一把好手，不过这样的能力很难通过面试发现，我需要突出这一点。
+ 我一共找了两周的工作，根据先前的工作经验，我是 Node.js 开发、项目经理、运维开发的综合体😕，这太难了😂。不知道是简历写得不好还是履历本来就不够吸引人，或许两者都有吧，我鲜有面试机会。正当我要放弃找工作打算先疯狂学习一阵做几个开源项目再找的时候，七陌电话邀我去面试。跟我约的时间是周五（也就是那两周的最后一个工作日），所以我就抱着最后试一试的心态去了。
+这原本是一个运维岗，去了以后我从面试官也就是运维总监那里得知他们的业务越来越复杂，正在向微服务转型，当时差不多已经拆成有大大小小 60 多个服务，在考虑上容器了，甚至考虑为此组建一个部门。听到这个后，我显得比较兴奋，因为这正是我想做的事。我也表明了我的态度：“如果让我来做这个的话，我愿意一试，并且我有信心做成。”。公司的 CTO 张总正在做容器化相关的调研，他对于这方面比较了解，所以面试官拨通了张总的电话，让他对我进行专业的面试。我们互相都比较满意，所以没过多久我就得到了 HR 的通知。
+新的起点 之前的公司10个人，新公司有200多人，从规模上讲，已经翻了好几倍了。现在还记得面试时，让我填的「职业生涯规划」，我有很认真的填写我要成为部门 Leader，结果我的部门就两个人，从编制上讲，还挂靠在别的部门😐。我心想我现在也刚进，以后肯定会招人的，先把自己事情做好就行，所以也就没想太多了。
+带我的人叫石冷，我去之前，架构部门就他一个人，因此他一向比较忙，平日里都戴着个耳机也不多话，我找他基本都是发 QQ 消息😓。为了快速融入到公司环境中，借着团建做主持的机会，我用了不到两周时间就把成都分公司这边近80号人都认识了。
+容器化方案 这是我在这个公司最重要的事，至少在进公司前我都是这么认为的。刚进去那会儿，不了解公司业务、不了解公司组织架构、不知道测试环境、不知道开发环境、不知道生产环境，总之是啥都不了解，石冷不爱说话，也从不安排任务，所以我基本上是被晾在那儿了😁。不过没有状况本身也是一种状况，我能做的就是在不浪费时间的前提下尽可能独立解决问题。首先认清目标，我来公司的目的就是出具并实施容器化解决方案的。
+然后，我给自己设立了阶段性目标：
+ 理清公司微服务架构的业务逻辑「我的天，60多个服务，分别是干啥的，他们之间如何协同工作的，没有文档，也不清楚」 学习 Docker、Kubernetes 相关技术「以前用的容器是 Zone，虽然接触过这俩，但并不多，想根据其能力出具解决方案还差远了」  针对第一点，我必须问，有时候会不好意思，但也不得不问，因为那是我开展工作的必要条件。至于第二点，翻阅官方文档进行学习，为此我还找石冷要了3台测试服务器。整个进展都比较顺利，我估计花了一个月的样子就出具了第一套过渡方案。主要策略是将原系统的中 Consul 和 Kubernetes 中的 etcd 的服务注册与发现的能力以及配置能力进行同步。我跟石冷讲了这个方案，他觉得还不错，我们就正式跟领导层进行了一场方案探讨的会议。可是，张总认为公司大部分研发人员连 Docker 都不了解，如果直接把 kubernetes 用起来有点太重了，难以落地，所以予以否决了『张总的考虑确实有道理，不过我觉得一个好的架构对于研发人员来讲应该是无觉察的，不知是否应当如此？😀』。尽管方案并没有落地实施，公司管理层对我的能力还是予以了充分肯定。
+此事过去后不久，公司把我和石冷分别临时下放到了运维部和云客服部，说是让我们能够更好地了解业务以便设计出更接地气的架构。
+去了庞然（运维部经理）那儿后，帮他协助私有云部门为私有云客户部署基础服务「MongoDB、Redis、Elasticsearch、Consul、Open office、Solr」，他们之前本来是脚本部署的，还要拷贝好多文件，特麻烦。为了简化流程，我把它们全部抬到了 Ansible 上来，感觉舒服多了「技能库里又多了件宝贝，开心😄」。本来待满一个月我就要回架构部了的，张总突然找到我说私有云部门的阿伟离职了，人手不够需要我，并且那边容器化方案更容易落地。于是乎，我就成了私有云老大湛成的手下。
+去到私有云 私有云部门是一个业务部门，主要是为大客户提供自建云客服系统以及可能存在的定制开发服务。私有云项目从服务器批下来到最终完成交付大致会经历 PoC 测试和定制开发（如果需要）两个阶段。所以私有云下又有实施和开发两大模块，服务器给到公司后，会先由运维团队搭建基础服务（也就是我之前在庞然的团队所做的事情），然后由我部门实施人员搭建业务服务并做基本调通，没有问题后移交技术支持与售前。阿伟走后，湛成成了唯一一个具有实施能力的私有云成员，但私有云的工作量不降反升，所以这才把我调了过去。湛成来了成都后，组建实施团队便成了我的任务之一。最终我招募了两位小伙伴，并带他们参与实施工作。实施过程中最难的地方莫过于调通了，像 Consul、Nginx、MongoDB 都很容易出问题，有时调试时，需要用到各种前后端的编程知识，也只能自己去解决。
+我们部署项目需要两个自主开发的部署工具：
+ vole —— node 编写的 Web 工具，用于录入配置并生成配置文件 lever —— python 编写的命令行工具，依赖于 Ansible，用于部署业务服务  两个工具都还有这样那样的问题，功能也不全，可能也就支持20来个服务吧。将实施任务交给两个新伙伴后，我开始了两个部署工具的改造之旅，我新加了些项目支持，修复了一些 BUG，甚至还改了下界面，也正是因为在这里更加真切地感受到了这些痛点问题，使得我对于容器化的解决方案又有了一些新的想法。在湛成的支持下，我又开始了我的容器化之旅。我还是用的 Kubernetes，不过这次我落地实施了。我用双容器 Pod 捆绑 Nginx 解决了程序中访问服务写死 127.</p>
+      </div>
+      <div class="card-footer">
+        <span class="float-left">July 1, 2019</span>
+        <a
+        href="/posts/experiences/job2/"
+        class="float-right btn btn-outline-info btn-sm"
+        >Read</a
+        >
+      </div>
+    </div>
+  </a>
+</div>
+
+        
+          <div class="filtr-item" data-category='experiences'>
+  <a href="/posts/experiences/job1/" class="post-card-link">
+    <div class="card">
+      <div class="card-head">
+        <img class="card-img-top" src='/assets/images/posts/experiences/job1_1.jpg'/>
+      </div>
+      <div class="card-body">
+        <h5 class="card-title">第一份工作</h5>
+        <p class="card-text post-summary">本文记录了自己的个人生活经历及其感悟，以回忆为主，文中所有姓名均为化名，无心对任何人或者是公司造成影响，如果可能发生，请联系我进行修改
+ 初入创业公司 公司原本只有三个人，我本以为他们三个是联合创始人，但到后来我发现创始人只有朱总一个。朱总曾先后在多家大型外企工作（我记得的就有惠普和甲骨文），有很多年的技术经验，在「去 IOE」的大背景下，希望基于 PostgreSQL 研发自主可控的国产数据库。CTO ——范畴，在华为研究所里开发了多年的缓存，后来去过中东做市场，也是一个非常有想法的人，最初也是他找到了我。另一个叫何敏，2012年西安电子科技大学毕业，原本供职于深圳国家电网，在那里做 C#，因为公司数据库选型和朱总结识。除了他们，其他人都跟我一样，是应届大学生。除了前端的邵梦，我们都是 C 语言开发入职的，按照最初的计划，进公司后是要从事数据库开发的。
+范畴为我们进行了为期数日的 C 语言岗前培训，同时，朱总还为我们进行了数据库相关知识培训。老实说，那段时间学到了蛮多东西。公司有个项目叫 EcoX，是朱总以前用 Perl 脚本写的 PostgreSQL 高可用集群管理系统，因为要商用，所以范畴那段时间一直在用 C++ 重新实现。那时候公司还没有任何基础设施建设，他维护代码特别麻烦，所以让我给解决一下。svn、samba、ldap，这些我以前听都没听过的东西，也还包括一些其它基础服务，我都给搭了一遍。当时我本来想推荐 git 而不用 svn 的，但是我那时项目做得少，最多也就是用过 Github，没有其它解决方案，索性也就搭的 svn。直到后来在西科大做了很多项目的研究生建平过来带来了 gitlab 的解决方案，我们才正式使用 git 的。不得不说，那确实是个好东西，直至今日我做自动化运维还用它✨✨✨。
+鸿鹄系列 我们的数据库称作 鸿鹄数据库，PG 是 OLTP 的一把好手，为了丰富应用场景，使其更好地支持 OLAP ，他第一步想要做的是加入列存。自主研发数据库门槛特别高，然而我们都是新人，大多数人连数据库原理都不懂，这可如何开始？我给范畴推荐了「中国大学 MOOC」上哈工大战德臣教授数据库系统的系列课程，这是我当时备战秋招的时候学过的，觉得还不错，后来他也在上面学习，还推荐给了大家。只是可惜的是，我后来一直没有在做数据库。
+刚进公司那会儿，公司有三台服务器（两台二手 hp，一台华为），我们自用的服务器都是从华为那台虚拟出来的。宿主机是 SmartOS 系统，它支持多种虚拟化技术：zone、基于 zone 改造的 lxc 以及从 linux 移植过来的 KVM ，前两种就是我们当前总在讲的容器化技术，使得运行在上面的应用有可以利用裸机的 IO 能力，在传统虚拟化技术面前有着非常大的优势。而支持 KVM 可以让用户将原本运行在虚拟机中的服务迁移过来；其次，SmartOS 原生支持 ZFS 文件系统。ZFS 作为最先进的文件系统之一，自带存储解决方案，服务器上的磁盘甚至不需要做阵列。这种技术特别适合数据库这种对 IOPS 要求很高的应用。朱总希望将其改造成自主可控的国产数据中心产品，所以做一个管理系统将这种能力管理起来成为了我们另一个项目，后来朱总给它取名叫 鸿鹄彩云「😅老实说，我对这个名字存有保留意见」。
+数据中心国产化之路 由于数据库产品的门槛实在过高，「鸿鹄彩云」便成为了我们的当务之急。范畴主要负责架构设计，我和常齐负责技术选型。因为采用 SOA 架构，所以选择一种较为合理的服务间通信方式是我们技术选型的头等任务。我们决定消息队列直接采用 OpenStack 在用的 RabbitMQ；Protobuf 以二进制流方式进行网络传输，作为序列化技术远比 XML 和 JSON 的效率高，只使用相对复杂，基于 Protobuf 的 gRPC 还是 Beta 版本，当时我们还在考虑要不要采用来着😯。因为大家都是新手，所以也没做什么详尽的测试，就都用了一下。不过，很快事情就变得不一样了。</p>
+      </div>
+      <div class="card-footer">
+        <span class="float-left">July 1, 2019</span>
+        <a
+        href="/posts/experiences/job1/"
+        class="float-right btn btn-outline-info btn-sm"
+        >Read</a
+        >
+      </div>
+    </div>
+  </a>
+</div>
+
+        
+          <div class="filtr-item" data-category='experiences'>
+  <a href="/posts/experiences/university/" class="post-card-link">
+    <div class="card">
+      <div class="card-head">
+        <img class="card-img-top" src='/assets/images/posts/experiences/university_1.jpg'/>
+      </div>
+      <div class="card-body">
+        <h5 class="card-title">大学</h5>
+        <p class="card-text post-summary">本文记录了自己的个人生活经历及其感悟，以回忆为主，文中所有姓名均为化名，无心对任何人或者是公司造成影响，如果可能发生，请联系我进行修改
+ 前言 早前基本不怎么接触过计算机的我，大学志愿毫不犹豫地全部填写了计算机相关专业。我很庆幸，当时的自己看到了未来，也很庆幸，我所学即我所爱。最后到了南昌航空大学攻读软件工程专业，只是学费真的好贵💔。
+大一 入学 上大学是我第一次出远门，也是第一次坐火车，我还记得那趟火车是T126，从成都开往东莞的，坐了大概19+小时。路上遇到一个从成都回襄樊过中秋节的老大哥，他说他是九几年毕业于哈工大一个汽车相关的专业，好像是内燃机啥的，我也记不太清楚了。从来没有讲过普通话的我，在车上跟他聊天，感觉特别扭，并不好意思讲。他跟我讲，我必须要克服，因为我到了学校还是得面对，逃避解决不了问题。所以，我在到学校前就把普通话讲顺畅了。临走时，他还给了我一本《读者》，为啥我还记得呢？也许是因为那是我唯一一本杂志的缘故吧😋。
+刚入学那会儿，住在一个临时宿舍，离学院大部队有点距离，我们有4个人，江西吉安的邹智彬，不会蒙语的内蒙人吴子贺，还有一个不跟我们一个班但跟我是四川老乡却不吃辣的莫天。我们都是外地人，所以虽然在一块儿没待多久，但是整个大学期间关系都非常不错。两周后一方向重新分班，我们仨都觉得微软不错，所以都选了它。我们分班后，便搬离了那里，我们三个还在一个班。邹智彬去了我对面宿舍；莫天回到了他原班级宿舍，与我们隔着几层楼。我和子贺呢，就多了俩新室友，江西吉安的胖子李忠，南昌本地人陈俊刚。莫天和邹智彬后面也经常来我们宿舍玩。
+ 注：我们软件学院共有6个方向，1方向（也就是我所在的方向）就叫软件工程，2方向是航空信息化，3方向是会计，4方向是嵌入式，5方向是测控（莫天所在），6方向是飞控。1方向在军训结束后，又分成了3个小方向：测试、Java、微软定向。
+ 初入大学第一天就被骗😱。入学手续差不多办好后，都晚上了。我一个人走在学校食堂旁边，来了一个女孩，说她是一个大四学生，从内蒙过来找她同学的，钱包手机都被偷了，连吃饭的钱都没有了，让我借钱给她吃顿饭。我的天，一顿吃了我17块大洋，要知道我大一每顿自己就花1.1元（一个素菜0.8元，一份饭0.3元），所以当时吃得我特心痛。吃完饭后，她又管我要200块，说是要去南大后街住一晚，我表示没有，她还不死心，说要是不信的话，可以跟她一起过去。可那时候两百块是我一个月的生活费，所以任她说破天，我也不可能给的😝。我只能说，她看出了我是新生，却没看出我穷😆。最终，她放弃了，临走前还记了我电话号码，说是第二天要还我钱。不过，我心里也明白，基本没啥可能，而事实也确实如此。
+大一的我是一个特别自卑的存在，因为自己是从村里来的，见识短浅，怕稍有不慎闹了笑话，暴露了自己乡野匹夫的身份😅，一直不敢在公众场合讲话。别说大学了，初中高中都是如此，但也因此我特别在意自己的格局和视野。那时咱们班上竞选班干部，其实我特想选个班长啥的，奈何我始终没有勇气上台。当时，我们的军训教官（也是我们学长）似乎看出了我的心思，干脆让大家不论参选与否都上台讲几句。然而尽管如此，我还是憋到了最后一个上场，并且待了半天硬是说不出一个字。从那以后，我心里暗自发誓，我需要在公众场合正确地表达自己，甚至于成为一个极具魅力的演说家。
+一直以来，我都害怕考试，害怕在公众场合发言，但我非常清楚这是多么不利于自己发展，因此解决这个问题也成了我的一大目标。为此，我便加入了校团委，和我一道的还有子贺。此外，为了让自己保持良好的生活习惯，我还加入了学校的知行班，每日六点集合跑五公里。
+组建团队 到了大一下学期，我们开始有专业课了。有一天，莫天突然找到我，说想组建一个团队，一起成长、一起学习，说不定将来还能一起成就一番伟业。说到我心坎儿里了。他做队长，我做副队。我们印了传单，一起在住宿楼的楼道里分发，告诉学院的小伙伴，我们将组建一个了不起的团队，期待志同道合的小伙伴加入。会议当天，我们租了个大音响，然而来的人并不多。不过，我们也正式成立了我们9个人的小分队「莫天、我、文博、彭星、佳莹、郑朋、汤洋、王同、秦风」。我们每天早上6点整集合，跑步到图书馆门口做早操，带着非常夸张的动作高喊三遍：『左脚！右脚！啊！这是多么美好的一天啊，充满了爱、热情、效益、感恩、Power！』💪💪💪，然后进行英语晨读，结束后再一起去食堂吃早餐，为此我退出了知行班；平时有时间就组队去图书馆学习，周末我们就一起去机房练习编码。在早上练习英语时，我们吸引到了第一位女同学韩婷的加入；紧接着，我班上学委慧慧也通过我加入了我们。有个周末，我们如同往常一样，一起去机房进行编程练习。韩婷碰见了她班上的同学奚心，刚好那天奚心有个问题不能解决，韩婷就带她问了莫天，莫天圆满地搞定了。至此，我们又多了一个成员，我们的团队定格在九男三女共十一人。
+ 注：莫天成绩一直都是不错的，是他们52班的第一名；而奚心，后来我们了解到，她是11班的第一名；
+ 小美好 有一天，莫天让我去参加一个活动，说是可以提升自我。那是一个演讲训练营，我怀着一颗期待的心过去，果然被感染到了。平时都不舍得花钱的我，也没怎么犹豫就直接支付了300块用于报名参加了一个清明假期的演讲训练营。后来莫天跟我讲，本来只是让我体验下那种氛围的，没成想我会报班😂。
+2014年4月4日晚，我正式加入了训练营，我依稀记得我们好像是3队「与我同校的信工学院的大二妹子李真，南昌大学大三的谢文春，江西财经大学大二的汤洋洋，江西农业大学大一的妹子廖美琴，南昌工学院大一的妹子刘蕖」。那时候的我还特腼腆，知道自己位置后，一个人傻坐在位置上，也不跟人交流。突然有个妹子走过来坐我旁边跟我打招呼，搞得我的脸一下就红了，场面一度很尴尬，可能就这么一见钟情了吧😍。据她介绍，她叫刘蕖，跟我是一队的，至于我当时有没有反过来自我介绍，已经不记得了，应该有吧？😥 选队长的时候，我一如既往地在心里想了想，然后把机会留给了别人（😹感觉自己特无私的，有没有？），最后，汤洋洋成为了我们的队长。
+在这里的三个日夜，想哭就哭、想笑就笑、想说就说，我从未如此毫无顾忌地展示自己，可即便如此，我仍然决定将自己心中对刘蕖的那份爱意埋藏起来直至忘却。😳为何会如此？三天三夜的启发已经让我发生了蜕变，从那时起，我告诉自己：『去做所有我认为是正确的事情，不论我是否做过、会不会做、敢不敢做、想不想做』。在我看来那不是一个正确的时间，那时候的日子过得实在寒酸，我认为自己还没有能力拥有一份爱情，所以基本没想要去争取。同时，我知道同队的谢文春也喜欢她，并且已经展开攻势了，我还想办法撮合他们来着😬。
+训练营结束后，我们团队组织了一次聚餐，我也去了，整个团队都知道谢文春在追她，都想撮合他俩，所以我基本上是计划去当观众的。饭局当天，她来得稍晚一点，大家都把谢文春旁边的位置给她留着（虽然自己并不计划去争取，但看着大家都想成全他们，心中难免还是有些失落，情绪不太高）。然而，等她到了后，她随便找了个理由，非常可爱地拒绝了谢文春的殷勤，还坐到了我旁边来。我是有点愣住了，不过喜欢的女孩坐自己身旁，心情肯定是不错的，那顿饭也是吃得有滋有味的😋。
+后来用 QQ 跟她网上聊天，具体聊的啥，我不太记得了。不过，通过交流我得知，原来她早就知道我对她有意思，刚好她对我也有意思。我问她是否介意我当时的情况，得到她的答复后，我们就在一起了。那是2014年4月24日，我们认识的第20天。所以，我的初恋就这么来了，像做梦一般，以前从不敢想。
+三小项目 所谓三小呢，就是：小发明、小制作、小创作。得益于莫天的班主任杨丰玉是学院带项目的老师，我们有一个做项目的机会。项目组有4个人「莫天、我、秦风、李磊」，我们用ege做了一套 C 指针动态演示系统帮助教学。项目经费下来后，杨老师给我们买了一些书，其中包括一些ACM的，只是我不知道后来为何不了了之了。只怪自己当初了解太少，不然说什么也要参加比赛才是。
+ 总有那么几个人在跨进大学校门前就接触过编程了，李磊就是其中一个，同时他是41班的No.1，一起做项目让我学到了很多，后来他被保送到了厦门大学深造。
+ 暑假工 跟女朋友一起去东莞去做车辆模型制作的车间工人，每天都是重复的工作，38℃的高温，每天顶着一个巨型电风扇吹，还是觉得身上黏乎乎的。
+大二 团队问题 在经历了大半学期的坚持后，有人早上起不来了，为了团队纪律，我提出了迟到罚款的规定，纪律算是得到了有效控制。一周后郑朋和王同觉得自己不再适合待下去，索性请求离开了，我们剩下的九个人一如既往的在一块儿学习。值得一提的是，此前莫天和奚心走到了一起。
+莫天和奚心出现了问题，奚心说为了团队不受影响，她不得不退出。然而，莫天从此一蹶不振，不理朝事。一日，他把我们都召集到了一起，宣布了他要解散团队的决定。作为他的朋友也是团队发起人之一，我心里很不是滋味，不知道如何面对我们的队员，因为当初的承诺都还没能兑现，如今主心骨突然要退出，实在是有些手足无措。莫天走后，我问队员的想法，问他们是否还想继续，除了秦风要退出，其他人都愿意跟我一起继续下去。只可惜当时的自己眼界有限，并不能为他们带来什么。大三我去了沈阳后，这件事情落下了个不了了之，这是我整个大学阶段无论如何都挥之不去的遗憾，我一直期待着某天还能有机会弥补。
+转专业 原计划大三就要去微软技术中心实训了，然而到了大二结束前的两周，我们被告知项目破产，没办法前去了。原本就觉得在学校学不到什么东西的我，就像是听到了一个噩耗。这时候我得知如果成绩足够优秀可以转专业到四方向，那可以去沈阳东软实训，我不由得动了这个念头，只是我需要考虑的是不得不跟女朋友异地恋了。莫天也想要转过去（我知道他是想逃避一些事情），所以他极力劝我跟他一起。思虑再三，为了自己的前途，我还是决定转过去。
+暑假工 这一年的暑假，我们去了重庆。本来还想进厂找工作的，但是厂里不要暑假工，我们在沙坪坝待了几天，一直也没有办法。没钱住宿，我们只能去网吧，希望省点钱。不幸的是，屋漏偏逢连夜雨，我们在网吧睡觉的时候，女朋友手机被偷了。手机有防盗功能，所以我们有嫌疑人照片，以及实名认证的电话号码，我们报了警，并将信息提供给了派出所，其实只要派出所肯查，肯定能找到的，但我们失败了。
+要是手机没被偷，我们找不到工作，或许就回去了吧？但当时的情况，如果就那样走了，我们不甘心。离开了沙坪坝，我们去了九龙坡，在谢家湾找到了一份烤肉店服务员的工作。之后，我们用挣来的钱给女朋友又重新买了一部手机。
+大三 友情 到了沈阳后，好长一段时间嘴唇都干巴巴的，没有一点知觉，跟女朋友异地，经常吵架，自己情绪变得特别不稳定。对莫天的不满也在这个时候彻底暴发了出来，于是我们决裂了，这种关系一直持续到毕业（毕业回南昌的火车上，我让我后来的室友金辉帮我将他约出，已是离别时，所有恩怨终是虚无，最终，我们冰释前嫌了，现在都在成都，仍是好友。）。
+我到了新的宿舍，认识了新的室友「姜伟、姜兴、金辉，他们都来自南昌」，这是一群非常有意思的小伙伴，我很快便平复心情，投入到新的征程中去了。在新的班级，我又认识了眭彬橙，他就坐我旁边。跟他交流是一件非常愉快的事，从技术到思想，总能碰撞出很多有意思的东西。
+ 眭彬橙是一个高中就自学编程的家伙，上大学之前就已经靠编程赚钱的主，毕业后去了B站，前些天刚得知现在已经到了阿里巴巴。
+ 选择 大四那年秋天，一开始我就回到了成都准备秋招的事情。那时候，整日跟川大、电子科大的本科及硕士研究生同台竞技，我的笔试成绩比较好，基本都能获得面试机会。然而，我却被从Oracle出来，一心想做国产数据库的朱贤文吸引了。
+为了实现自己的梦想，放弃了给自己履历镀金的机会，加入一家创业公司实习并作为第一份工作。在现在看来，很难说这是一个明智的选择。但也没啥好后悔的，我做了自己想做的事，成就了今天的自己。整个大四我基本都在这里实习。我将在第一份工作中详细介绍。
+ 总结 大一、大二，学习一直跟着学校的节奏在走，尽管学习进度上有所超前，但是没有将时间很好地利用起来。暑假都用来打暑假工了，没有合理利用起来，太奢侈了，觉悟得太晚。团队的不了了之，是我对不起我的队员们，希望将来还有机会弥补。这些无一例外地都让我意识到了格局的重要性。
+一个人的视野和格局决定了他成就的高低，这是我从小到大最切身的感受。小学初中在乡下不知乡镇以外是何处，高中在市里发现城里人真的挺会玩，大学让我体会到了原来知识不仅是知识，出了社会后方知天外有天。学校的不同其实质就是平台所能给的视野和格局的差异。在格局不断变大的同时，人也会变得更加自信，我便是如此。</p>
+      </div>
+      <div class="card-footer">
+        <span class="float-left">July 1, 2019</span>
+        <a
+        href="/posts/experiences/university/"
+        class="float-right btn btn-outline-info btn-sm"
+        >Read</a
+        >
+      </div>
+    </div>
+  </a>
+</div>
+
+        
+          <div class="filtr-item" data-category='tools'>
+  <a href="/posts/tools/gnu-sed/" class="post-card-link">
+    <div class="card">
+      <div class="card-head">
+        <img class="card-img-top" src='/assets/images/posts/tools/stream_editor.png'/>
+      </div>
+      <div class="card-body">
+        <h5 class="card-title">GNU sed用户手册</h5>
+        <p class="card-text post-summary">1 简介 sed是一个流编辑器（Stream EDitor）。流编辑器对输入流（文件或者是来自于管道的输入）进行基本的文件转换。虽然在某些方面类似于脚本化编辑器（例如ed），但是sed通过对输入进行一次遍历来工作，因此更高效。比较大的区别是sed能在管道中筛选文本。
+2 运行 2.1 概述 一般的sed用法：
+sed SCRIPT INPUTFILE... 例，将input.txt中的‘hello’全部替换成‘world’：
+sed &#39;s/hello/world/&#39; input.txt &gt; output.txt 如果已没有指定INPUTFILE或者INPUTFILE是-，sed将处理标准输入的内容，下述命令是等价的：
+sed &#39;s/hello/world/&#39; input.txt &gt; output.txt sed &#39;s/hello/world/&#39; &lt; input.txt &gt; output.txt cat input.txt | sed &#39;s/hello/world/&#39; - &gt; output.txt sed默认是将处理结果写到标准输出。使用-i参数则是直接修改文件。另见W和s///w命令将输出写入到其他文件。下述命令将会修改file.txt文件而不会产生任何输出：
+sed -i &#39;s/hello/world&#39; file.txt 默认情况下，sed打印所有的输入（修改和删除除外，比如命令d）。用-n限制输出，p打印特定行。以下命令只打印输入文件的第45行：
+sed -n &#39;45p&#39; file.txt sed将多个输入文件作为一个长的输入流，在下述例子中，将打印第一个文件（one.txt）的第一行和第三个文件（three.txt）的最后一行。可用-s反转。
+sed -n &#39;1p ; $p&#39; one.txt two.txt three.txt 若没有指定-e或者-f选项，sed使用第一个非选项参数作为执行脚本，接下来的非选项参数作为输入文件。如果使用-e或者-f指定一个执行脚本，其它所有的非参数选项将作为输入文件。-e和-f可以结合使用，并且可以多次出现（最终的执行脚本是这些单独脚本连接后的结果）。 下述例子是等价的：
+sed &#39;s/hello/world/&#39; input.txt &gt; output.txt sed -e &#39;s/hello/world/&#39; input.txt &gt; output.txt sed --expression=&#39;s/hello/world/&#39; input.</p>
+      </div>
+      <div class="card-footer">
+        <span class="float-left">March 11, 2018</span>
+        <a
+        href="/posts/tools/gnu-sed/"
+        class="float-right btn btn-outline-info btn-sm"
+        >Read</a
+        >
+      </div>
+    </div>
+  </a>
+</div>
+
+        
+          <div class="filtr-item" data-category='cloud-native,kubernetes'>
+  <a href="/posts/cloud-native/kubernetes/kubeadm/" class="post-card-link">
+    <div class="card">
+      <div class="card-head">
+        <img class="card-img-top" src='/assets/images/posts/cloud-native/kubernetes.jpg'/>
+      </div>
+      <div class="card-body">
+        <h5 class="card-title">使用 kubeadm 安装 Kubernetes 1.10.0</h5>
+        <p class="card-text post-summary">kubernetes可以使用多种容器runtime，此处使用当前最常见的docker。
+安装docker 在各种机器上安装docker的方式不同，我曾翻译过一篇ubuntu安装docker的文章，还有一些没来的及翻译的，可以参考官方文档。推荐的docker版本为v1.12，v1.11, v1.13 和 17.03 也行，其它的官方就没测试过了，不过我使用当前最新的v18.03也行。
+docker官方  使用Ubuntu安装docker-ce Mac和Windows桌面安装docker-ce  下载Mac版本的docker-ce，执行即安装 下载Windows版本的docker-ce，执行即可安装   CentOS安装docker-ce Fedora安装docker-ce 二进制安装方式  kubernetes推荐   Ubuntu/Debian/HypriotOS 从Ubuntu的库安装
+apt-get update apt-get install -y docker.io 使用docker库安装v17.03
+apt-get update apt-get install -y \  apt-transport-https \  ca-certificates \  curl \  software-properties-common curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add - add-apt-repository \  &#34;deb https://download.docker.com/linux/$(. /etc/os-release; echo &#34;$ID&#34;)\ $(lsb_release -cs)\ stable&#34; apt-get update &amp;&amp; apt-get install -y docker-ce=$(apt-cache madison docker-ce | grep 17.</p>
+      </div>
+      <div class="card-footer">
+        <span class="float-left">March 9, 2018</span>
+        <a
+        href="/posts/cloud-native/kubernetes/kubeadm/"
+        class="float-right btn btn-outline-info btn-sm"
+        >Read</a
+        >
+      </div>
+    </div>
+  </a>
+</div>
+
+        
+          <div class="filtr-item" data-category='middleware,rabbitmq'>
+  <a href="/posts/middleware/rabbitmq/rabbitmq-rpc-with-node/" class="post-card-link">
+    <div class="card">
+      <div class="card-head">
+        <img class="card-img-top" src='/assets/images/posts/middleware/rabbitmq_node.jpg'/>
+      </div>
+      <div class="card-body">
+        <h5 class="card-title">Node使用RabbitMQ：远程过程调用（RPC）</h5>
+        <p class="card-text post-summary">前提条件 本教程假定RabbitMQ已安装并在标准端口（5672）上的本地主机上运行。如果您使用不同的主机，端口或凭据，连接设置将需要调整。
+（使用amqp.node客户端） 在第二个教程中，我们学习了如何使用工作队列在多个Worker之间分配耗时的任务。 但是如果我们需要在远程计算机上运行一个函数并等待结果呢？那么，这是件不同的事。这种模式通常被称为远程过程调用或RPC。 在本教程中，我们将使用RabbitMQ构建一个RPC系统：一个客户端和一个可扩展的RPC服务器。由于我们没有任何值得分发的耗时任务，所以我们将创建一个返回斐波那契数列的虚拟RPC服务。
+回调队列 一般来讲，通过RabbitMQ使用RPC是非常容易的。客户端发送请求消息，服务器回复响应消息。为了收到回应，请求时，我们需要发送一个callback队列地址。我们可以使用默认队列。让我们试试看：
+ch.assertQueue(&#39;&#39;, {exclusive: true}); ch.sendToQueue(&#39;rpc_queue&#39;,new Buffer(&#39;10&#39;), { replyTo: queue_name }); # ... then code to read a response message from the callback queue ...  消息属性 AMQP 0-9-1协议预定义了一组与消息一起的14个属性。除了以下属性，大多数属性很少使用： persistent：将消息标记为persistent（值为true）或transient（false）。您可能会从第二个教程中了解到这个属性。 content_type：用于描述编码的MIME类型。例如，对于经常使用的JSON编码，将此属性设置为application/json是一个很好的习惯。 reply_to：通常用于命名回调队列。 correlation_id：用于将RPC响应与请求相关联。
+ 关联标识（correlation id） 在上面介绍的方法中，我们建议为每个RPC请求创建一个回调队列。这是非常低效的，但幸运的是有一个更好的方法——让我们创建一个单一的客户端回调队列。 这引发了一个新的问题，在该队列中收到回复，不清楚回复属于哪个请求。什么时候使用correlation_id属性？我们将把它设置为每个请求的唯一值。之后，当我们在回调队列中收到一条消息时，我们将查看这个属性，并基于这个属性，我们可以将响应与请求进行匹配。如果我们看到一个未知的correlation_id值，我们可以放心地丢弃这个消息——这不属于我们的请求。 您可能会问，为什么我们应该忽略回调队列中的未知消息，而不是失败并报一个错误？这是由于在服务器端的竞争条件的可能性。虽然不太可能，但在发送给我们答复之后，在发送请求的确认消息之前，RPC服务器可能会死亡。如果发生这种情况，重新启动的RPC服务器将再次处理该请求。这就是为什么在客户端，我们必须优雅地处理重复的响应，理想情况下RPC应该是幂等的。
+总结 我们的RPC调用像这样： 当客户端启动的时候，它创建一个匿名的独占式回调队列。 对于一个RPC请求，客户端会发送具有这两个属性的消息：reply_to，用于设置回调队列；correlation_id，作为请求标识。 请求被发送到一个rpc_queue队列。 RPC Worker（又名：服务器）在队列上等待请求。当出现一个请求时，它执行这个工作，并使用reply_to字段中的队列将结果发送回客户端。 客户端在回调队列中等待数据。出现消息时，会检查correlation_id属性。如果它匹配来自请求的值，则返回对应用程序的响应。
+全部代码 斐波那契函数：
+function fibonacci(n) { if (n == 0 || n == 1) return n; else return fibonacci(n - 1) + fibonacci(n - 2); } 我们声明斐波那契函数。它只假定有效的正整数输入（不要指望这个函数可以使用大数字，因为这可能是最慢的递归实现）。 我们的RPC服务器rpc_server.</p>
+      </div>
+      <div class="card-footer">
+        <span class="float-left">February 16, 2018</span>
+        <a
+        href="/posts/middleware/rabbitmq/rabbitmq-rpc-with-node/"
+        class="float-right btn btn-outline-info btn-sm"
+        >Read</a
+        >
+      </div>
+    </div>
+  </a>
+</div>
+
+        
+          <div class="filtr-item" data-category='middleware,rabbitmq'>
+  <a href="/posts/middleware/rabbitmq/rabbitmq-exchange-with-node/" class="post-card-link">
+    <div class="card">
+      <div class="card-head">
+        <img class="card-img-top" src='/assets/images/posts/middleware/rabbitmq_node.jpg'/>
+      </div>
+      <div class="card-body">
+        <h5 class="card-title">Node使用RabbitMQ：主题交换器</h5>
+        <p class="card-text post-summary">前提条件 本教程假定RabbitMQ已安装并在标准端口（5672）上的本地主机上运行。如果您使用不同的主机，端口或凭据，连接设置将需要调整。
+（使用amqp.node客户端） 在之前的教程中，我们改良了我们的日志系统。我们没有使用只有虚拟广播的fanout交换器，而是使用direct交换器，提供了有选择性地接收日志的可能性。 虽然使用direct交换器改良了我们的系统，但是他还是存在一些限制——它不能根据多种标准路由。 在我们的日志系统中，我们可能不仅想要订阅基于严重性级别的日志，可能还有基于日志出处的。你可能从syslog unix工具知道这个概念，它根据严重性（info/warn/crit &hellip;）和设备（auth/cron/kern &hellip;）来路由日志。 这会给我们很大的灵活性——我们可能想要获取来自&rsquo;cron&rsquo;的严重错误，而且还要听取来自&rsquo;kern&rsquo;的所有日志。 为了在我们的日志系统中实现这一点，我们需要了解更复杂的主题（topic）交换器。
+主题交换器 发送到主题交换的消息不能有任意的routing_key——它必须是由点分隔的单词列表。单词可以是任何东西，但通常它们指定连接到消息的一些功能。一些有效的路由键例子： stock.usd.nyse，nyse.vmw，quick.orange.rabbit。在路由选择键中可以有许多单词，最多255个字母。 绑定键也必须有相同的形式。主题交换器背后的逻辑类似于直接的——使用特定的路由键发送的消息将被传送到与匹配的绑定键绑定的所有队列。但是绑定键有两个重要的特殊情况：
+ *（星号）可以代替一个单词。 #（井号）可以代替另个或者多个单词。  举个简单的例子：
+在这个例子中，我们将发送所有描述动物的信息。消息将使用由三个单词（两个点）组成的路由键发送。路由键中的第一个单词将描述速度，第二个颜色和第三个种类：&lt;speed&gt;.&lt;color&gt;.&lt;species&gt;。 我们将创建三个绑定：Q1的绑定键是*.orange.*，Q2是*.*.rabbit和lazy.#。 什么含义呢？
+ Q1对所有橘色动物感兴趣。 Q2想要监听所有的兔子和和所有懒惰的动物。  一条路由键为quick.orange.rabbit将会被分发到两个队列，同样的，lazy.orange.elephant也将被分发到两个队列。而quick.orange.fox只会被发送到第一个队列中，lazy.brown.fox只会被发送到第二个。lazy.pink.rabbit虽然匹配第二个队列中的两个绑定键，但是它只会被发送一次。auick.brown.fox不匹配任何绑定键所以会被直接取消并且被丢掉。 如果违反我们的约定，发送一个或四个单词，如orange或quick.orange.male.rabbit的消息会发生什么？它们也将因为不匹配绑定键而被丢掉。 另一方面，lazy.orange.male.rabbit即使有四个单词，也会匹配最后一个绑定键，并被传递到第二个队列。
+ 主题交换器 主题交换器功能强大能够拥有其它交换器的功能。 当一个队列使用“＃”（井号）绑定键绑定时，它将接收所有的消息，而不管路由键如何——类似于fanout交换器。 当在绑定中不使用特殊字符“*”（星号）和“＃”（井号）时，主题交换器将像直接交换器一样。
+ 全部代码 我们将在我们的日志系统中使用主题交换器。我们首先假定日志的路由键有两个单词：&lt;facility&gt;.&lt;severity&gt;。 这个代码和前一个教程基本一样。 emit_log_topic.js：
+#!/usr/bin/env node  var amqp = require(&#39;amqplib/callback_api&#39;); amqp.connect(&#39;amqp://localhost&#39;, function(err, conn) { conn.createChannel(function(err, ch) { var ex = &#39;topic_logs&#39;; var args = process.argv.slice(2); var key = (args.length &gt; 0) ? args[0] : &#39;anonymous.</p>
+      </div>
+      <div class="card-footer">
+        <span class="float-left">February 15, 2018</span>
+        <a
+        href="/posts/middleware/rabbitmq/rabbitmq-exchange-with-node/"
+        class="float-right btn btn-outline-info btn-sm"
+        >Read</a
+        >
+      </div>
+    </div>
+  </a>
+</div>
+
+        
+          <div class="filtr-item" data-category='middleware,rabbitmq'>
+  <a href="/posts/middleware/rabbitmq/rabbitmq-route-with-node/" class="post-card-link">
+    <div class="card">
+      <div class="card-head">
+        <img class="card-img-top" src='/assets/images/posts/middleware/rabbitmq_node.jpg'/>
+      </div>
+      <div class="card-body">
+        <h5 class="card-title">Node使用RabbitMQ：路由</h5>
+        <p class="card-text post-summary">前提条件 本教程假定RabbitMQ已安装并在标准端口（5672）上的本地主机上运行。如果您使用不同的主机，端口或凭据，连接设置将需要调整。
+（使用amqp.node客户端） 在之前的教程中，我们构建了一个简单的日志系统我们能够将日志消息广播给许多接收者。 在本教程中，我们将添加一个功能——只订阅一部分消息。比如说，我们只把最严重的错误输出到日志文件（写到盘），而在控制台上打印所有的日志信息。
+绑定 在前面的教程中我们已经创建过绑定了，这里我们可以重新使用：
+ch.bindQueue(q.queue, ex, &#39;&#39;); 一个绑定将一个交换器和一个队列关联起来。我们可以这样简单理解：队列将会对该交换器里的消息感兴趣。 绑定可以采用额外的绑定键参数（上面代码中的空字符串）。这是我们如何创建一个带key的绑定：
+ch.bindQueue(queue_name, exchange_name, &#39;black&#39;); 绑定键的含义取决于交换类型。我们之前使用的fanout交换机，简单地忽略了它的值。
+直接交换器（Direct exchange） 我们在前面的教程中创建的日志系统将广播所有的信息给消费者。我们希望扩展这个功能，以便根据消息的严重性来过滤消息。例如我们可能希望将日志写入磁盘的脚本只接收到严重的错误，而不会浪费磁盘去存储info和warning的日志。 我们之前使用了一个fanout交换器，这并没有给我们太大的灵活性——它只能够无意识地广播。 现在我们使用direct交换器代替。direct交换器背后的路由算法很简单——消息将进入binding key与消息的routing key完全匹配的队列。 为了阐释清楚，我们可以参考一下示意图：
+如图，我们可以看到direct交换器X绑定了两个队列。第一个队列的绑定键是orange，第二个队列有两个绑定，两个绑定键分别是black和green。 此图中，发布一个路由键为orange的消息到交换器中，将被路由到Q1队列中。路由键为black或者是green的消息将路由到Q2队列中。所有其他消息将被取消。
+多绑定 相同的绑定键绑定多个队列是完全合法的。在上述例子中，我们完全可以使用绑定键black绑定X和Q1。如此一来这个直接交换器就跟删除交换器一样将会把消息广播给匹配的队列。带有路由键black的消息将被同时推送到Q1和Q2。
+发送日志 我们将使用我们的日志系统模型，以直接交换器代替删除交换器，以日志的严重性级别作为路由键。这样接收脚本可以选择自己想接收的级别的日志。我们先关注发送日志。 我们总需要首先去创建一个交换器：
+var ex = &#39;direct_logs&#39;; ch.assertExchange(ex, &#39;direct&#39;, {durable: false}); 然后准备发送一个消息：
+var ex = &#39;direct_logs&#39;; ch.assertExchange(ex, &#39;direct&#39;, {durable: false}); ch.publish(ex, severity, new Buffer(msg)); 为了简化事情，我们将假定“严重性”可以是info，warning，error之一。
+订阅 接收消息的方式与上一个教程中的一样，除了一个例外——我们将为每个我们感兴趣的严重级别创建一个新的绑定。
+args.forEach(function(severity) { ch.bindQueue(q.queue, exchange, severity); }); 全部代码 emit_log_direct.js脚本的代码：
+#!/usr/bin/env node  var amqp = require(&#39;amqplib/callback_api&#39;); amqp.</p>
+      </div>
+      <div class="card-footer">
+        <span class="float-left">February 14, 2018</span>
+        <a
+        href="/posts/middleware/rabbitmq/rabbitmq-route-with-node/"
+        class="float-right btn btn-outline-info btn-sm"
+        >Read</a
+        >
+      </div>
+    </div>
+  </a>
+</div>
+
+        
+          <div class="filtr-item" data-category='middleware,rabbitmq'>
+  <a href="/posts/middleware/rabbitmq/rabbitmq-pubsub-with-node/" class="post-card-link">
+    <div class="card">
+      <div class="card-head">
+        <img class="card-img-top" src='/assets/images/posts/middleware/rabbitmq_node.jpg'/>
+      </div>
+      <div class="card-body">
+        <h5 class="card-title">Node使用RabbitMQ：发布与订阅</h5>
+        <p class="card-text post-summary">前提条件 本教程假定RabbitMQ已安装并在标准端口（5672）上的本地主机上运行。如果您使用不同的主机，端口或凭据，连接设置将需要调整。
+（使用amqp.node客户端） 在前面的教程中，我们创建了一个工作队列，假设每个任务只被传递给一个Worker。在这一部分，我们将做一些完全不同的事情——我们会向多个消费者传递信息。这种模式被称为“发布与订阅”。 为了说明这个模式，我们将建立一个简单的日志系统。它将包含两个程序 - 第一个将发送日志消息，第二个将接收并打印它们。 在我们的日志系统中，接收程序的每个运行副本都会收到消息。这样我们就可以运行一个接收器并将日志定向到磁盘，同时将能够运行另一个接收器并输出到屏幕上以便查看日志。 本质上，发布的日志消息将被广播给所有的接收者。
+交换器（exchange） 在本教程的前面部分，我们发送和接收来自队列的消息。现在是时候在Rabbit中引入完整的消息模型了。 让我们快速回顾一下前面的教程中介绍的内容：
+ 生产者（producer）是发送消息的用户应用程序。 队列（queue）是存储消息的缓冲区。 消费者（consumer）是接收消息的用户应用程序。  RabbitMQ中消息传递模型的核心思想是生产者永远不会将任何消息直接发送到队列中。实际上，生产者通常甚至不知道邮件是否会被传送到任何队列中。 生产者只能将消息发送给交换器。交换器非常简单，它一面接受来自生产者的消息，一面将接收到的消息推送给队列。交换器必须知道如何处理接收到的消息：是否应该附加到特定的队列？是否应该附加到许多队列？还是应该丢弃。这些规则是由交换类型定义的。
+有几种可用的交换类型：direct，topic，headers和fanout。我们将关注最后一个 ——fanout。让我们创建一个这种类型的交换器，并将其称为logs：
+ch.assertExchange(&#39;logs&#39;, &#39;fanout&#39;, {durable: false}) fanout交换非常简单。正如你可能从名字中猜到的那样，它只是将所有收到的消息广播到它所知道的所有队列中。这正是我们日志系统所需要的。
+ 列出交换器 要列出服务器上的交换，您可以运行有用的rabbitmqctl：
+sudo rabbitmqctl list_exchanges  在这个列表中将会有一些amq.*交换和默认（未命名）交换。这些是默认创建的，但目前不太可能需要使用它们。 默认交换器 在本教程的以前部分，我们对交换器一无所知，但仍能够将消息发送到队列。这是可能的，因为我们正在使用一个默认的交换，这是由空字符串（&quot;&quot;）标识。 回顾一下我们之前如何发布消息：
+ ch.sendToQueue(&#39;hello&#39;, new Buffer(&#39;Hello World!&#39;));  这里我们使用默认的或无名的交换：消息被路由到队列中，如果它存在的话，该消息被指定为第一个参数。
+ 现在，我们可以发布到我们的命名交换：
+ch.publish(&#39;logs&#39;, &#39;&#39;, new Buffer(&#39;Hello World!&#39;)); 作为第二个参数的空字符串意味着我们不想将消息发送到任何特定的队列。我们只想将其发布到我们的logs交换器。
+临时队列 正如你以前可能记得我们使用的是具有指定名称的队列（请记住hello和task_queue？）。给队列命名是很重要的——我们需要给Workers指定相同的队列。当你想在生产者和消费者之间共享队列时，一定要给队列命名。 但是我们的日志系统并不是这样。我们想要监听所有日志消息，而不仅仅是其中的一部分。我们也只对目前流动的消息感兴趣，而不是旧消息。要解决这个问题，我们需要两件事。 首先，每当我们连接到Rabbit，我们需要一个新的、空的队列。要做到这一点，我们可以创建一个随机名称的队列，或者最好是让服务器为我们选择一个随机队列名称。 其次，一旦我们断开消费者，队列应该被自动删除。 在amqp.node客户端中，当我们将队列名称作为空字符串提供时，我们使用生成的名称创建一个非持久队列：
+ch.assertQueue(&#39;&#39;, {exclusive: true}); 当方法返回时，队列实例包含由RabbitMQ生成的随机队列名称。例如，它可能看起来像amq.gen-JzTY20BRgKO-HjmUJj0wLg。 当声明它的连接关闭时，队列将被删除，因为它被声明为独占（exclusive）。
+绑定 我们已经创建了一个扇出交换器和一个队列。现在我们需要告诉交换器把消息发送到我们的队列。交换器和队列之间的关系被称为绑定。
+ch.bindQueue(queue_name, &#39;logs&#39;, &#39;&#39;); 此后，logs交换器将把消息附加到我们的队列中。
+ 列出绑定 你可以通过以下方式列出所有的绑定：</p>
+      </div>
+      <div class="card-footer">
+        <span class="float-left">February 13, 2018</span>
+        <a
+        href="/posts/middleware/rabbitmq/rabbitmq-pubsub-with-node/"
+        class="float-right btn btn-outline-info btn-sm"
+        >Read</a
+        >
+      </div>
+    </div>
+  </a>
+</div>
+
+        
+          <div class="filtr-item" data-category='middleware,rabbitmq'>
+  <a href="/posts/middleware/rabbitmq/rabbitmq-queue-with-node/" class="post-card-link">
+    <div class="card">
+      <div class="card-head">
+        <img class="card-img-top" src='/assets/images/posts/middleware/rabbitmq_node.jpg'/>
+      </div>
+      <div class="card-body">
+        <h5 class="card-title">Node使用RabbitMQ：工作队列</h5>
+        <p class="card-text post-summary">前提条件 本教程假定RabbitMQ已安装并在标准端口（5672）上的本地主机上运行。如果您使用不同的主机，端口或凭据，连接设置将需要调整。
+（使用amqp.node客户端） 在第一个教程中，我们编写了用于从命名队列发送和接收消息的程序。在这一个中，我们将创建一个工作队列，用于在多个Worker之间分配耗时的任务。 工作队列（又名：任务队列）主要目的是避免立即执行资源密集型任务，避免必须等待任务完成。取而代之的是，安排稍后完成任务。我们把一个任务封装成一个消息并发送给一个队列。在后台运行的工作进程将弹出任务并最终执行作业。当你运行许多Worker时，任务将在他们之间共享。 这个概念在web应用程序中特别有用，在短的HTTP请求窗口中不可能处理复杂的任务。
+准备 在本教程的前一部分，我们发送了一个包含“Hello World！”的消息。现在我们将发送代表复杂任务的字符串。我们没有真正的任务，比如图像被重新调整大小或者渲染PDF文件，所以让我们假装我们忙——通过使用setTimeout方法。 我们稍微修改前面例子中的send.js代码，以允许从命令行发送任意消息。这个程序将安排任务到我们的工作队列，所以让我们把它命名为new_task.js：
+var q = &#39;task_queue&#39;; var msg = process.argv.slice(2).join(&#39; &#39;) || &#34;Hello World!&#34;; ch.assertQueue(q, {durable: true}); ch.sendToQueue(q, new Buffer(msg), {persistent: true}); console.log(&#34; [x] Sent &#39;%s&#39;&#34;, msg); 我们旧的receive.js脚本也需要进行一些更改：它需要伪造邮件正文中每个点的第二个工作。它将从队列中弹出消息并执行任务，所以我们称之为worker.js：
+ch.consume(q, function(msg) { var secs = msg.content.toString().split(&#39;.&#39;).length - 1; console.log(&#34; [x] Received %s&#34;, msg.content.toString()); setTimeout(function() { console.log(&#34; [x] Done&#34;); }, secs * 1000); }, {noAck: true}); 请注意，我们的假任务模拟执行时间。 按照教程1运行它们：
+# shell 1 ./worker.js # shell 2 .</p>
+      </div>
+      <div class="card-footer">
+        <span class="float-left">February 12, 2018</span>
+        <a
+        href="/posts/middleware/rabbitmq/rabbitmq-queue-with-node/"
+        class="float-right btn btn-outline-info btn-sm"
+        >Read</a
+        >
+      </div>
+    </div>
+  </a>
+</div>
+
+        
+          <div class="filtr-item" data-category='middleware,rabbitmq'>
+  <a href="/posts/middleware/rabbitmq/rabbitmq-base-with-node/" class="post-card-link">
+    <div class="card">
+      <div class="card-head">
+        <img class="card-img-top" src='/assets/images/posts/middleware/rabbitmq_node.jpg'/>
+      </div>
+      <div class="card-body">
+        <h5 class="card-title">Node使用RabbitMQ：入门篇</h5>
+        <p class="card-text post-summary">前提条件 本教程假定RabbitMQ已安装并在本地主机的标准端口（5672）上运行。如果您使用不同的主机，端口或凭据，连接设置将需要调整。
+简介 RabbitMQ是一个消息broker：它接受和转发消息。你可以把它想象成一个邮局：当你把邮件放在邮箱里时，你可以确定邮差先生最终会把邮件发送给你的收件人。在这个比喻中，RabbitMQ是整个邮政系统即信箱、邮局和邮递员。 RabbitMQ与邮局的主要区别是它不处理纸张，而是接受，存储和转发数据的二进制数据块——消息。 RabbitMQ和一般的消息传递使用了一些术语。
+ 生产（producing）只不过是发送而已。一个发送消息的程序是一个生产者（producer）：
+队列（queue）是RabbitMQ内部的邮箱名称。尽管消息流经RabbitMQ和您的应用程序，但它们只能存储在队列（queue）中。队列（queue）只受主机的内存和磁盘限制，实质上是一个大的消息缓冲区。许多生产者（producer）可以发送消息到一个队列（queue），许多消费者（consumers）可以尝试从一个队列（queue）接收数据。这就是我们代表队列（queue）的方式：
+消费（consuming）与接受有类似的意义。消费者（consumer）是主要等待接收消息的程序：
+ 请注意，producer，consumer和broker不必在同一主机上；事实上在大多数应用程序中都不会。
+(使用amqp.node客户端) 在本教程的这一部分，我们将用Node编写两个小程序；发送单个消息的生产者，以及接收消息并将其打印出来的消费者。我们将详细介绍amqp.node API中的一些细节，将注意力集中在这个非常简单的事情上，以便开始。这是一个消息传递的“Hello World”。 在下图中，“P”是我们的生产者，“C”是我们的消费者。中间的盒子是一个队列——RabbitMQ消费者的消息缓冲区。  amqp.node客户端库 RabbitMQ提供多种协议。本教程使用AMQP 0-9-1，这是一个开放，通用的消息传递协议。 RabbitMQ有许多不同的语言客户端。我们将在本教程中使用amqp.node客户端。 首先，使用npm安装amqp.node：
+ npm install amqplib 现在我们安装了amqp.node，我们可以写一些代码。
+发送端 我们将调用我们的消息发布者（发送者）send.js和我们的消息使用者（接收者）receive.js。发布者将连接到RabbitMQ，发送一条消息，然后退出。 在send.js中，我们需要首先需要库：
+#!/usr/bin/env node  var amqp = require(&#39;amqplib/callback_api&#39;); 然后连接到RabbitMQ服务器
+amqp.connect(&#39;amqp://localhost&#39;, function(err, conn) {}); 接下来我们创建一个频道（channel），这是大部分API所需要做的：
+amqp.connect(&#39;amqp://localhost&#39;, function(err, conn) { conn.createChannel(function(err, ch) {}); }); 发送，我们必须申报队列给我们发送；然后我们可以发布消息到队列中：
+amqp.connect(&#39;amqp://localhost&#39;, function(err, conn) { conn.createChannel(function(err, ch) { var q = &#39;hello&#39;; ch.assertQueue(q, {durable: false}); // Note: on Node 6 Buffer.</p>
+      </div>
+      <div class="card-footer">
+        <span class="float-left">February 11, 2018</span>
+        <a
+        href="/posts/middleware/rabbitmq/rabbitmq-base-with-node/"
+        class="float-right btn btn-outline-info btn-sm"
+        >Read</a
+        >
+      </div>
+    </div>
+  </a>
+</div>
+
+        
+          <div class="filtr-item" data-category='virtualization,vmware'>
+  <a href="/posts/virtualization/vmware/vmware-vcenter/" class="post-card-link">
+    <div class="card">
+      <div class="card-head">
+        <img class="card-img-top" src='/assets/images/posts/virtualization/vmware_horizon.jpg'/>
+      </div>
+      <div class="card-body">
+        <h5 class="card-title">详解VMware vCenter Server</h5>
+        <p class="card-text post-summary">作为vSphere的核心主键之一的 vCenter Server 可以部署在Linux上或者是Windows上，在Linux上被称为 vCenter Server Appliance。 根据 Platform Services Controller 所部署的位置的不同，有以下几种部署类型：
+   部署类型 描述     具有嵌入式 Platform Services Controller 部署的 vCenter Server 与 Platform Services Controller 捆绑在一起的所有服务与 vCenter Server 服务一起部署在同一虚拟机或物理服务器上。   Platform Services Controller 只有与 Platform Services Controller 捆绑在一起的服务会部署在虚拟机或物理服务器上。   具有外部 Platform Services Controller 的 vCenter Server （需要外部 Platform Services Controller） 只有 vCenter Server 服务会部署在虚拟机或物理服务器上。必须向之前部署或安装的 Platform Services Controller 实例注册此类 vCenter Server 实例。    </p>
+      </div>
+      <div class="card-footer">
+        <span class="float-left">January 25, 2018</span>
+        <a
+        href="/posts/virtualization/vmware/vmware-vcenter/"
+        class="float-right btn btn-outline-info btn-sm"
+        >Read</a
+        >
+      </div>
+    </div>
+  </a>
+</div>
+
+        
+          <div class="filtr-item" data-category='virtualization,vmware'>
+  <a href="/posts/virtualization/vmware/vmware-vcenter-vsphere/" class="post-card-link">
+    <div class="card">
+      <div class="card-head">
+        <img class="card-img-top" src='/assets/images/posts/virtualization/vmware_horizon.jpg'/>
+      </div>
+      <div class="card-body">
+        <h5 class="card-title">vSphere 和 vCenter Server</h5>
+        <p class="card-text post-summary">VMware vSphere 是一套虚拟化应用程序，包括 ESXi 和 vCenter Server。 vSphere 使用虚拟化执行以下任务：
+ 在一台物理机上同时运行多个操作系统。 回收闲置资源并在多台物理机之间平衡工作负载。 处理硬件故障和预定维护。  熟悉构成 vSphere 环境的组件有助于理解设置过程，并最终理解使用 VMware vCenter Server 管理主机和运行虚拟机的过程。 除了 ESXi 主机和 vSphere Client 之外，vSphere 还包括以下组件：
+vSphere Web Client vSphere Web Client 是连接到 vCenter Server 和多主机环境的接口。另外，它还提供对虚拟机的控制台访问。借助 vSphere Web Client，您可以使用浏览器内界面执行所有管理任务。
+VMware vCenter Server vCenter Server 将各台主机中的资源统一在一起，使这些资源可以在整个数据中心的虚拟机之间共享。其实现原理是：根据系统管理员设定的策略，管理主机的虚拟机分配，以及给定主机内虚拟机的资源分配。 vCenter Server 允许使用 vSphere 的高级功能，如 vSphere Distributed Resource Scheduler (DRS)、vSphere High Availability (HA)、vSphere vMotion 和 vSphere Storage vMotion。
+数据中心 数据中心是一种结构，在该结构中，可以向清单中添加主机及其相关虚拟机。
+主机 主机是使用 ESXi 虚拟化软件来运行虚拟机的计算机。主机为驻留在其上的虚拟机提供 CPU 和内存资源、对存储器的访问以及网络连接。</p>
+      </div>
+      <div class="card-footer">
+        <span class="float-left">January 23, 2018</span>
+        <a
+        href="/posts/virtualization/vmware/vmware-vcenter-vsphere/"
+        class="float-right btn btn-outline-info btn-sm"
+        >Read</a
+        >
+      </div>
+    </div>
+  </a>
+</div>
+
+        
+          <div class="filtr-item" data-category='virtualization,vmware'>
+  <a href="/posts/virtualization/vmware/vmware-vcenter-component/" class="post-card-link">
+    <div class="card">
+      <div class="card-head">
+        <img class="card-img-top" src='/assets/images/posts/virtualization/vmware_horizon.jpg'/>
+      </div>
+      <div class="card-body">
+        <h5 class="card-title">vCenter Server 组件和服务</h5>
+        <p class="card-text post-summary">摘自于VMware官方文档，移至自己博客方便阅读，如有侵权，请联系我删除
+vCenter Server 为虚拟机和主机的管理、操作、资源置备和性能评估提供了一个集中式平台。 安装具有嵌入式 Platform Services Controller 的 vCenter Server 或部署具有嵌入式 Platform Services Controller 的 vCenter Server Appliance 时，vCenter Server、vCenter Server 组件以及 Platform Services Controller 中包含的服务将部署在同一个系统上。 安装具有外部 Platform Services Controller 的 vCenter Server 或部署具有外部 Platform Services Controller 的 vCenter Server Appliance 时，vCenter Server 和 vCenter Server 组件将部署在一个系统上，而 Platform Services Controller 中包含的服务将部署在另一个系统上。 以下组件包含在 vCenter Server 和 vCenter Server Appliance 安装中：
+ VMware Platform Services Controller 基础架构服务组包含 vCenter Single Sign-On、License Service、Lookup Service 和 VMware Certificate Authority。 vCenter Server 服务组包含 vCenter Server、vSphere Web Client、vSphere Auto Deploy 和 vSphere ESXi Dump Collector。适用于 Windows 的 vCenter Server 还包含 VMware vSphere Syslog Collector。vCenter Server Appliance 还包含 VMware vSphere Update Manager 扩展服务。   注：从 vSphere 6.</p>
+      </div>
+      <div class="card-footer">
+        <span class="float-left">January 21, 2018</span>
+        <a
+        href="/posts/virtualization/vmware/vmware-vcenter-component/"
+        class="float-right btn btn-outline-info btn-sm"
+        >Read</a
+        >
+      </div>
+    </div>
+  </a>
+</div>
+
+        
+          <div class="filtr-item" data-category='virtualization,openstack'>
+  <a href="/posts/virtualization/openstack/openstack-ironic/" class="post-card-link">
+    <div class="card">
+      <div class="card-head">
+        <img class="card-img-top" src='/assets/images/posts/virtualization/openstack.png'/>
+      </div>
+      <div class="card-body">
+        <h5 class="card-title">Ironic裸机服务——OpenStack</h5>
+        <p class="card-text post-summary">OpenStack为用户提供裸机服务（区别于虚拟机），该服务在OpenStack项目中被称作ironic。它可以独立使用或者作为OpenStack Cloud的一部分使用，并与OpenStack认证（keystone），计算（nova），网络（neutron），图像（glance）和对象存储（swift）服务集成。 当裸机服务适当配置了计算和网络服务时，可以使用计算服务的API来配置裸机。不过，由于物理服务器和交换机硬件的特性不同，对于裸机实例的操作很有限。例如，实时迁移不能在裸机实例上执行。 为了涵盖广泛的硬件，OpenStack社区利用开源技术（例如，PXE和IPMI）的参考驱动程序。 Ironic的可插拔驱动架构还允许硬件供应商编写和提供驱动程序来提高性能或补充社区驱动程序未提供的功能。
+为何提供裸机？ 以下是在云上裸机（物理服务器）的一些案例，当然有许多其它更有趣的：
+ 高性能计算集群 使用无法虚拟化的设备 数据库托管（某些数据库在hypervisor中效果不好） 单租户，专用硬件的性能，安全性，可靠性和其他监管要求 快速部署云基础架构  概念架构 下图显示了配置物理服务器期间的关系以及所有服务如何发挥作用。 （注：Ceilometer和Swift也可以和Ironic一起使用，此处未标出）
+逻辑架构 下图显示了逻辑体系结构。它显示了构成Ironic服务的基本组件，Ironic服务与其他OpenStack服务的关系以及引导实例请求导致物理服务器供应的逻辑流程。
+Ironic由以下组件构成：
+ 一个RESTful API服务，管理员或者其他服务可以通过这个服务与被管理的裸机进行交互。 一个Conductor服务，主导大部分工作。通过API服务暴露功能，Conductor和API通过RPC通信。 各种支持异构硬件的驱动。 一个消息队列。 用于存储包括Conductor状态，节点（物理服务器）和驱动程序等资源信息的数据库。  如Figure 1.2所示，用户请求通Nova API和Nova Scheduler启动Nova 计算服务的一个实例。计算服务将此请求移交给Ironic服务，在Ironic服务中，请求从Ironic API传递到Conductor，再传递给驱动程序，为用户成功配置物理服务器。 就像Nova计算服务通知诸如Glance、Neutron、Swift等不同的OpenStack服务去创建一个虚拟机实例一样，此处Ironic服务也通知相同的网络、镜像以及其他的一些服务去创建一个裸机实例。
+Ironic的关键技术 预启动执行环境（PXE） PXE是由英特尔和微软开发的Wired for Management（WfM）规范的一部分。PXE使系统的BIOS和网络接口卡（NIC）从网络而非磁盘引导计算机。Bootstrapping是系统将OS加载到本地内存以便处理器执行的过程。该功能简化了管理员的服务器部署和管理。
+动态主机配置协议（DHCP） DHCP是在IP网络上使用的标准化网络协议，用于动态分配网络配置参数，例如接口或者服务的IP地址。使用PXE，BIOS使用DHCP获取网络接口的IP地址，并找到存储网络引导程序（NBP）的服务器。
+网络引导程序（NBP） NBP相当于GRUB（GRand Unified Bootloader）或LILO（LInux LOader）—— 用于本地启动的传统加载器。像硬盘环境中的引导程序一样，NBP负责将OS内核加载到内存中，以便可以通过网络引导操作系统。
+简单文件传输协议（TFTP） TFTP是一种简单的文件传输协议，通常用于在本地环境中的机器之间自动传输配置或启动文件。在PXE环境中，TFTP使用来自DHCP服务器的信息通过网络下载NBP。
+智能平台管理接口（IPMI） IPMI是系统管理员用于计算机系统的带外管理和操作监控的标准化计算机系统接口。这是一种通过仅使用硬件的网络连接而不是操作系统来管理可能无响应或断电的系统的方法。
+Ironic部署架构 Ironic RESTful API服务用于注册Ironic将管理的硬件。云管理员通常会注册硬件，指定其属性（如MAC地址和IPMI凭证）。可以有多个API服务实例。 在Ironic中Conductor负责大部分的工作。出于安全原因，建议将Conductor服务放置在隔离的主机上，因为这是唯一需要访问数据平面和IPMI控制平面的服务。 可以有多个Conductor服务实例来支持各种类型的驱动程序，也可以管理故障转移。Conductor服务的实例应该位于不同的节点上。每个Conductor本身可以运行多个驱动器来操作异构硬件。如下图所示。 该API公开了支持的驱动程序的列表以及为其服务的指挥主机的名称。
+了解裸机部署 启动实例请求进来时会发生什么？下图说明了配置裸机实例过程中涉及的步骤。 在部署过程之前必须满足这些条件：
+ 在裸机服务节点上配置从属软件包，其中的Ironic的Conductor正在运行，如tftp-server，ipmi，syslinux等，用于裸机配置。 Nova必须配置为使用裸机服务端点，并且应将在Nova计算节点上为计算驱动程序配置使用Ironic驱动程序。 为可用的硬件创建flavor，Nova必须知道从哪个flavor启动。 要在Glance中提供的可用镜像。下面列出的是成功部署裸机所需的一些镜像类型：  bm-deploy-kernel bm-deploy-ramdisk user-image user-image-vmlinuz user-image-initrd   要通过Ironic RESTful API服务注册的硬件。  </p>
+      </div>
+      <div class="card-footer">
+        <span class="float-left">December 11, 2017</span>
+        <a
+        href="/posts/virtualization/openstack/openstack-ironic/"
+        class="float-right btn btn-outline-info btn-sm"
+        >Read</a
+        >
+      </div>
+    </div>
+  </a>
+</div>
+
+        
+          <div class="filtr-item" data-category='cloud-native,container'>
+  <a href="/posts/cloud-native/container/lxc1/" class="post-card-link">
+    <div class="card">
+      <div class="card-head">
+        <img class="card-img-top" src='/assets/images/posts/cloud-native/linux_containers.jpg'/>
+      </div>
+      <div class="card-body">
+        <h5 class="card-title">LXC介绍</h5>
+        <p class="card-text post-summary">什么是LXC？ LXC是Linux内核中拥有容器功能的用户空间接口。 通过强大的API和简单的工具，它可以让Linux用户轻松创建并管理系统或应用程序容器。
+特征 当前的LXC使用以下的内核特性来封装进程
+ Kernel namespaces (ipc, uts, mount, pid, network and user) Apparmor and SELinux profiles Seccomp policies Chroots (using pivot_root) Kernel capabilities CGroups (control groups)  LXC容器通常被认为是chroot和一个完整的虚拟机。 LXC的目标是尽可能创造一个环境 到一个标准的Linux安装，但不需要单独的内核。
+组件 LXC目前由几个单独的组件组成：
+ liblxc库 API的几种语言绑定  python3 (in-tree, long term support in 1.0.x and 2.0.x) lua (in tree, long term support in 1.0.x and 2.0.x) Go ruby python2 Haskell   一套控制容器的标准工具 分发容器模板  </p>
+      </div>
+      <div class="card-footer">
+        <span class="float-left">November 11, 2017</span>
+        <a
+        href="/posts/cloud-native/container/lxc1/"
+        class="float-right btn btn-outline-info btn-sm"
+        >Read</a
+        >
+      </div>
+    </div>
+  </a>
+</div>
+
+        
+          <div class="filtr-item" data-category='cloud-native,container'>
+  <a href="/posts/cloud-native/container/lxc0/" class="post-card-link">
+    <div class="card">
+      <div class="card-head">
+        <img class="card-img-top" src='/assets/images/posts/cloud-native/linux_containers.jpg'/>
+      </div>
+      <div class="card-body">
+        <h5 class="card-title">LXC简介</h5>
+        <p class="card-text post-summary">LXC LXC是著名的经过严格测试的底层Linux容器运行库。从2008年开始发展，现已在世界各地的关键生产环境中得到证明。其中一些核心贡献者是帮助在Linux内核中实现各种知名集装箱功能的人员。
+系统容器 LXC的主要重点是系统容器。也就是说，提供尽可能接近VM但没有运行单独内核并模拟所有硬件的开销的容器。 这是通过内核安全功能（如命名空间，强制访问控制和控制组合）实现的。
+非特权容器 非特权容器是没有任何权限运行的容器。这需要对内核中运行容器的用户名空间的支持。用户命名空间合并到主线内核之后，LXC是第一个支持非特权容器的运行库。 实质上，用户名空间隔离给定的UID和GID集合。这通过在主机上的一系列UID和GID之间建立到容器中UID和GID的不同（非特权）范围之间的映射来实现。内核将以这样一种方式转换此映射，即在容器内部，所有UID和GID按照您期望的从主机显示，而在主机上，这些UID和GID实际上是无特权的。例如，在容器内作为UID和GID 0运行的进程可能在主机上显示为UID和GID 100000。可以从相应的用户命名空间手册页中收集实现和工作细节。 由于非特权容器是一种安全增强功能，因此它们自然会受到内核强制执行的一些限制。为了提供一个功能齐全的非特权容器LXC与3个setuid代码交互：
+ lxc-user-nic（setuid帮助器创建一个veth对，并在主机上桥接它） newuidmap（从shawdow库中，设置一个uid映射） newgidmap（从shawdow库中，设置一个gid映射）  一切都是以您自己的用户身份运行，也可以作为用户拥有的uid运行。 一般来说，LXC的目标是利用内核中可用的每个安全功能。这意味着LXC的配置管理将使经验丰富的用户根据自己的需要对LXC进行复杂的调整。 有关LXC安全性的更详细的介绍可以在以下链接中找到：
+ https://linuxcontainers.org/lxc/security/  移除特权 LXC在没有正确的配置这些工具的情况下是可以运行的。只不过你这种容器的用途通常是非常有限的。这里突出两个最常见的问题：
+ 网络：没有依赖一个setuid帮助器为非特权用户设置适当的网络设备（参见LXC的lxc-user-nic二进制文件），唯一的选择是与主机共享网络命名空间。虽然原则上应该是安全的，但共享主机的网络命名空间仍然是减少隔离的一个步骤，并增加攻击向量。此外，当主机和容器共享相同的网络命名空间时，内核将拒绝任何sysfs挂接。这通常意味着容器内的init二进制文件将无法正确启动。 用户命名空间：如上所述，用户名空间是一个很大的安全性增强。但是，不依赖特权帮助者，主机上无权限的用户只能将自己的UID映射到容器中。然而，标准的POSIX系统需要65536个UID和GID来保证完整的功能。  配置 LXC通过一些简单的关键字配置，例如：
+ lxc.rootfs.path lxc.mount.entry  LXC通过使用单点命名空间配置关键字。这意味着复杂的配置关键字（如lxc.net.0）会展示各种子项，例如lxc.net.0.type，lxc.net.0.link，lxc.net.0.ipv6.address等一些更精细的配置。 LXC被用作LXD的默认运行库，LXD是容器管理程序，它暴露出设计良好且稳定的REST-api。
+内核需求 LXC在2.6.32以上的任何内核上运行。所有它需要的是一个功能C编译器。 LXC适用于提供必要内核功能的所有架构。这包括（但不限于）：
+ i686 x86_64 ppc,ppc64,ppc64le s390x armvl7,arm64  LXC至少还支持以下C标准库：
+ glibc musl bionic(Android&rsquo;s libc)  向后兼容 LXC一直专注于强大的向后兼容性。事实上，API从1.0.0版起没有被破坏。主LXC目前处于版本2。</p>
+      </div>
+      <div class="card-footer">
+        <span class="float-left">November 5, 2017</span>
+        <a
+        href="/posts/cloud-native/container/lxc0/"
+        class="float-right btn btn-outline-info btn-sm"
+        >Read</a
+        >
+      </div>
+    </div>
+  </a>
+</div>
+
+        
+          <div class="filtr-item" data-category='virtualization,sdn'>
+  <a href="/posts/virtualization/sdn/sdn-development/" class="post-card-link">
+    <div class="card">
+      <div class="card-head">
+        <img class="card-img-top" src='/assets/images/posts/virtualization/sdn.jpg'/>
+      </div>
+      <div class="card-body">
+        <h5 class="card-title">SDN发展必然</h5>
+        <p class="card-text post-summary">现在很多人认为云可能是虚拟化的终极。但是，ICT（Information Communications Technology，信息通信技术）当然还有许多要素才开始感受到虚拟化的影响，更不用说实际上被虚拟化了。网络是突出的例子。现在的首选术语是“软件定义网络”或SDN而不是V首字母缩略词，尤其是因为虚拟网络和VPN仍将存在于新的软件定义的世界，这肯定是正确的跨越所有ICT。 当光纤到桌面/家庭是可行，4G速度将很快在千兆位时，为什么我们需要虚拟化网络？开放网络基金会（ONF）刚刚两年多，已经成为了像ICT这样独立基础的领先机构，直白的说，今天的“传统网络架构不能满足企业、运营商和终端用户的需求”。即使硬件工程不断发展和进步，可是标准和协议的不足限制我们充分利用基础架构的能力。视频、图像、移动数据以及即将到来的“物联网”当然也还包括大数据的数据量可能会让因特网无法承受，这也就使得虚拟化网络变得更加重要了。基因组学、天文学、天体物理学、气象学和许多其他科学领域可以注重网络与数据量而不用管传统的分层交换架构。
+传输和控制层面 SDN的概念很简单：如果数据或业务承载层和控制层被去耦合，则以前的静态网络可以变得智能、响应、可编程和集中控制。所有这些都可以根据逻辑规则自动响应流量模式、流量类型或紧急情况。网络设备，特别是交换机和路由器，通常涉及一些来自多个制造商不同的内置的智能，通常是专有的内部代码。现在，网络工程师几乎都在抱怨虚拟机只需要点几下，几分钟就能让它运行起来，但是网络设备却要花费数十天的时间来正确配置和测试与网络的接口。 OpenFlow是ONF为SDN设置的主协议集，采用了斯坦福大学和伯克利分校开发的标准，几年前由谷歌和后来的Facebook接受。如今已经广泛采用，如果您今天订购网络交换机或路由器，交付的产品几乎肯定会具有OpenFlow兼容性内置或将提供升级。另一方面，谨慎的网络设备制造商可能没有勉强地采用SDN，因为这威胁到了其Ethernet/IP的环境。但是，他们确实认识到SDN的必然性，因为它将为从WAN到数据中心到运营商的所有功能带来明确的下一代功能。这并不是我们这些用户和单个消费者能决定的，都是市场的驱动。
+架构依赖 曾在IBM，HP和Nortel专注网络技术的专家，现任ONF执行董事Dan Pitt 说：“我们依赖于同样的网络架构，已经超过45年，其中有些仍然显示出原始Arpanet的特征。最初，互联网的目标是生存性，所有的数据都必须存在于每一个节点上，但也意味着只有这么多的数据可以存在于每一个设备上。SDN原则上满足了现在和将来的需求，这是ICT工程文化的一个全面变化，也是民主化的一个可喜的选择，使得网络本身具有可编程性和适应性。” 来自ICT部门的受访者Pitt认为，SDN将需要两三年或更多的时间，成为所有网络和软硬件运行和管理的缺省设置。“今天的例子比Google更加明显和开放，SDN已经成为了规范，并展示了应对网络上各种需求的优势。” 他提到了SDN一个大的应用场景。加州大学从教职工到学生再到安全和维护人员超过12万用户，这其中95%的人携带着自己的设备，他们高度分散。它拥有从电子邮件和文本到全动态高清视频和大数据处理几乎所有已知的数据流量和容量。这意味着它甚至比全球大多数企业面临更多的ICT复杂性和网络性能问题。Pitt说，SDN是管理所有这一切并且在整个校园提供高服务质量和满意度水平的最成功的工具。
+复杂易错 如今的网络管理起来复杂、耗时、易错而且还成本巨大。Dan Pitt 解释说,完全灵活和动态网络管理控制的简单的用户界面可以是我们的一个终极愿景。“它们将是基础设施的象征，但不需要特殊技能，我们可以预见用简单语言编写的策略和业务规则，甚至可以使用符号和图形独立的语言来控制网络中没有按照已有策略自动化的所有元素。” 思科在网络的任何发展中都很重要，作为技术领导者，同时也可能是安装系统数量最多的供应商，尤其是硬件。从概念上讲，它必然算是参与SDN运动的ONF的一个成员。思科开放网络环境被描述为一种“网络编程策略”，并在协议和行业标准中提供选择。这对于ONF来讲可能不是一个福音，但重要的一点是，在这个早期的采用阶段，行业领先的网络系统供应商是广泛共识的一部分。 思科英国和爱尔兰首席技术官Ian Foddering 说：“一年多以来，我们一直在跟客户谈论SDN。目前，我们看到ONF模式可能是控制层和数据层的经典且简单的分离，但我们相信，在真实的市场世界中，混合SDN解决方案是多数组织最适合和实际使用的方法。他们希望利用他们已经拥有的东西，但要有新的集中控制。”他坚持认为，思科致力于开放标准，并提到上个月刚刚成立的OpenDaylight联盟。该联盟处于Linux基金会之下，其中包括ONF的大部分成员，Citrix，IBM，HP，Juniper Networks，VMware 等也随着Cisco一起加入。尽管该联盟似乎将使用openFlow，但ONF本身并不是该联盟的一部分。
+发展 Foddering谈到，现实点讲，在SDN在市场上想要达到任何规模至少需要3年的时间。他相信，数据中心和云服务提供商以及一些大型全球企业将引领这一方向。“SDN将协助创建大规模可扩展的数据中心和更高水平的自动化，同时具有经济和效率方面的优势。我们最近在爱尔兰和英国进行的一项调查表明，人们对于SDN所提供的服务的了解已经到达了一种几乎让人吃惊的程度。人们知道它是什么，它将走向何处以及潜在的好处。我们都在探索如何走向SDN。” 他说，简单的使用和管理是关键，网络复杂性完全隐藏在后端。“在某些方面，SDN应该真正被称为‘用户定义的网络’，这将为网络管理带来更多的敏捷性和响应性，我们也将它视为将网络智能暴露给应用程序，再次增加了协调和自动化。更深入的网络智能被引入一类新的分析应用程序，可以促进更复杂的网络策略并支持驱动网络的业务逻辑，”Foddering说。“这最终使得网络更有价值，并且可以支持更多的创新和创收服务。”
+过去的困境 VMware的首席技术专家Joe Baguley认为：“网络在过去一直停滞不前，我们在服务器虚拟化和云计算方面取得了长足的进步，今天为新的虚拟机或应用程序的配置网络和安全性仍然是涉及人，键盘和CLI的大量的手动工作。“与ICT中的其他形式的虚拟化一样，自动化的关键是将软件从硬件中抽象出来。软件定义的数据中心的愿景是下一代ICT的核心，在这一阶段，网络是阻碍我们基础设施中几乎所有其他方面发展的障碍。 “ICT发展的总体趋势是明确的，”Baguley说。“我们正在转向一种逻辑可行且最终灵活的软件定义和控制的环境，当然了其本质还是在硬件上运行。管理一个组织中的数千台服务器必须成为编程式，并转向策略驱动的自动化，使其无论是在规模上，还是在应对不断变化的流量需求方面实现高效性和灵活性。” 他补充说，所有这些都将推进内部计算与私有云和公共云之间的关系。随着时间的推移，组织将更加清晰地建立起核心，而不是数据、应用程序和其他所有东西。SDN以及所有其他形式的虚拟化，都将能够根据组织的策略和当前的需求，实现工作负载的自由而无缝移动。“非常严格的sla和安全肯定会适用，”Baguley说，“事实上，在一个虚拟的和软件定义的ICT世界中，一些服务提供商无疑会开始根据他们的物理资产来区分他们自己。关键是，我们对公共云进行全面分析，以根据用户的策略和业务规则来处理所有工作负载。”
+炒作之后 “我们在最近几十年里清楚地看到，ICT实际上从未成熟，当然也从未停止，”Citrix的云平台组总监Damian Saunders说。 “我们可以回顾一下那些在他们的时代引起了大量炒作的新技术，并清楚地看到那些成功的技术都是建立在良好的科学基础上的。虚拟化当然是一个很好的例子，从它所运行的硬件中抽象出软件和控制。现在，作为一个行业，我们已经把这个概念带到了网络上，并且已经得到了很多相关的专业知识和技术。” Saunders是另一个相信“user defined networking” 的人，在很多方面都是一个更有意义的术语，因为SDN提供的不仅仅是虚拟化，从现在起它将把策略驱动的灵活性带到我们管理企业计算的方式中。例如，它将使更灵活的软件许可条款，并将整个基础设施变成一个可编程的平台，供用户和信息使用。我们需要为数据中心设计更多的复杂性，以及在下一代ICT中为用户呈现简单性的智能。”
+弹性能力 新时代下，弹性是一个关键的概念。Saunders说，“传统上，我们必须提前对硬件能力进行预测和计划，通常是为资产的可能生命周期做准备。当然，资源是可以增加的，但总的来说，我们总是在购买更多，而我们实际上知道我们不太可能使用这么多。“爆裂”是一个几乎不可能的概念。那是旧模式。现在，我们根据需求提供资源，如有必要就将其收回，并遵循业务和使用的正常的衰落和流动——更不用提收入了。服务条款和软件许可也可以遵循用户定义的需求和更好的条款。这都是真正的变革。” 惠普仍然是世界上最大的多产品、多服务ICT巨头之一，也同时参与了ONF和Open Daylight联盟。Bruno Hareng是惠普分管SDN的首席技术经理，他解释说，SDN是一种不可避免的回应，因为各种各样的网络都面临着各种各样的挑战，比如大数据和移动消费者和商业设备的指数需求。“传统网络面临着应用程序范围，流量类型和数据量的问题，” 他说，“我们需要将服务器，存储和网络集成到一个通用的平台中，集中智能地控制，以识别和满足所有不同和不断变化的应用程序和工作负载的需求，刚性架构不能这样做。”
+多种实现 Hareng承认，在市场上有许多不同的方法，但他说，惠普正在采用OpenFlow的定义和逻辑，在网络架构中对控制和数据层进行耦合。“这是相当通用的，允许跨ICT和电信的互操作性。在组织内部，可以采用其他方法来实现相同的SDN特性，并在基础设施中得到结果，尤其是应用程序感知和用户定义的灵活性。就像其他许多ICT一样，现实生活很可能会产生混合或融合的解决方案，我们当然还需要管理现有的网络设备。” Hareng指出了通用通信迅速成长为协作的关键元素，并在网络语音和视频造成实时需求的例子。“即使普通用户现在也能理解管理网络流量的困难，以确保通用通信的优先级和QoS。”但他们也很欣赏这种价值。SDN为应用程序提供了相同的功能，使网络能够动态地响应每个应用程序的需求。例如，已经证明了SDN已经极大地改善了Hadoop的性能。”
+家庭领域 在这里，爱尔兰的网络专家Data Edge首席技术官Paul Phelan表示,现在全球拥有基础架构和带宽，也就拥有真正利用SDN的潜力。“我们不得不花费几代技术学习我们的方式，但SDN使现在成为一个网络拥有大脑的时代。传统上，离散组件的智能有限，这样做：配置一个大路由器确实仍然是ICT中最危险的工作之一，错误和错误配置有巨大的可能性，一位数字的输入错误可能会导致整个网络丢失。” 相当正确的是，在Phelan的意见中，应用程序正在跨越ICT占据首席地位，这是一个自然而然的演进。“从某种意义上说，我们可以问为什么现在还没有发生这样的事情，但实际上近年来，已经有了一种ICT的达尔文进化，我们已经开发出了强大和成熟的技术，由于一些专有的因素输家已经走了。最近，虚拟化和相关技术已经足够强大，足以应对网络的复杂性，尤其是控制层。” 即使SDN技术尚未成为市场的主流，SDN技术已经到位并进行了良好的测试。 “自从2010年以来，Google一直在SDN上运行，OpenFlow的标准和性能和设备测试也是我们所参与的一个领域 - SDN然后提供几乎无限的灵活性和可扩展性，突发和激增？看到服务提供商和运营商按需提供带宽，竞争将同事推动软件控制能够提供性能和经济性。”</p>
+      </div>
+      <div class="card-footer">
+        <span class="float-left">October 22, 2017</span>
+        <a
+        href="/posts/virtualization/sdn/sdn-development/"
+        class="float-right btn btn-outline-info btn-sm"
+        >Read</a
+        >
+      </div>
+    </div>
+  </a>
+</div>
+
+        
+          <div class="filtr-item" data-category='cloud-native,container'>
+  <a href="/posts/cloud-native/container/install-docker-on-ubuntu/" class="post-card-link">
+    <div class="card">
+      <div class="card-head">
+        <img class="card-img-top" src='/assets/images/posts/cloud-native/docker.jpg'/>
+      </div>
+      <div class="card-body">
+        <h5 class="card-title">Ubuntu安装 Docker 社区版</h5>
+        <p class="card-text post-summary">准备 系统要求 要安装Docker CE，我们需要这些64位版本的Ubuntu：
+ Artful 17.10 (Docker CE 17.11 Edge and higher only) Zesty 17.04 Xenial 16.04 (LTS) Trusty 14.04 (LTS)  在Ubuntu x86_64、armhf、s390x（IBM Z）和ppc64le（IBM Power）架构上支持Docker CE。
+ ppc64le和s390x限制：IBM Z和Power体系结构的软件包仅在Ubuntu Xenial及更高版本上可用。
+ 卸载旧版本 老版本的Docker被称为docker或者docker-engine。如果安装了这些，请将其卸载：
+sudo apt-get remove docker docker-engine docker.io  如果apt-get报告没有安装这些软件包，则可以直接跳过这一步。
+/var/lib/docker/的内容（包括映像，容器，卷和网络）将被保留。 Docker CE包现在称为docker-ce。
+安装Docker CE 您可以根据您的需要以不同的方式安装Docker CE：
+ 大多数用户设置Docker的存储库并从中进行安装，以方便安装和升级任务。这是推荐的方法。 有些用户下载deb软件包手动安装，并完全手动管理升级。这很适合在诸如没有互联网访问的封闭系统上安装Docker。 在测试和开发环境中，有些用户选择使用自动便捷脚本来安装Docker。  使用软件仓库安装 首次在新的主机上安装Docker CE之前，需要设置Docker软件仓库。之后，您可以从该库安装和更新Docker。
+设置软件仓库   更新apt包索引：
+sudo apt-get update    安装软件包以允许apt通过HTTPS使用存储库：
+sudo apt-get install \ apt-transport-https \ ca-certificates \ curl \ software-properties-common    添加Docker的官方GPG密钥：</p>
+      </div>
+      <div class="card-footer">
+        <span class="float-left">October 22, 2017</span>
+        <a
+        href="/posts/cloud-native/container/install-docker-on-ubuntu/"
+        class="float-right btn btn-outline-info btn-sm"
+        >Read</a
+        >
+      </div>
+    </div>
+  </a>
+</div>
+
+        
+          <div class="filtr-item" data-category='virtualization,sdn'>
+  <a href="/posts/virtualization/sdn/sdn-definition/" class="post-card-link">
+    <div class="card">
+      <div class="card-head">
+        <img class="card-img-top" src='/assets/images/posts/virtualization/sdn.jpg'/>
+      </div>
+      <div class="card-body">
+        <h5 class="card-title">SDN的定义</h5>
+        <p class="card-text post-summary">SDN（Software-Defined Networking，软件定义网络）的定义 什么是SDN？ 转发层与网络控制层的物理分离以及控制多设备的控制层
+软件定义网络（SDN）是一种新兴的体系结构，具有动态，可管理性，成本效益和适应性，使其成为当今应用的高带宽，动态性能的理想选择。该架构解耦了网络控制和转发功能，使网络控制成为可直接编程的，底层基础设施将被抽象出来，用于应用和网络服务。OpenFlow®协议是构建SDN解决方案的基础元素。 SDN架构是：
+ 可直接编程：网络控制是直接可编程的，因为它与转发功能分离开来。 敏捷：来自转发的抽象控制使管理员可以动态调整网络流量，以满足不断变化的需求。 集中管理：网络智能（在逻辑上）集中在基于软件的SDN控制器中，其维护网络的全局视图，其将应用和策略引擎看作是单个逻辑交换机。 编程配置：SDN使网络管理员通过动态，自动化的SDN程序非常快速地配置，管理，保护和优化网络资源，他们可以自己编写，因为程序不依赖于专有软件。 开放标准和厂商中立：通过开放标准实现，SDN简化了网络设计和操作，因为SDN控制器提供了指令，而不是多个供应商特定的设备和协议。 ![image](https://images.weserv.nl/?url=https://www.opennetworking.org/images/stories/sdn-resources/meet-sdn/sdn-3layers.gif  计算趋势正在推动网络变革 SDN解决了传统网络的静态架构不适合当今数据中心、校园和运营商环境的动态计算和存储需求的事实。推动新网络范式需求的关键计算趋势包括：
+ 改变传输模式：通过公共和私有云通常访问地理分布式数据库和服务器的应用程序需要极其灵活的流量管理和按需访问带宽。 “消费化信息技术”：BYOD（Bring Your Own Device，携带您自己的设备）趋势需要既灵活又安全的网络。 - 云服务的兴起：用户期望按需访问应用程序，基础架构和其他IT资源。 大数据意味着更大带宽：处理今天的大型数据集需要大量的并行处理，这将加剧对额外容量和任何到任何连接的不断需求。 为了满足不断变化的计算趋势所带来的网络需求，网络设计师发现自己受到当前网络的限制： 过于复杂：添加或移动设备和实施全网络策略是复杂，耗时的，主要是手动尝试风险的服务中断，阻止网络更改。 无法缩放：链接超额订购对提供可扩展性的历史悠久的方法对于虚拟化网络中的动态流量模式是无效的，这是在整个计算池中具有大规模并行处理算法和相关数据集的服务提供商网络中更为显着的问题。 厂商依赖：冗长的供应商设备产品周期和缺乏标准的开放接口限制了网络运营商将网络定制到各自环境的能力。  </p>
+      </div>
+      <div class="card-footer">
+        <span class="float-left">October 21, 2017</span>
+        <a
+        href="/posts/virtualization/sdn/sdn-definition/"
+        class="float-right btn btn-outline-info btn-sm"
+        >Read</a
+        >
+      </div>
+    </div>
+  </a>
+</div>
+
+        
+          <div class="filtr-item" data-category='virtualization,sdn'>
+  <a href="/posts/virtualization/sdn/sdn-architecture/" class="post-card-link">
+    <div class="card">
+      <div class="card-head">
+        <img class="card-img-top" src='/assets/images/posts/virtualization/sdn.jpg'/>
+      </div>
+      <div class="card-body">
+        <h5 class="card-title">SDN架构组件</h5>
+        <p class="card-text post-summary">架构组件 以下定义并解释了各架构组件：
+SDN应用程序 SDN应用程序是通过北向接口（NBI）显式，直接和编程地将其网络要求和所需网络行为传达给SDN控制器。此外，他们可能会为了内部决策而消耗网络的抽象视图。SDN应用程序由一个_SDN应用程序逻辑_和一个或多个_NBI驱动程序_组成。SDN应用程序本身可能会暴露另一层抽象网络控制，从而通过各自的_NBI代理_提供一个或多个更高级别的NBI。
+SDN控制器 SDN控制器是一个逻辑上集中的实体，负责将SDN应用程序的要求转换为SDN数据路径，以及向SDN应用提供网络的抽象视图（可能包括统计信息和事件） 。SDN控制器由一个或多个_NBI代理_，_SDN控制逻辑_和控制层到数据层接口（CDPI）驱动器组成。作为逻辑集中式实体的定义既不规定也不排除实施细节，例如多个控制器的联合，控制器的分层连接，控制器之间的通信接口，以及虚拟化或网络资源的切片。
+SDN数据路径 SDN数据路径是一种逻辑网络设备，可以对其广告转发和数据处理功能进行可见性和无争议的控制。逻辑表示可以包括物理底物资源的全部或子集。SDN数据路径包括_CDPI代理_和一组一个或多个流量转发引擎和零个或多个流量处理功能。这些引擎和功能可能包括数据通路的外部接口或内部流量处理或终止功能之间的简单转发。一个或多个SDN数据路径可以包含在单个（物理）网络元件中——作为单元管理的通信资源的集成物理组合。SDN数据路径也可以跨多个物理网元进行定义。这种逻辑定义既不规定也不排除实现细节，例如物理映射的逻辑映射，共享物理资源的管理，SDN数据通路的虚拟化或分片，与非SDN网络的互操作性，以及数据处理功能，可以包括OSI 4-7层功能。
+控制层到数据层接口 SDN CDPI是在SDN控制器和SDN数据路径之间定义的接口，其至少提供： 1. 对所有转发操作的编程控制， 2. 能力广告， 3. 统计报告， 4. 事件通知。 SDN的一个价值在于期望CDPI以开放，供应商中立和可互操作的方式实施。
+SDN北向接口 SDN NBI是SDN应用程序和SDN控制器之间的接口，通常提供抽象网络视图，并能够直接表达网络行为和要求。这可能发生在任何抽象级别（纬度）和不同功能集（经度）之间。SDN的一个价值在于期望这些接口以开放，供应商中立和可互操作的方式实现。</p>
+      </div>
+      <div class="card-footer">
+        <span class="float-left">October 21, 2017</span>
+        <a
+        href="/posts/virtualization/sdn/sdn-architecture/"
+        class="float-right btn btn-outline-info btn-sm"
+        >Read</a
+        >
+      </div>
+    </div>
+  </a>
+</div>
+
+        
+          <div class="filtr-item" data-category='virtualization,sdn'>
+  <a href="/posts/virtualization/sdn/openflow/" class="post-card-link">
+    <div class="card">
+      <div class="card-head">
+        <img class="card-img-top" src='/assets/images/posts/virtualization/openflow.png'/>
+      </div>
+      <div class="card-body">
+        <h5 class="card-title">OpenFlow简介</h5>
+        <p class="card-text post-summary">OpenFlow 来源于维基百科——自由百科全书 OpenFlow 是一种通信协议，可以通过网络访问网络交换机或路由器的转发平面。
+描述 OpenFlow允许网络控制器确定网络交换机网络的路径。控制器与交换机不同。 控制与转发的分离允许使用可行的比访问控制列表（ACL）和路由协议更复杂的流量管理。 此外，OpenFlow允许使用单一的开放协议远程管理来自不同供应商的交换机（通常每个都有自己的专有接口和脚本语言）。 协议的发明人认为OpenFlow是软件定义网络（SDN）的推动者。 OpenFlow允许通过添加，修改和删除数据包匹配规则和操作来远程管理第3层交换机的数据包转发表。 这样，路由决策可以由控制器定期或临时进行，并转换成具有可配置寿命的规则和动作， 然后将其部署到交换机的流表中，以匹配的速度将匹配的分组实际转发到交换机这些规则的持续时间。 由交换机无法匹配的数据包可以转发给控制器。 然后，控制器可以决定修改一个或多个交换机上的现有流表规则，或者部署新的规则，以防止交换机与控制器之间的流量结构性流动。 它甚至可以决定转发流量本身，只要它告诉交换机转发整个数据包，而不是只是他们的header。 OpenFlow协议分层在传输控制协议（TCP）之上，并规定了传输层安全性（TLS）的使用。 控制器应该在TCP端口6653上侦听想要建立连接的交换机。 早期版本的OpenFlow协议非官方使用端口6633.
+历史 开放网络基金会（ONF） 是一个致力于促进和采用软件定义网络（SDN） 的用户主导的组织， ONF将OpenFlow定义为在SDN架构的控制层和转发层之间定义的第一个标准通信接口。 OpenFlow允许直接访问和操纵诸如交换机和路由器的网络设备的转发平面，包括物理设备和虚拟设备（基于虚拟机管理程序）。 没有一个开放接口的转发平台，导致了如今的网络设备的现状，如单一，封闭和专用。 需要像OpenFlow这样的协议，将网络控制从专有网络交换机转移到开源和本地管理的控制软件。 许多网络交换机和路由器供应商已经宣布意图支持或正在运送支持OpenFlow的交换机， 包括阿尔卡特朗讯, 大交换机网络， 博科通信， Radisys， Arista Networks， Pica8，NoviFlow， 华为，思科， 戴尔EMC，Extreme Networks， IBM，瞻博网络， Digisol， Larch Networks，Hewlett-Packard， NEC和MikroTik。 一些网络控制平面实现使用协议来管理网络转发元素。OpenFlow主要用于安全通道上的交换机和控制器之间。 有关OpenFlow相关产品的相当全面的列表可以在ONF网站和SDNCentral网站上找到。</p>
+      </div>
+      <div class="card-footer">
+        <span class="float-left">October 11, 2017</span>
+        <a
+        href="/posts/virtualization/sdn/openflow/"
+        class="float-right btn btn-outline-info btn-sm"
+        >Read</a
+        >
+      </div>
+    </div>
+  </a>
+</div>
+
+        
+        
+      </div>
+      
+    </div>
+  </div>
+
+    </div>
+
+    <footer class="container-fluid text-center align-content-center footer pb-2">
+  <div class="container pt-5">
+    <div class="row text-left">
+      <div class="col-md-4 col-sm-12">
+        <h5>导航</h5>
+        
+        <ul>
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#about">关于</a>
+            </li>
+            
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#skills">技能</a>
+            </li>
+            
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#experiences">经历</a>
+            </li>
+            
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#projects">项目</a>
+            </li>
+            
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#recent-posts">最近文章</a>
+            </li>
+            
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#achievements">成就</a>
+            </li>
+            
+        </ul>
+        
+
+      </div>
+      <div class="col-md-4 col-sm-12">
+        <h5>联系我</h5>
+        <ul>
+          
+          <li><span>电话: </span> <span>&#43;8619980414909</span></li>
+          
+          <li><span>邮箱: </span> <span>jerry@mydream.ink</span></li>
+          
+        </ul>
+      </div>
+      <div class="col-md-4 col-sm-12">
+        
+        <p>接收最新的邮件通知</p>
+        <form>
+          <div class="form-group">
+            <input
+              type="email"
+              class="form-control"
+              id="exampleInputEmail1"
+              aria-describedby="emailHelp"
+              placeholder="输入邮箱"
+            />
+            <small id="emailHelp" class="form-text text-muted"
+              >你的邮件地址不会被共享给他人</small
+            >
+          </div>
+          <button type="submit" class="btn btn-info">提交</button>
+        </form>
+      </div>
+    </div>
+  </div>
+  <hr />
+  <div class="container">
+    <div class="row text-left">
+      <div class="col-md-4">
+        <a id="theme" href="/" target="#">
+          <img src="/assets/images/logo-inverted.png">青云卷</a>
+      </div>
+      <div class="col-md-4"><a href="https://beian.miit.gov.cn">蜀ICP备 2021017630号-1</a>© 2021 Copyright.</div>
+    </div>
+  </div>
+</footer>
+
+    <script src="/assets/js/jquery-3.4.1.min.js"></script>
+<script src="/assets/js/bootstrap.min.js"></script>
+
+<script src="/assets/js/navbar.js"></script>
+<script src="/assets/js/jquery.filterizr.min.js"></script>
+
+
+    
+    
+    <script src="/assets/js/list.js"></script>
+
+  </body>
+</html>

@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>tls on 青云卷</title>
+    <link>https://mydream.ink/tags/tls/</link>
+    <description>Recent content in tls on 青云卷</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh-cn</language>
+    <lastBuildDate>Sat, 09 Nov 2019 08:49:39 +0800</lastBuildDate><atom:link href="https://mydream.ink/tags/tls/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>使用 cert-manager 自动管理 tls 证书</title>
+      <link>https://mydream.ink/posts/cloud-native/kubernetes/use-cert-manager-in-kubernetes/</link>
+      <pubDate>Sat, 09 Nov 2019 08:49:39 +0800</pubDate>
+      
+      <guid>https://mydream.ink/posts/cloud-native/kubernetes/use-cert-manager-in-kubernetes/</guid>
+      <description>http 协议是一个全明文传输的协议，不加任何处理的 http 报文将在因特网中裸奔，只要有人对监听你的报文，你所有隐私将被人一览无余。Let’s Encrypt 是一家免费、开放、自动化的证书颁发机构（CA），为公众的利益而运行。它是一项由 Internet Security Research Group（ISRG）提供的服务。本着想要创建一个更安全，更尊重隐私的 Web 环境的初衷，Let’s Encrypt 以尽可能对用户友好的方式免费提供为网站启用 HTTPS（SSL/TLS）所需的数字证书。
+但是 Let’s Encrypt 颁发的证书有个特点，有效期只有三个月。这意味着我们需要频繁续期证书，倘若手动续期，无疑会增加运维成本。有什么方式可以为我们自动颁发证书吗？当然有！ACME 无疑就是我们的最佳选择。
+有一款很好用的 ACME 客户端叫 Certbot，可以帮助自动颁发、续期证书。在 kubernetes 的生态中有没有什么好的工具能帮助我们非常方便地使用证书么？当然有，那就是本期主题——cert-manager。
+cert-manager 是本地 Kubernetes 证书管理控制器。它可以帮助从各种来源颁发证书，例如 Let&amp;rsquo;s Encrypt，HashiCorp Vault，Venafi，简单的签名密钥对或自签名。它将确保证书有效并且是最新的，并在到期前尝试在配置的时间续订证书。
+原理比较简单，本文就不讲了，主要谈谈来安装和使用。
+安装 YAML 安装   创建 namespace
+kubectl create namespace cert-manager   安装 crd 和 cert-manager
+kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/v0.11.0/cert-manager.yaml  值得说明的是：在 kubernetes 1.15 以前的版本需要在执行kubectl apply时添加一个参数--validate=false，否则在创建 CustomResourceDefinition 资源时会收到与 x-kubernetes-preserve-unknown-fields 字段有关的验证错误。
+   helm 安装 依次执行下述命令：</description>
+    </item>
+    
+  </channel>
+</rss>

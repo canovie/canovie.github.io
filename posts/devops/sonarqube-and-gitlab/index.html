@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>自动化运维之自动构建</title>
+    <meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta http-equiv="X-UA-Compatible" content="ie=edge" />
+
+
+<link rel="stylesheet" href="/assets/css/bootstrap.min.css" />
+<link rel="stylesheet" href="/assets/css/style.css" />
+<link rel="stylesheet" href="/assets/css/navbar.css" />
+
+
+<link href="https://fonts.googleapis.com/css2?family=Muli:wght@300;400;500;600" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" />
+
+
+<link rel="icon" type="image/png" href="/assets/images/favicon.png" />
+
+
+    
+<link
+  rel="stylesheet"
+  href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/styles/atom-one-dark.min.css"
+/>
+<link rel="stylesheet" href="/assets/css/single.css" />
+
+
+    
+    
+      
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'UA-142765126-1', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+
+    
+  </head>
+
+  <body>
+    <div class="container-fluid bg-dimmed wrapper">
+      
+      
+    <nav class="navbar navbar-expand-lg top-navbar final-navbar shadow">
+    <div class="container">
+      <a class="navbar-brand" href="/posts">
+        <img src="/assets/images/logo.png">青云卷</a>
+      <button class="navbar-toggler navbar-light" type="button" >
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <div class="collapse navbar-collapse" id="top-nav-items">
+        <ul class="navbar-nav ml-auto">
+        </ul>
+      </div>
+    </div>
+</nav>
+
+
+
+      
+      
+<div class="container p-0 read-area">
+  
+  <div class="hero-area col-sm-12" style='background-image: url(https://mydream.ink/assets/images/posts/devops/sonarqube.png);'>
+  </div>
+
+  
+  <div class="page-content">
+    <div class="author-profile ml-auto align-self-lg-center">
+      <img class="rounded-circle" src='/assets/images/portrait.jpg'/>
+      <h5 class="author-name">Jerry Chan</h5>
+      <p>November 9, 2019</p>
+    </div>
+
+    <div class="title">
+      <h1>自动化运维之自动构建</h1>
+    </div>
+
+    <div class="post-content" id="post-content">
+      <h2 id="版本说明">版本说明</h2>
+<ul>
+<li>gitlab: 11.4.5</li>
+<li>sonarqube: 8.0-community-beta</li>
+<li>helm: v3.0.0-rc.2</li>
+<li><a href="https://github.com/gabrie-allaigre/sonar-gitlab-plugin">sonar-gitlab-plugin</a>: <a href="https://github.com/gabrie-allaigre/sonar-gitlab-plugin/releases/download/4.1.0-SNAPSHOT/sonar-gitlab-plugin-4.1.0-SNAPSHOT.jar">4.1.0-SNAPSHOT</a></li>
+<li><a href="https://github.com/helm/charts/tree/master/stable/sonarqube">chart</a>: 3.2.2</li>
+</ul>
+<h2 id="预处理">预处理</h2>
+<ul>
+<li>可用的 ingress controller</li>
+<li>域名：确保对应的域名<code>sonar.example.com</code> 能够访问到 ingress</li>
+<li>已经有 gitlab，并且配置好了一个全局可用的 Kubernetes 环境的 runner</li>
+</ul>
+<h2 id="安装-sonarqube">安装 sonarqube</h2>
+<p>没有已经存在的数据库用于相关数据存取，所以在安装 sonarqube 的同时，还将根据依赖安装 postgresql。</p>
+<h3 id="自定义变量">自定义变量</h3>
+<p>进入<code>stable/sonarqube</code>，创建 custom.yaml 文件：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#f92672">image</span>:
+  <span style="color:#f92672">tag</span>: <span style="color:#ae81ff">8.0</span>-<span style="color:#ae81ff">community-beta</span>
+<span style="color:#f92672">ingress</span>:
+  <span style="color:#f92672">enabled</span>: <span style="color:#66d9ef">true</span>
+  <span style="color:#f92672">hosts</span>:
+    - <span style="color:#f92672">name</span>: <span style="color:#ae81ff">sonar.example.com</span>
+  <span style="color:#f92672">annotations</span>:
+    <span style="color:#f92672">kubernetes.io/ingress.class</span>: <span style="color:#ae81ff">nginx</span> <span style="color:#75715e"># 选择指定的 ingress controller</span>
+    <span style="color:#f92672">cert-manager.io/cluster-issuer</span>: <span style="color:#ae81ff">letsencrypt-stagging</span> <span style="color:#75715e"># 使用提前创建好的可用的 Issue/ClusterIssue</span>
+    <span style="color:#f92672">acme.cert-manager.io/http01-edit-in-place</span>: <span style="color:#e6db74">&#34;true&#34;</span> <span style="color:#75715e"># 颁发证书时依托原原有的 ingress 而不新建</span>
+  <span style="color:#f92672">tls</span>:
+  - <span style="color:#f92672">hosts</span>:
+    - <span style="color:#ae81ff">sonar.example.com</span>
+    <span style="color:#f92672">secretName</span>: <span style="color:#ae81ff">sonar-tls</span>
+
+<span style="color:#f92672">persistence</span>:
+  <span style="color:#f92672">enabled</span>: <span style="color:#66d9ef">true</span>
+  <span style="color:#f92672">accessMode</span>: <span style="color:#ae81ff">ReadWriteOnce</span>
+  <span style="color:#f92672">size</span>: <span style="color:#ae81ff">10Gi</span>
+
+<span style="color:#f92672">plugins</span>:
+  <span style="color:#f92672">install</span>: <span style="color:#75715e"># 预装 sonar-gitlab-plugin 插件</span>
+  - <span style="color:#e6db74">&#34;https://github.com/gabrie-allaigre/sonar-gitlab-plugin/releases/download/4.1.0-SNAPSHOT/sonar-gitlab-plugin-4.1.0-SNAPSHOT.jar&#34;</span>
+<span style="color:#f92672">postgresql</span>:
+  <span style="color:#f92672">enabled</span>: <span style="color:#66d9ef">true</span>
+  <span style="color:#f92672">postgresUser</span>: <span style="color:#e6db74">&#34;sonar&#34;</span> <span style="color:#75715e"># 供 sonarqube 的 JDBC 使用</span>
+  <span style="color:#f92672">postgresqlUsername</span>: <span style="color:#e6db74">&#34;sonar&#34;</span> <span style="color:#75715e"># postgresql chart</span>
+  <span style="color:#f92672">postgresPassword</span>: <span style="color:#e6db74">&#34;pg-pass&#34;</span> <span style="color:#75715e"># 供 sonarqube 的 JDBC 使用</span>
+  <span style="color:#f92672">postgresqlPassword</span>: <span style="color:#e6db74">&#34;pg-pass&#34;</span> <span style="color:#75715e"># postgresql chart</span>
+  <span style="color:#f92672">postgresDatabase</span>: <span style="color:#e6db74">&#34;sonar&#34;</span> <span style="color:#75715e"># 供 sonarqube 的 JDBC 使用</span>
+  <span style="color:#f92672">postgresqlDatabase</span>: <span style="color:#e6db74">&#34;sonar&#34;</span> <span style="color:#75715e"># postgresql chart</span>
+</code></pre></div><blockquote>
+<p>注：如上配置，由于国内访问 <a href="https://kubernetes-charts.storage.googleapis.com/">https://kubernetes-charts.storage.googleapis.com/</a> 时会存在困难，此处我直接将 postgresql 的 chart 软链到了 sonarqube 的 charts 目录下，省去了依赖安装的步骤，但由此带来的问题是版本配置的不兼容。为了兼容，同一配置出现了两个配置项，为了能够正常使用，不得不确保相同配置项的一致性。</p>
+</blockquote>
+<h3 id="依赖软链">依赖软链</h3>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">mkdir charts
+cd charts
+ln -s ../../postgresql ../../mysql . <span style="color:#75715e"># 虽然 mysql 没用上，但由于在 requirements.yaml 中存在也一并处理了</span>
+cd ..
+</code></pre></div><h3 id="helm-安装">helm 安装</h3>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">helm install -g -n kube-public -f custom.yaml . <span style="color:#75715e"># 此处使用的是 helm3</span>
+</code></pre></div><h3 id="检测安装">检测安装</h3>
+<ol>
+<li>
+<p>证书是否颁发成功</p>
+<pre><code>kubectl -n kube-public get certificate sonar-tls
+</code></pre><p>READY 如果为 true 的话说明证书颁发成功</p>
+</li>
+<li>
+<p>检测服务是否可用</p>
+<p>这有两种方式，一个是看 pod 是否为 ready 状态；另一个是看 svc 是否有对应的 endpoint。具体要根据 helm 部署的 release 的名字来看。</p>
+</li>
+<li>
+<p>检测没有问题后，可以在浏览器中输入域名试一下。</p>
+</li>
+</ol>
+<h2 id="配置">配置</h2>
+<h3 id="gitlab-配置">gitlab 配置</h3>
+<p>登入 sonarqube 系统，依次点击 <code>Administration</code> -&gt; <code>Configuration</code> -&gt; <code>General Settings</code> -&gt; <code>Gitlab</code></p>
+<h4 id="配置项">配置项</h4>
+<ul>
+<li>
+<p>GitLab url</p>
+<p>例如：gitlab.example.com</p>
+</li>
+<li>
+<p>GitLab User Token</p>
+<ol>
+<li>
+<p>登入 gitlab 系统，依次点击<code>右上角头像</code> -&gt; <code>Settings</code> -&gt; <code>Access Tokens</code></p>
+</li>
+<li>
+<p><code>Scopes</code> 勾选 <code>api</code>，<code>Name</code>随便填，点击<code>Create personal access tokens</code>即可创建。</p>
+<p><img src="/assets/images/posts/devops/get-access-token.png" alt="Get Access Token"></p>
+</li>
+<li>
+<p>将复制好的 Token 填入。</p>
+</li>
+</ol>
+</li>
+<li>
+<p>Global template</p>
+<p>对于 commit 的评论分为全局评论和行内评论，该配置项为全局评论设定模版，模板有多种方式，可参照<a href="https://github.com/gabrie-allaigre/sonar-gitlab-plugin/tree/master/templates/global">全局配置</a>。</p>
+</li>
+<li>
+<p>Inline template</p>
+<p>这个配置项为行内评论设置模板，具体配置可参照<a href="https://github.com/gabrie-allaigre/sonar-gitlab-plugin/tree/master/templates/inline">行内配置</a>。</p>
+</li>
+</ul>
+<h3 id="中文配置可选">中文配置（可选）</h3>
+<p>登入 sonarqube 系统，依次点击 <code>Administration</code> -&gt; <code>Marketplace</code>，搜索<code>chinese</code>，可以找到一款名为<code>Chinese Pack</code>的插件，点击<code>install</code>安装。</p>
+<p><img src="/assets/images/posts/devops/reboot-after-install-plugins.png" alt="Reboot after intsll plugins"></p>
+<p>插件下载完成后会进入 pending 状态，这时需要如图所示点击重启。</p>
+<blockquote>
+<p>注：安装所有插件都需要重启生效，重启时，正在进行的分析会停止。</p>
+</blockquote>
+<h3 id="编程语言插件">编程语言插件</h3>
+<p>这个必须正确安装才能进行代码分析，同样是在<code>Marketplace</code>中进行安装，但凡语言组件会有一个<code>LANGUAGES</code>的标签，这需要根据自己代码的实际情况酌情安装。常见的有：</p>
+<ul>
+<li>SonarJS</li>
+<li>SonarJava</li>
+<li>SonarPython</li>
+<li>SonarGo</li>
+<li>SonarHTML</li>
+<li>SonarCSS</li>
+<li>&hellip;</li>
+</ul>
+<p>部分语言社区版是不支持的，如：SQL、C 等等</p>
+<h2 id="使用">使用</h2>
+<p>由于我们是非 Java 项目，所以使用 <a href="http://sonar.test.weike.fm/documentation/analysis/scan/sonarscanner/">SonarScanner</a>。</p>
+<p><code>sonar-scanner</code>命令有三种配置方式：环境变量、命令行参数、配置文件。</p>
+<ul>
+<li>环境变量——我所知道的环境变量有两个：<code>SONAR_TOKEN</code>的<code>SONAR_HOST_URL</code>，但在使用插件的时候，环境变量有坑，所以不建议使用，后面会提到；</li>
+<li>命令行参数——可以定义和配置文件一样的配置，一些敏感或可变的配置项可以采用这种方式注入；</li>
+<li>配置文件——分为全局配置文件和项目配置文件，容器环境中，一般不使用全局配置。推荐配置一些常规又繁琐基本不会改变的项。</li>
+</ul>
+<h3 id="示例httpsgithubcomsonarsourcesonar-scanning-examples"><a href="https://github.com/SonarSource/sonar-scanning-examples">示例</a>：</h3>
+<ol>
+<li>
+<p>下载示例代码：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">git clone https://github.com/SonarSource/sonar-scanning-examples
+</code></pre></div></li>
+<li>
+<p>在 gitlab 中创建 sonar-scanning-examples 项目:</p>
+<ul>
+<li>
+<p>确保 runner 可用</p>
+</li>
+<li>
+<p>为 runner 配置好 values，也就是环境变量</p>
+<ul>
+<li>
+<p><code>PRIVATE_TOKEN</code>，也就是<code>Gitlab User Token</code></p>
+</li>
+<li>
+<p><code>SONAR_TOKEN</code>，需要在 sonarqube 控制台创建</p>
+<p>点击<code>Administration</code> -&gt; <code>Security</code> -&gt; <code>Users</code>，在此处为指定用户生成 Token</p>
+<p><img src="/assets/images/posts/devops/generate-token.png" alt="Generate Token"></p>
+</li>
+<li>
+<p><code>SONAR_HOST_URL</code>，sonarqube 的地址</p>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<p>添加 .gitlab-ci.yml 文件</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">cd sonarqube-scanner
+cat &gt; .gitlab-ci.yml <span style="color:#e6db74">&lt;&lt; EOF
+</span><span style="color:#e6db74">stages:
+</span><span style="color:#e6db74">  - quality
+</span><span style="color:#e6db74">
+</span><span style="color:#e6db74">sast:
+</span><span style="color:#e6db74">  image:
+</span><span style="color:#e6db74">    name: sonarsource/sonar-scanner-cli:latest
+</span><span style="color:#e6db74">    entrypoint: [&#34;&#34;]
+</span><span style="color:#e6db74">  stage: quality
+</span><span style="color:#e6db74">  script:
+</span><span style="color:#e6db74">    - sonar-scanner -Dsonar.gitlab.commit_sha=$CI_COMMIT_SHA -Dsonar.gitlab.ref_name=$CI_COMMIT_REF_NAME -Dsonar.gitlab.project_id=$CI_PROJECT_ID -Dsonar.login=$SONAR_TOKEN -Dsonar.gitlab.user_token=$PRIVATE_TOKEN
+</span><span style="color:#e6db74">  only:
+</span><span style="color:#e6db74">    - merge_requests
+</span><span style="color:#e6db74">    - branches
+</span><span style="color:#e6db74">EOF</span>
+</code></pre></div></li>
+<li>
+<p>提交代码</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">git init
+git remote add origin git@gitlab.example.com/examples/sonar-scanning-examples
+git add .
+git commit -m <span style="color:#e6db74">&#34;Initial commit&#34;</span>
+git push -u origin master
+</code></pre></div></li>
+<li>
+<p>查看效果</p>
+<p><strong>行内注释</strong></p>
+<p><img src="/assets/images/posts/devops/inline-comment.png" alt="行内注释"></p>
+<p><strong>全局注释</strong></p>
+<p><img src="/assets/images/posts/devops/global-comment.png" alt="全局注释"></p>
+<p><strong>sonarqube 控制台列表</strong></p>
+<p><img src="/assets/images/posts/devops/sonarqube-items.png" alt="sonarqube 控制台列表"></p>
+<p><strong>sonarqube 控制台详情</strong></p>
+<p><img src="/assets/images/posts/devops/sonarqube-detail.png" alt="sonarqube 控制台详情"></p>
+</li>
+</ol>
+<h2 id="那些坑">那些坑</h2>
+<ol>
+<li><code>sonar-scanner</code>在使用环境变量<code>SONAR_TOKEN</code>的时候似乎存在问题，所以后来我是在命令行中使用的该变量</li>
+<li>gitlab 的 token 在 sonarqube 控制台中的配置似乎并没有效果，我在实际使用<code>sonar-scanner</code>的过程中还需要再次配置</li>
+<li><code>sonar-gitlab-plugin</code>插件版本不对，起初用的<code>4.0.0</code>的版本，会报一个奇怪的错误，换了<code>4.1.0-SNAPSHOT</code>后，问题得到了解决</li>
+</ol>
+
+    </div>
+
+    
+    
+      <div class="btn-improve-page">
+          <a href="https://github.com/alphajc/mysite/edit/master/content/posts/devops/sonarqube-and-gitlab.md">
+            <i class="fas fa-code-branch"></i>
+            Improve This Page
+          </a>
+      </div>
+    
+
+    
+  <hr />
+    <div class="row next-prev-navigator">
+
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    
+      
+      <div class="col-md-6 previous-article">
+        <a href="/posts/cloud-native/kubernetes/use-cert-manager-in-kubernetes/" class="btn btn-outline-info">
+          <span><i class="fas fa-chevron-circle-left"></i> 上一篇</span>
+          <br />
+          <span>使用 cert-manager 自动管理 tls 证书</span>
+        </a>
+      </div>
+      
+    
+    
+      
+        
+        
+          
+              
+          
+        
+        <div class="col-md-6 next-article">
+          <a href="/posts/middleware/zookeeper/deploy-zookeeper-observer-across-vpc/" class="btn btn-outline-info">
+            <span>下一篇 <i class="fas fa-chevron-circle-right"></i></span>
+            <br />
+            <span>跨 VPC 部署 zookeeper observer</span>
+          </a>
+        </div>
+      
+    
+  
+
+  
+
+  
+
+  
+
+  
+
+</div>
+
+  <hr />
+  
+  
+      <div id="disqus_thread"></div>
+<script type="text/javascript">
+  (function () {
+    
+    
+    if (window.location.hostname == "localhost") return;
+
+    var dsq = document.createElement("script");
+    dsq.type = "text/javascript";
+    dsq.async = true;
+    var disqus_shortname = "mydream-ink";
+    dsq.src = "//" + disqus_shortname + ".disqus.com/embed.js";
+    (
+      document.getElementsByTagName("head")[0] ||
+      document.getElementsByTagName("body")[0]
+    ).appendChild(dsq);
+  })();
+</script>
+<noscript
+  >请开启 JavaScript 功能
+  <a href="https://disqus.com/?ref_noscript"
+    >comments powered by Disqus.</a
+  ></noscript
+>
+<a href="https://disqus.com/" class="dsq-brlink"
+  >通过 <span class="logo-disqus">Disqus</span> 评论</a
+>
+
+  
+</div>
+
+    </div>
+
+    <footer class="container-fluid text-center align-content-center footer pb-2">
+  <div class="container pt-5">
+    <div class="row text-left">
+      <div class="col-md-4 col-sm-12">
+        <h5>导航</h5>
+        
+        <ul>
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#about">关于</a>
+            </li>
+            
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#skills">技能</a>
+            </li>
+            
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#experiences">经历</a>
+            </li>
+            
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#projects">项目</a>
+            </li>
+            
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#recent-posts">最近文章</a>
+            </li>
+            
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#achievements">成就</a>
+            </li>
+            
+        </ul>
+        
+
+      </div>
+      <div class="col-md-4 col-sm-12">
+        <h5>联系我</h5>
+        <ul>
+          
+          <li><span>电话: </span> <span>&#43;8619980414909</span></li>
+          
+          <li><span>邮箱: </span> <span>jerry@mydream.ink</span></li>
+          
+        </ul>
+      </div>
+      <div class="col-md-4 col-sm-12">
+        
+        <p>接收最新的邮件通知</p>
+        <form>
+          <div class="form-group">
+            <input
+              type="email"
+              class="form-control"
+              id="exampleInputEmail1"
+              aria-describedby="emailHelp"
+              placeholder="输入邮箱"
+            />
+            <small id="emailHelp" class="form-text text-muted"
+              >你的邮件地址不会被共享给他人</small
+            >
+          </div>
+          <button type="submit" class="btn btn-info">提交</button>
+        </form>
+      </div>
+    </div>
+  </div>
+  <hr />
+  <div class="container">
+    <div class="row text-left">
+      <div class="col-md-4">
+        <a id="theme" href="/" target="#">
+          <img src="/assets/images/logo-inverted.png">青云卷</a>
+      </div>
+      <div class="col-md-4"><a href="https://beian.miit.gov.cn">蜀ICP备 2021017630号-1</a>© 2021 Copyright.</div>
+    </div>
+  </div>
+</footer>
+
+    <script src="/assets/js/jquery-3.4.1.min.js"></script>
+<script src="/assets/js/bootstrap.min.js"></script>
+
+<script src="/assets/js/navbar.js"></script>
+<script src="/assets/js/jquery.filterizr.min.js"></script>
+
+
+    
+    
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/highlight.min.js"></script>
+<script src="/assets/js/single.js"></script>
+<script>
+  hljs.initHighlightingOnLoad();
+</script>
+
+
+  </body>
+</html>

@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>git on 青云卷</title>
+    <link>https://mydream.ink/tags/git/</link>
+    <description>Recent content in git on 青云卷</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh-cn</language>
+    <lastBuildDate>Sun, 11 Aug 2019 16:29:00 +0800</lastBuildDate><atom:link href="https://mydream.ink/tags/git/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>修改 Git 的历史提交</title>
+      <link>https://mydream.ink/posts/tools/modify-the-history-commit-of-git/</link>
+      <pubDate>Sun, 11 Aug 2019 16:29:00 +0800</pubDate>
+      
+      <guid>https://mydream.ink/posts/tools/modify-the-history-commit-of-git/</guid>
+      <description>现在工作生活中，基本都使用 Git 用作代码的版本控制。我们应该为自己的每次 commit 提供一个合理的 log，以让自己或其他开发者明白对应的 commit 都干了些什么，但有时我们不可避免地会出错，然后就需要修改某些该死的提交。我们大可以新建一个 commit 来干这个事情，但这对于有洁癖的我来讲实在太 low 了，也不利于代码维护。Git 作为一个强大的工具，当然有解决办法啦，下面就让我们来一起探讨该如何修改过去的提交。
+环境说明 我这里有一个 git 项目，进行过 3 次代码提交，日志如下：
+commit 5ae91d0efae757087386c0c4b80e660e97627d22 (HEAD -&amp;gt; master) Author: Jerry Chan &amp;lt;jerry@mydream.ink&amp;gt; Date: Sun Aug 11 20:04:43 2019 +0800 third commit commit 6df839cab26ce48a561192933dc28c0d9fe302db Author: Jerry Chan &amp;lt;jerry@mydream.ink&amp;gt; Date: Sun Aug 11 19:57:46 2019 +0800 second commit commit 61aa39cfbcbab89d8e0d44c03f01f65402bd20e6 Author: Jerry Chan &amp;lt;jerry@mydream.ink&amp;gt; Date: Sun Aug 11 19:56:23 2019 +0800 fist commit   第一次，提交的时候我建了个文件test.txt，并写了一行内容：</description>
+    </item>
+    
+  </channel>
+</rss>

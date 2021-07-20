@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>云原生 on 青云卷</title>
+    <link>https://mydream.ink/categories/%E4%BA%91%E5%8E%9F%E7%94%9F/</link>
+    <description>Recent content in 云原生 on 青云卷</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh-cn</language>
+    <lastBuildDate>Sat, 27 Jul 2019 21:56:03 +0800</lastBuildDate><atom:link href="https://mydream.ink/categories/%E4%BA%91%E5%8E%9F%E7%94%9F/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Docker 背后的内核知识——cgroups 资源限制</title>
+      <link>https://mydream.ink/archive/docker-kernel-knowledge-cgroups-resource-isolation/</link>
+      <pubDate>Sat, 27 Jul 2019 21:56:03 +0800</pubDate>
+      
+      <guid>https://mydream.ink/archive/docker-kernel-knowledge-cgroups-resource-isolation/</guid>
+      <description>上一篇中，我们了解了 Docker 背后使用的资源隔离技术 namespace，通过系统调用构建一个相对隔离的 shell 环境，也可以称之为一个简单的“容器”。本文我们则要开始讲解另一个强大的内核工具——cgroups。他不仅可以限制被 namespace 隔离起来的资源，还可以为资源设置权重、计算使用量、操控进程启停等等。在介绍完基本概念后，我们将详细讲解 Docker 中使用到的 cgroups 内容。希望通过本文，让读者对 Docker 有更深入的了解。
+1. cgroups 是什么 cgroups（Control Groups）最初叫 Process Container，由 Google 工程师（Paul Menage 和 Rohit Seth）于 2006 年提出，后来因为 Container 有多重含义容易引起误解，就在 2007 年更名为 Control Groups，并被整合进 Linux 内核。顾名思义就是把进程放到一个组里面统一加以控制。官方的定义如下 { 引自：https://www.kernel.org/doc/Documentation/cgroups/cgroups.txt }：
+ cgroups 是 Linux 内核提供的一种机制，这种机制可以根据特定的行为，把一系列系统任务及其子任务整合（或分隔）到按资源划分等级的不同组内，从而为系统资源管理提供一个统一的框架。
+ 通俗的来说，cgroups 可以限制、记录、隔离进程组所使用的物理资源（包括：CPU、memory、IO 等），为容器实现虚拟化提供了基本保证，是构建 Docker 等一系列虚拟化管理工具的基石。
+对开发者来说，cgroups 有如下四个有趣的特点：
+ cgroups 的 API 以一个伪文件系统的方式实现，即用户可以通过文件操作实现 cgroups 的组织管理。 cgroups 的组织管理操作单元可以细粒度到线程级别，用户态代码也可以针对系统分配的资源创建和销毁 cgroups，从而实现资源再分配和管理。 所有资源管理的功能都以“subsystem（子系统）”的方式实现，接口统一。 子进程创建之初与其父进程处于同一个 cgroups 的控制组。  本质上来说，cgroups 是内核附加在程序上的一系列钩子（hooks），通过程序运行时对资源的调度触发相应的钩子以达到资源追踪和限制的目的。</description>
+    </item>
+    
+    <item>
+      <title>docker 容器网络方案：calico 网络模型</title>
+      <link>https://mydream.ink/archive/docker-calico-network/</link>
+      <pubDate>Thu, 18 Jul 2019 06:57:59 +0800</pubDate>
+      
+      <guid>https://mydream.ink/archive/docker-calico-network/</guid>
+      <description>calico 简介 calico 是容器网络的又一种解决方案，和其他虚拟网络最大的不同是，它没有采用 overlay 网络做报文的转发，提供了纯 3 层的网络模型。三层通信模型表示每个容器都通过 IP 直接通信，中间通过路由转发找到对方。在这个过程中，容器所在的节点类似于传统的路由器，提供了路由查找的功能。
+要想路由工作能够正常，每个虚拟路由器（容器所在的主机节点）必须有某种方法知道整个集群的路由信息，calico 采用的是 BGP 路由协议，全称是 Border Gateway Protocol。
+除了能用于 docker 这样的容器外，它还能集成到容器集群平台 kubernetes、共有云平台 AWS、GCE 等， 而且也能很容易地集成到 openstack 等 Iaas 平台。
+这篇文章就介绍 calico 是如何实现 docker 跨主机网络的。
+calico 集群安装和实验 这部分我会在自己的 virtualbox 环境中运行多节点 docker，并使用 calico 实现跨主机的容器网络通信功能。实验环境一共启动了三台 centos7 虚拟机：
+ node00: 172.17.8.100 node01: 172.17.8.101 node02: 172.17.8.102  这三台机器可以通过上面的 IP 地址进行通信，并且有不同的 hostname，推荐使用 vagrant 运行虚拟机集群。
+这部分我们会手动安装 calico 集群，以加深理解，在生产环境中推荐使用自动化安装。
+1. 安装 docker 既然要在 docker 集群中测试 calico 网络，当然要有一个能正常工作的 docker 环境。docker 的安装这里就不说了，请参考官网上的安装手册选择适合自己的方式。</description>
+    </item>
+    
+    <item>
+      <title>Istio 流量管理实现机制深度解析</title>
+      <link>https://mydream.ink/archive/deep-analysis-of-istio-traffic-management-implementation-mechanism/</link>
+      <pubDate>Sat, 13 Jul 2019 16:33:15 +0800</pubDate>
+      
+      <guid>https://mydream.ink/archive/deep-analysis-of-istio-traffic-management-implementation-mechanism/</guid>
+      <description>前言 Istio 作为一个 service mesh 开源项目,其中最重要的功能就是对网格中微服务之间的流量进行管理,包括服务发现,请求路由和服务间的可靠通信。Istio 实现了 service mesh 的控制面，并整合 Envoy 开源项目作为数据面的 sidecar，一起对流量进行控制。
+Istio 体系中流量管理配置下发以及流量规则如何在数据面生效的机制相对比较复杂，通过官方文档容易管中窥豹，难以了解其实现原理。本文尝试结合系统架构、配置文件和代码对 Istio 流量管理的架构和实现机制进行分析，以达到从整体上理解 Pilot 和 Envoy 的流量管理机制的目的。
+Pilot 高层架构 Istio 控制面中负责流量管理的组件为 Pilot，Pilot 的高层架构如下图所示：
+
+Pilot Architecture（来自[Isio 官网文档](https://istio.io/docs/concepts/traffic-management/)[[1]](#ref01)) 根据上图,Pilot 主要实现了下述功能：
+统一的服务模型 Pilot 定义了网格中服务的标准模型，这个标准模型独立于各种底层平台。由于有了该标准模型，各个不同的平台可以通过适配器和 Pilot 对接，将自己特有的服务数据格式转换为标准格式，填充到 Pilot 的标准模型中。
+例如 Pilot 中的 Kubernetes 适配器通过 Kubernetes API 服务器得到 kubernetes 中 service 和 pod 的相关信息，然后翻译为标准模型提供给 Pilot 使用。通过适配器模式，Pilot 还可以从 Mesos, Cloud Foundry, Consul 等平台中获取服务信息，还可以开发适配器将其他提供服务发现的组件集成到 Pilot 中。
+标准数据面 API Pilo 使用了一套起源于 Envoy 项目的标准数据面 API[2]来将服务信息和流量规则下发到数据面的 sidecar 中。</description>
+    </item>
+    
+    <item>
+      <title>深入解读 Service Mesh 背后的技术细节</title>
+      <link>https://mydream.ink/archive/the-technicial-detail-of-service-mesh/</link>
+      <pubDate>Sat, 13 Jul 2019 13:36:51 +0800</pubDate>
+      
+      <guid>https://mydream.ink/archive/the-technicial-detail-of-service-mesh/</guid>
+      <description>深入解读 Service Mesh 背后的技术细节 本文由网易云发布。
+作者：刘超，网易云首席解决方案架构师
+在 Kubernetes 称为容器编排的标准之后，Service Mesh 开始火了起来，但是很多文章讲概念的多，讲技术细节的少，所以专门写一篇文章，来解析 Service Mesh 背后的技术细节。
+一、Service Mesh 是 Kubernetes 支撑微服务能力拼图的最后一块 在上一篇文章为什么 kubernetes 天然适合微服务中我们提到，Kubernetes 是一个奇葩所在，他的组件复杂，概念复杂，在没有实施微服务之前，你可能会觉得为什么 Kubernetes 要设计的这么复杂，但是一旦你要实施微服务，你会发现 Kubernetes 中的所有概念，都是有用的。
+在我们微服务设计的是个要点中，我们会发现 Kubernetes 都能够有相应的组件和概念，提供相应的支持。
+其中最后的一块拼图就是服务发现，与熔断限流降级。
+众所周知，Kubernetes 的服务发现是通过 Service 来实现的，服务之间的转发是通过 kube-proxy 下发 iptables 规则来实现的，这个只能实现最基本的服务发现和转发能力，不能满足高并发应用下的高级的服务特性，比较 SpringCloud 和 Dubbo 有一定的差距，于是 Service Mesh 诞生了，他期望讲熔断，限流，降级等特性，从应用层，下沉到基础设施层去实现，从而使得 Kubernetes 和容器全面接管微服务。
+二、以 Istio 为例讲述 Service Mesh 中的技术关键点 就如 SDN 一样，Service Mesh 将服务请求的转发分为控制面和数据面，因而分析他，也是从数据面先分析转发的能力，然后再分析控制面如何下发命令。今天这篇文章重点讲述两个组件 Envoy 和 Pilot
+一切从 Envoy 开始 我们首先来看，如果没有融入 Service Mesh，Envoy 本身能够做什么事情呢？
+Envoy 是一个高性能的 C++写的 proxy 转发器，那 Envoy 如何转发请求呢？需要定一些规则，然后按照这些规则进行转发。</description>
+    </item>
+    
+    <item>
+      <title>从IaaS到FaaS——Serverless架构的前世今生</title>
+      <link>https://mydream.ink/archive/iaas-faas-serverless/</link>
+      <pubDate>Sun, 07 Jul 2019 13:43:44 +0800</pubDate>
+      
+      <guid>https://mydream.ink/archive/iaas-faas-serverless/</guid>
+      <description>今天大多数公司在开发应用程序并将其部署在服务器上的时候，无论是选择公有云还是私有的数据中心，都需要提前了解究竟需要多少台服务器、多大容量的存储和数据库的功能等。并需要部署运行应用程序和依赖的软件到基础设施之上。假设我们不想在这些细节上花费精力，是否有一种简单的架构模型能够满足我们这种想法？这个答案已经存在，这就是今天软件架构世界中新鲜但是很热门的一个话题——Serverless（无服务器）架构。
+什么是Serverless 如同许多新的概念一样，Serverless目前还没有一个普遍公认的权威的定义。最新的一个定义是这样描述的：“无服务器架构是基于互联网的系统，其中应用开发不使用常规的服务进程。相反，它们仅依赖于第三方服务（例如AWS Lambda服务），客户端逻辑和服务托管远程过程调用的组合。”
+最开始，“无服务器”架构试图帮助开发者摆脱运行后端应用程序所需的服务器设备的设置和管理工作。这项技术的目标并不是为了实现真正意义上的“无服务器”，而是指由第三方云计算供应商负责后端基础结构的维护，以服务的方式为开发者提供所需功能，例如数据库、消息，以及身份验证等。简单地说，这个架构的就是要让开发人员关注代码的运行而不需要管理任何的基础设施。程序代码被部署在诸如AWS Lambda这样的平台之上，通过事件驱动的方法去触发对函数的调用。很明显，这是一种完全针对程序员的架构技术。其技术特点包括了事件驱动的调用方式，以及有一定限制的程序运行方式，例如AWS Lambda的函数的运行时间默认为3秒到5分钟。从这种架构技术出现的两年多时间来看，这个技术已经有了非常广泛的应用，例如移动应用的后端和物联网应用等。简而言之，无服务器架构的出现不是为了取代传统的应用。然而，从具有高度灵活性的使用模式及事件驱动的特点出发，开发人员／架构师应该重视这个新的计算范例，它可以帮助我们达到减少部署、提高扩展性并减少代码后面的基础设施的维护负担。
+Serverless的历史 Serverless这个概念并不容易理解。乍见之下，很容易让人混淆硬件服务器及软件上的服务与其所谓的“服务器”差别。在这里强调的所谓“无服务器”指的是我们的代码不会明确地部署在某些特定的软件或者硬件的服务器上。运行代码托管的环境是由例如AWS这样的云计算厂商所提供的。
+Serverless这个词第一次被使用大约是2012年由Ken Form所写的一篇名为《Why The Future of Software and Apps is Serverless》的文章。这篇文章谈到的内容是关于持续集成及源代码控制等内容，并不是我们今天所特指的这一种架构模式。但Amazon在2014年发布的AWS Lambda让“Serverless”这一范式提高到一个全新的层面，为云中运行的应用程序提供了一种全新的系统体系结构。至此再也不需要在服务器上持续运行进程以等待HTTP请求或API调用，而是可以通过某种事件机制触发代码的执行，通常这只需要在AWS的某台服务器上配置一个简单的功能。此后Ant Stanley 在2015年7月的名为《Server are Dead…》的文章中更是围绕着AWS Lambda及刚刚发布的AWS API Gateway这两个服务解释了他心目中的Serverless，“Server are dead…they just don’t know it yet”。到了2015年10月份，在那一年的AWS re:Invent大会上，Serverless的这个概念更是反复出现在了很多场合。印象中就包括了“（ARC308）The Serverless Company Using AWS Lambda”及“（DVO209）JAWS: The Monstrously Scalable Serverless Framework”这些演讲当中。随着这个概念的进一步发酵，2016年10月在伦敦举办了第一届的Serverlessvconf。在两天时间里面，来自全世界40多位演讲嘉宾为开发者分享了关于这个领域进展。
+在Serverless的世界里面，AWS扮演了一个非常重要的角色。但是AWS并不是唯一的Serverless架构服务的供应商。其他厂商，例如Google Cloud Functions、Microsoft Azure Functions、IBM OpenWhisk、Iron.io和Webtask等各种开源平台都提供了类似的服务。
+Serverless与FaaS 微服务（MicroService）是软件架构领域业另一个热门的话题。如果说微服务是以专注于单一责任与功能的小型功能块为基础，利用模组化的方式组合出复杂的大型应用程序，那么我们还可以进一步认为Serverless架构可以提供一种更加“代码碎片化”的软件架构范式，我们称之为Function as a Services（FaaS）。而所谓的“函数”（Function）提供的是相比微服务更加细小的程序单元。例如，可以通过微服务代表为某个客户执行所有CRUD操作所需的代码，而FaaS中的“函数”可以代表客户所要执行的每个操作：创建、读取、更新，以及删除。当触发“创建账户”事件后，将通过AWS Lambda函数的方式执行相应的“函数”。从这一层意思来说，我们可以简单地将Serverless架构与FaaS概念等同起来。
+FaaS与PaaS的比较 乍看起来，FaaS与PaaS的概念在某些方面有许多相似的地方。人们甚至认为FaaS就是另一种形式的PaaS。但是Intent Media的工程副总裁Mike Roberts有自己的不同看法：“大部分PaaS应用无法针对每个请求启动和停止整个应用程序，而FaaS平台生来就是为了实现这样的目的。”
+FaaS和PaaS在运维方面最大的差异在于缩放能力。对于大部分PaaS平台，用户依然需要考虑缩放。但是对于FaaS应用，这种问题完全是透明的。就算将PaaS应用设置为自动缩放，依然无法在具体请求的层面上进行缩放，而FaaS应用在成本方面效益就高多了。AWS云架构战略副总裁Adrian Cockcroft曾经针对两者的界定给出了一个简单的方法：“如果你的PaaS能够有效地在20毫秒内启动实例并运行半秒,那么就可以称之为Serverless”。
+Serverless架构的优点   降低运营成本：
+Serverless是非常简单的外包解决方案。它可以让您委托服务提供商管理服务器、数据库和应用程序甚至逻辑，否则您就不得不自己来维护。由于这个服务使用者的数量会非常庞大，于是就会产生规模经济效应。在降低成本上包含了两个方面，即基础设施的成本和人员（运营/开发）的成本。
+  降低开发成本：</description>
+    </item>
+    
+    <item>
+      <title>Helm的安装和使用</title>
+      <link>https://mydream.ink/archive/about-the-installation-and-use-of-helm/</link>
+      <pubDate>Sun, 07 Jul 2019 08:42:53 +0800</pubDate>
+      
+      <guid>https://mydream.ink/archive/about-the-installation-and-use-of-helm/</guid>
+      <description>Helm 可以理解为 Kubernetes 的包管理工具，可以方便地发现、共享和使用为Kubernetes构建的应用。
+一、基本概念   Helm的三个基本概念
+ Chart：Helm应用（package），包括该应用的所有Kubernetes manifest模版，类似于YUM RPM或Apt dpkg文件 Repository：Helm package存储仓库 Release：chart的部署实例，每个chart可以部署一个或多个release    Helm工作原理
+Helm包括两个部分，helm客户端和tiller服务端。
+the client is responsible for managing charts, and the server is responsible for managing releases.
+  helm客户端
+helm客户端是一个命令行工具，负责管理charts、reprepository和release。它通过gPRC API（使用kubectl port-forward将tiller的端口映射到本地，然后再通过映射后的端口跟tiller通信）向tiller发送请求，并由tiller来管理对应的Kubernetes资源。
+Helm客户端的使用方法参见Helm命令。
+  tiller服务端
+tiller接收来自helm客户端的请求，并把相关资源的操作发送到Kubernetes，负责管理（安装、查询、升级或删除等）和跟踪Kubernetes资源。为了方便管理，tiller把release的相关信息保存在kubernetes的ConfigMap中。
+tiller对外暴露gRPC API，供helm客户端调用。
+  二、安装 环境：kubernetes 1.7 + helm 2.5.0
+  客户端安装：
+下载相应的版本：https://github.com/kubernetes/helm/releases
+解压
+tar -zxvf helm-v2.5.0-linux-amd64.tgz 把helm执行文件放置在：
+mv linux-amd64/helm /usr/local/bin/helm From there, you should be able to run the client: helm help.</description>
+    </item>
+    
+    <item>
+      <title>LXC的简单用法</title>
+      <link>https://mydream.ink/archive/the-simple-usage-of-lxc/</link>
+      <pubDate>Sun, 07 Jul 2019 08:02:31 +0800</pubDate>
+      
+      <guid>https://mydream.ink/archive/the-simple-usage-of-lxc/</guid>
+      <description>LXC简介 LXC (Linux Containters) 是一种基于内核容器属性的用户空间接口。 它被认为介于chroot和完全虚拟化之间，其目标为创建一个不需要独立内核，但近可能接近标准Linux安装的环境。
+其特性如下：
+ 内核空间（ipc, uts, mount, pid, network和user) 支持Apparmor和SELinux seccomp策略 chroots (使用pivot_root) Kernel capabilities 支持cgroups (Control groups) 由于没有完全虚拟化CPU，也没有虚拟化硬盘，其性能是与物理机接近的。实际经验，我发现在LXC中编译C/C++源码（如构建基于C/C++源码的RPM或DEB）的性能是VirtualBox的3倍。强烈建议使用LXC代替KVM和VirtualBox作为RPM或DEB的构建环境。  以下操作基于Ubuntu 12.04，那么需要安装LXC包：
+sudo apt-get install -y lxc  创建LXC 以创建一个名为precise的Ubuntu 12.04容器为例。
+需要创建一个基础的配置文件。由于创建LXC完成后，不再需要该配置文件（可以删除），故该文件的名字和路径没有特殊要求。这里命名为precise.conf，放在当前路径下：
+lxc.network.type = veth lxc.network.flags = up lxc.network.name = eth0 lxc.network.link = lxcbr0  lxcbr0为由LXC包创建的虚拟网桥，通过ifconfig可以知道其IP地址10.0.3.1，网段10.0.3.1/24，容器将通过lxcbr0与外界通信。
+如此，可以开始创建容器了：
+sudo lxc-create -n precise -f precise.conf -t ubuntu -- -r precise   -n 指定容器名，这里为precise。
+-f 指定基础配置文件，即上一步骤创建的precise.conf。
+-t 指定模板名，这里必须为ubuntu（创建Ubuntu 12.</description>
+    </item>
+    
+  </channel>
+</rss>

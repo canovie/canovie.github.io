@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>在 Mac 上使用 Docker 自带的 Kubernetes</title>
+    <meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta http-equiv="X-UA-Compatible" content="ie=edge" />
+
+
+<link rel="stylesheet" href="/assets/css/bootstrap.min.css" />
+<link rel="stylesheet" href="/assets/css/style.css" />
+<link rel="stylesheet" href="/assets/css/navbar.css" />
+
+
+<link href="https://fonts.googleapis.com/css2?family=Muli:wght@300;400;500;600" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" />
+
+
+<link rel="icon" type="image/png" href="/assets/images/favicon.png" />
+
+
+    
+<link
+  rel="stylesheet"
+  href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/styles/atom-one-dark.min.css"
+/>
+<link rel="stylesheet" href="/assets/css/single.css" />
+
+
+    
+    
+      
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'UA-142765126-1', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+
+    
+  </head>
+
+  <body>
+    <div class="container-fluid bg-dimmed wrapper">
+      
+      
+    <nav class="navbar navbar-expand-lg top-navbar final-navbar shadow">
+    <div class="container">
+      <a class="navbar-brand" href="/posts">
+        <img src="/assets/images/logo.png">青云卷</a>
+      <button class="navbar-toggler navbar-light" type="button" >
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <div class="collapse navbar-collapse" id="top-nav-items">
+        <ul class="navbar-nav ml-auto">
+        </ul>
+      </div>
+    </div>
+</nav>
+
+
+
+      
+      
+<div class="container p-0 read-area">
+  
+  <div class="hero-area col-sm-12" style='background-image: url(https://mydream.ink/assets/images/posts/cloud-native/docker-tutorial.png);'>
+  </div>
+
+  
+  <div class="page-content">
+    <div class="author-profile ml-auto align-self-lg-center">
+      <img class="rounded-circle" src='/assets/images/portrait.jpg'/>
+      <h5 class="author-name">Jerry Chan</h5>
+      <p>July 12, 2019</p>
+    </div>
+
+    <div class="title">
+      <h1>在 Mac 上使用 Docker 自带的 Kubernetes</h1>
+    </div>
+
+    <div class="post-content" id="post-content">
+      <p>Mac 安装 Docker 的方法不再赘述，很简单，<a href="https://download.docker.com/mac/stable/Docker.dmg">官方下载</a>安装即可。</p>
+<p>安装完成后，<code>kubectl</code>的二进制文件就已经存在了。我们仅需要下载镜像，开启 kubernetes。</p>
+<h2 id="下载镜像">下载镜像</h2>
+<p>查看一下你的 Docker 和 Kubernetes 版本：</p>
+<p><img src="/assets/images/posts/cloud-native/k8s_from_docker.png" alt="About Version"></p>
+<p>使用<a href="https://gist.github.com/alphajc/ad56aa01da685d665c856551c4d18baf%22">以下脚本</a>，记得将镜像版本改成你所需要的🍁</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#75715e">#!/bin/bash
+</span><span style="color:#75715e"></span>
+set -e 
+KUBE_VERSION<span style="color:#f92672">=</span>v1.10.11
+KUBE_PAUSE_VERSION<span style="color:#f92672">=</span>3.1
+ETCD_VERSION<span style="color:#f92672">=</span>3.1.12
+DNS_VERSION<span style="color:#f92672">=</span>1.14.8
+DOCKER_TOOL_VERSION<span style="color:#f92672">=</span>v0.4.12
+
+GCR_URL<span style="color:#f92672">=</span>k8s.gcr.io
+ALIYUN_URL<span style="color:#f92672">=</span>registry.cn-hangzhou.aliyuncs.com/google_containers
+
+images<span style="color:#f92672">=(</span>kube-proxy-amd64:<span style="color:#e6db74">${</span>KUBE_VERSION<span style="color:#e6db74">}</span>
+kube-scheduler-amd64:<span style="color:#e6db74">${</span>KUBE_VERSION<span style="color:#e6db74">}</span>
+kube-controller-manager-amd64:<span style="color:#e6db74">${</span>KUBE_VERSION<span style="color:#e6db74">}</span>
+kube-apiserver-amd64:<span style="color:#e6db74">${</span>KUBE_VERSION<span style="color:#e6db74">}</span>
+pause-amd64:<span style="color:#e6db74">${</span>KUBE_PAUSE_VERSION<span style="color:#e6db74">}</span>
+etcd-amd64:<span style="color:#e6db74">${</span>ETCD_VERSION<span style="color:#e6db74">}</span>
+k8s-dns-sidecar-amd64:<span style="color:#e6db74">${</span>DNS_VERSION<span style="color:#e6db74">}</span>
+k8s-dns-kube-dns-amd64:<span style="color:#e6db74">${</span>DNS_VERSION<span style="color:#e6db74">}</span>
+k8s-dns-dnsmasq-nanny-amd64:<span style="color:#e6db74">${</span>DNS_VERSION<span style="color:#e6db74">}</span><span style="color:#f92672">)</span>
+
+<span style="color:#66d9ef">for</span> image in <span style="color:#e6db74">${</span>images[@]<span style="color:#e6db74">}</span> ; <span style="color:#66d9ef">do</span>
+  docker pull <span style="color:#e6db74">${</span>ALIYUN_URL<span style="color:#e6db74">}</span>/<span style="color:#e6db74">${</span>image<span style="color:#e6db74">}</span>
+  docker tag <span style="color:#e6db74">${</span>ALIYUN_URL<span style="color:#e6db74">}</span>/<span style="color:#e6db74">${</span>image<span style="color:#e6db74">}</span> <span style="color:#e6db74">${</span>GCR_URL<span style="color:#e6db74">}</span>/<span style="color:#e6db74">${</span>image<span style="color:#e6db74">}</span>
+  docker rmi <span style="color:#e6db74">${</span>ALIYUN_URL<span style="color:#e6db74">}</span>/<span style="color:#e6db74">${</span>image<span style="color:#e6db74">}</span>
+<span style="color:#66d9ef">done</span>
+
+<span style="color:#75715e"># 拉取 Docker 相关镜像</span>
+docker pull docker/kube-compose-api-server:<span style="color:#e6db74">${</span>DOCKER_TOOL_VERSION<span style="color:#e6db74">}</span>
+docker pull docker/kube-compose-controller:<span style="color:#e6db74">${</span>DOCKER_TOOL_VERSION<span style="color:#e6db74">}</span>
+</code></pre></div><p>执行该脚本，将从阿里镜像库获得所需镜像。</p>
+<h2 id="启动-kubernetes-功能">启动 Kubernetes 功能</h2>
+<p>打开 Docker 配置面板，请至少勾选 Enable Kubernetes 以开启 Kubernetes 服务。</p>
+<p><img src="/assets/images/posts/cloud-native/start_k8s.png" alt="Start Kubenetes"></p>
+<p>开启片刻后，你将看到 Docker Engine 和 Kubernetes 同时处于<code>running</code>状态。</p>
+<h2 id="查看-kubernetes-服务">查看 Kubernetes 服务</h2>
+<p>输入<code>kubectl get pods --all-namespaces</code>，你将看到：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">➜  ~ kubectl get pods --all-namespaces
+NAMESPACE     NAME                                         READY     STATUS    RESTARTS   AGE
+docker        compose-74649b4db6-bjw57                     1/1       Running   <span style="color:#ae81ff">0</span>          1m
+docker        compose-api-597cc7786b-vpnnk                 1/1       Running   <span style="color:#ae81ff">0</span>          1m
+kube-system   etcd-docker-for-desktop                      1/1       Running   <span style="color:#ae81ff">0</span>          2m
+kube-system   kube-apiserver-docker-for-desktop            1/1       Running   <span style="color:#ae81ff">0</span>          2m
+kube-system   kube-controller-manager-docker-for-desktop   1/1       Running   <span style="color:#ae81ff">0</span>          2m
+kube-system   kube-dns-86f4d74b45-n55kv                    3/3       Running   <span style="color:#ae81ff">0</span>          2m
+kube-system   kube-proxy-dgwfm                             1/1       Running   <span style="color:#ae81ff">0</span>          2m
+kube-system   kube-scheduler-docker-for-desktop            1/1       Running   <span style="color:#ae81ff">0</span>          1m
+</code></pre></div><p>至此，你就可以尽情享受 Kubernetes 带给你的乐趣了🎉🌴🎉</p>
+
+    </div>
+
+    
+    
+      <div class="btn-improve-page">
+          <a href="https://github.com/alphajc/mysite/edit/master/content/posts/cloud-native/kubernetes/Use%20Kubernetes%20From%20Docker%20on%20Mac.md">
+            <i class="fas fa-code-branch"></i>
+            Improve This Page
+          </a>
+      </div>
+    
+
+    
+  <hr />
+    <div class="row next-prev-navigator">
+
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    
+      
+    
+    
+      
+        
+        
+          
+        
+        <div class="col-md-12 next-article">
+          <a href="/posts/cloud-native/container/install-docker-on-centos7/" class="btn btn-outline-info">
+            <span>下一篇 <i class="fas fa-chevron-circle-right"></i></span>
+            <br />
+            <span>在 CentOS7 上安装新版 Docker CE（使用国内源）</span>
+          </a>
+        </div>
+      
+    
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+</div>
+
+  <hr />
+  
+  
+      <div id="disqus_thread"></div>
+<script type="text/javascript">
+  (function () {
+    
+    
+    if (window.location.hostname == "localhost") return;
+
+    var dsq = document.createElement("script");
+    dsq.type = "text/javascript";
+    dsq.async = true;
+    var disqus_shortname = "mydream-ink";
+    dsq.src = "//" + disqus_shortname + ".disqus.com/embed.js";
+    (
+      document.getElementsByTagName("head")[0] ||
+      document.getElementsByTagName("body")[0]
+    ).appendChild(dsq);
+  })();
+</script>
+<noscript
+  >请开启 JavaScript 功能
+  <a href="https://disqus.com/?ref_noscript"
+    >comments powered by Disqus.</a
+  ></noscript
+>
+<a href="https://disqus.com/" class="dsq-brlink"
+  >通过 <span class="logo-disqus">Disqus</span> 评论</a
+>
+
+  
+</div>
+
+    </div>
+
+    <footer class="container-fluid text-center align-content-center footer pb-2">
+  <div class="container pt-5">
+    <div class="row text-left">
+      <div class="col-md-4 col-sm-12">
+        <h5>导航</h5>
+        
+        <ul>
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#about">关于</a>
+            </li>
+            
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#skills">技能</a>
+            </li>
+            
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#experiences">经历</a>
+            </li>
+            
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#projects">项目</a>
+            </li>
+            
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#recent-posts">最近文章</a>
+            </li>
+            
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#achievements">成就</a>
+            </li>
+            
+        </ul>
+        
+
+      </div>
+      <div class="col-md-4 col-sm-12">
+        <h5>联系我</h5>
+        <ul>
+          
+          <li><span>电话: </span> <span>&#43;8619980414909</span></li>
+          
+          <li><span>邮箱: </span> <span>jerry@mydream.ink</span></li>
+          
+        </ul>
+      </div>
+      <div class="col-md-4 col-sm-12">
+        
+        <p>接收最新的邮件通知</p>
+        <form>
+          <div class="form-group">
+            <input
+              type="email"
+              class="form-control"
+              id="exampleInputEmail1"
+              aria-describedby="emailHelp"
+              placeholder="输入邮箱"
+            />
+            <small id="emailHelp" class="form-text text-muted"
+              >你的邮件地址不会被共享给他人</small
+            >
+          </div>
+          <button type="submit" class="btn btn-info">提交</button>
+        </form>
+      </div>
+    </div>
+  </div>
+  <hr />
+  <div class="container">
+    <div class="row text-left">
+      <div class="col-md-4">
+        <a id="theme" href="/" target="#">
+          <img src="/assets/images/logo-inverted.png">青云卷</a>
+      </div>
+      <div class="col-md-4"><a href="https://beian.miit.gov.cn">蜀ICP备 2021017630号-1</a>© 2021 Copyright.</div>
+    </div>
+  </div>
+</footer>
+
+    <script src="/assets/js/jquery-3.4.1.min.js"></script>
+<script src="/assets/js/bootstrap.min.js"></script>
+
+<script src="/assets/js/navbar.js"></script>
+<script src="/assets/js/jquery.filterizr.min.js"></script>
+
+
+    
+    
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/highlight.min.js"></script>
+<script src="/assets/js/single.js"></script>
+<script>
+  hljs.initHighlightingOnLoad();
+</script>
+
+
+  </body>
+</html>

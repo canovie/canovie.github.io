@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Node使用RabbitMQ：工作队列</title>
+    <meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta http-equiv="X-UA-Compatible" content="ie=edge" />
+
+
+<link rel="stylesheet" href="/assets/css/bootstrap.min.css" />
+<link rel="stylesheet" href="/assets/css/style.css" />
+<link rel="stylesheet" href="/assets/css/navbar.css" />
+
+
+<link href="https://fonts.googleapis.com/css2?family=Muli:wght@300;400;500;600" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" />
+
+
+<link rel="icon" type="image/png" href="/assets/images/favicon.png" />
+
+
+    
+<link
+  rel="stylesheet"
+  href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/styles/atom-one-dark.min.css"
+/>
+<link rel="stylesheet" href="/assets/css/single.css" />
+
+
+    
+    
+      
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'UA-142765126-1', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+
+    
+  </head>
+
+  <body>
+    <div class="container-fluid bg-dimmed wrapper">
+      
+      
+    <nav class="navbar navbar-expand-lg top-navbar final-navbar shadow">
+    <div class="container">
+      <a class="navbar-brand" href="/posts">
+        <img src="/assets/images/logo.png">青云卷</a>
+      <button class="navbar-toggler navbar-light" type="button" >
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <div class="collapse navbar-collapse" id="top-nav-items">
+        <ul class="navbar-nav ml-auto">
+        </ul>
+      </div>
+    </div>
+</nav>
+
+
+
+      
+      
+<div class="container p-0 read-area">
+  
+  <div class="hero-area col-sm-12" style='background-image: url(https://mydream.ink/assets/images/posts/middleware/rabbitmq_node.jpg);'>
+  </div>
+
+  
+  <div class="page-content">
+    <div class="author-profile ml-auto align-self-lg-center">
+      <img class="rounded-circle" src='/assets/images/portrait.jpg'/>
+      <h5 class="author-name">Jerry Chan</h5>
+      <p>February 12, 2018</p>
+    </div>
+
+    <div class="title">
+      <h1>Node使用RabbitMQ：工作队列</h1>
+    </div>
+
+    <div class="post-content" id="post-content">
+      <h1 id="前提条件">前提条件</h1>
+<p>本教程假定RabbitMQ已安装并在标准端口（5672）上的本地主机上运行。如果您使用不同的主机，端口或凭据，连接设置将需要调整。</p>
+<h1 id="使用amqpnodehttpswwwsquaremobiusnetamqpnode客户端">（使用<a href="https://www.squaremobius.net/amqp.node/">amqp.node</a>客户端）</h1>
+<p>在第一个教程中，我们编写了用于从命名队列发送和接收消息的程序。在这一个中，我们将创建一个工作队列，用于在多个Worker之间分配耗时的任务。 工作队列（又名：任务队列）主要目的是避免立即执行资源密集型任务，避免必须等待任务完成。取而代之的是，安排稍后完成任务。我们把一个任务封装成一个消息并发送给一个队列。在后台运行的工作进程将弹出任务并最终执行作业。当你运行许多Worker时，任务将在他们之间共享。 这个概念在web应用程序中特别有用，在短的HTTP请求窗口中不可能处理复杂的任务。</p>
+<h2 id="准备">准备</h2>
+<p>在本教程的前一部分，我们发送了一个包含“Hello World！”的消息。现在我们将发送代表复杂任务的字符串。我们没有真正的任务，比如图像被重新调整大小或者渲染PDF文件，所以让我们假装我们忙——通过使用<code>setTimeout</code>方法。 我们稍微修改前面例子中的<code>send.js</code>代码，以允许从命令行发送任意消息。这个程序将安排任务到我们的工作队列，所以让我们把它命名为<code>new_task.js</code>：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-js" data-lang="js"><span style="color:#66d9ef">var</span> <span style="color:#a6e22e">q</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;task_queue&#39;</span>;
+<span style="color:#66d9ef">var</span> <span style="color:#a6e22e">msg</span> <span style="color:#f92672">=</span> <span style="color:#a6e22e">process</span>.<span style="color:#a6e22e">argv</span>.<span style="color:#a6e22e">slice</span>(<span style="color:#ae81ff">2</span>).<span style="color:#a6e22e">join</span>(<span style="color:#e6db74">&#39; &#39;</span>) <span style="color:#f92672">||</span> <span style="color:#e6db74">&#34;Hello World!&#34;</span>;
+
+<span style="color:#a6e22e">ch</span>.<span style="color:#a6e22e">assertQueue</span>(<span style="color:#a6e22e">q</span>, {<span style="color:#a6e22e">durable</span><span style="color:#f92672">:</span> <span style="color:#66d9ef">true</span>});
+<span style="color:#a6e22e">ch</span>.<span style="color:#a6e22e">sendToQueue</span>(<span style="color:#a6e22e">q</span>, <span style="color:#66d9ef">new</span> <span style="color:#a6e22e">Buffer</span>(<span style="color:#a6e22e">msg</span>), {<span style="color:#a6e22e">persistent</span><span style="color:#f92672">:</span> <span style="color:#66d9ef">true</span>});
+<span style="color:#a6e22e">console</span>.<span style="color:#a6e22e">log</span>(<span style="color:#e6db74">&#34; [x] Sent &#39;%s&#39;&#34;</span>, <span style="color:#a6e22e">msg</span>);
+</code></pre></div><p>我们旧的<code>receive.js</code>脚本也需要进行一些更改：它需要伪造邮件正文中每个点的第二个工作。它将从队列中弹出消息并执行任务，所以我们称之为<code>worker.js</code>：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-js" data-lang="js"><span style="color:#a6e22e">ch</span>.<span style="color:#a6e22e">consume</span>(<span style="color:#a6e22e">q</span>, <span style="color:#66d9ef">function</span>(<span style="color:#a6e22e">msg</span>) {
+  <span style="color:#66d9ef">var</span> <span style="color:#a6e22e">secs</span> <span style="color:#f92672">=</span> <span style="color:#a6e22e">msg</span>.<span style="color:#a6e22e">content</span>.<span style="color:#a6e22e">toString</span>().<span style="color:#a6e22e">split</span>(<span style="color:#e6db74">&#39;.&#39;</span>).<span style="color:#a6e22e">length</span> <span style="color:#f92672">-</span> <span style="color:#ae81ff">1</span>;
+
+  <span style="color:#a6e22e">console</span>.<span style="color:#a6e22e">log</span>(<span style="color:#e6db74">&#34; [x] Received %s&#34;</span>, <span style="color:#a6e22e">msg</span>.<span style="color:#a6e22e">content</span>.<span style="color:#a6e22e">toString</span>());
+  <span style="color:#a6e22e">setTimeout</span>(<span style="color:#66d9ef">function</span>() {
+    <span style="color:#a6e22e">console</span>.<span style="color:#a6e22e">log</span>(<span style="color:#e6db74">&#34; [x] Done&#34;</span>);
+  }, <span style="color:#a6e22e">secs</span> <span style="color:#f92672">*</span> <span style="color:#ae81ff">1000</span>);
+}, {<span style="color:#a6e22e">noAck</span><span style="color:#f92672">:</span> <span style="color:#66d9ef">true</span>});
+</code></pre></div><p>请注意，我们的假任务模拟执行时间。 按照教程1运行它们：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh"><span style="color:#75715e"># shell 1</span>
+./worker.js
+</code></pre></div><div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh"><span style="color:#75715e"># shell 2</span>
+./new_task.js
+</code></pre></div><h2 id="循环调度">循环调度</h2>
+<p>使用任务队列的优点之一是能够轻松地平行工作。如果我们积压工作，我们可以增加更多的工人，这样可以轻松扩展。 首先，我们试着同时运行两个<code>worker.js</code>脚本。他们都会从队列中得到消息，但究竟是如何？让我们来看看。 您需要打开三个控制台。两个将运行worker.js脚本。这些控制台将是我们的两个消费者——C1和C2。</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh"><span style="color:#75715e"># shell 1</span>
+./worker.js
+<span style="color:#75715e"># =&gt; [*] Waiting for messages. To exit press CTRL+C</span>
+</code></pre></div><div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh"><span style="color:#75715e"># shell 2</span>
+./worker.js
+<span style="color:#75715e"># =&gt; [*] Waiting for messages. To exit press CTRL+C</span>
+</code></pre></div><p>在第三个，我们将发布新的任务。一旦你开始了消费者，你可以发布一些消息：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh"><span style="color:#75715e"># shell 3</span>
+./new_task.js First message.
+./new_task.js Second message..
+./new_task.js Third message...
+./new_task.js Fourth message....
+./new_task.js Fifth message.....
+</code></pre></div><p>让我们看看交给我们工人的东西：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh"><span style="color:#75715e"># shell 1</span>
+./worker.js
+<span style="color:#75715e"># =&gt; [*] Waiting for messages. To exit press CTRL+C</span>
+<span style="color:#75715e"># =&gt; [x] Received &#39;First message.&#39;</span>
+<span style="color:#75715e"># =&gt; [x] Received &#39;Third message...&#39;</span>
+<span style="color:#75715e"># =&gt; [x] Received &#39;Fifth message.....&#39;</span>
+</code></pre></div><div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh"><span style="color:#75715e"># shell 2</span>
+./worker.js
+<span style="color:#75715e"># =&gt; [*] Waiting for messages. To exit press CTRL+C</span>
+<span style="color:#75715e"># =&gt; [x] Received &#39;Second message..&#39;</span>
+<span style="color:#75715e"># =&gt; [x] Received &#39;Fourth message....&#39;</span>
+</code></pre></div><p>默认情况下，RabbitMQ将按顺序将每条消息发送给下一个使用者。平均而言，每个消费者将获得相同数量的消息。这种分发消息的方式称为循环法（round-robin）。试试三个或更多的Worker。</p>
+<h2 id="消息确认">消息确认</h2>
+<p>做任务可能需要几秒钟的时间。你可能会想知道如果其中一个消费者开始一个长期的任务，并且只是部分完成就死掉了会发生什么。使用我们当前的代码，一旦RabbitMQ向客户发送消息，立即将其标记为删除。在这种情况下，如果你杀死了一个Worker，我们将失去刚刚处理的信息，也将失去所有派发给这个特定工作人员但尚未处理的消息。 但我们不想失去任何任务。如果一个Worker死掉，我们希望将任务交付给另一个Worker。 为了确保消息永不丢失，RabbitMQ支持<a href="https://www.rabbitmq.com/confirms.html">消息确认</a>。消费者发回确认（告知）告诉RabbitMQ已经收到，处理了一个特定的消息，并且RabbitMQ可以自由删除它。 如果消费者死掉（其通道关闭，连接关闭或TCP连接丢失），RabbitMQ将认为消息未被完全处理，并将重新排队。如果同时有其他消费者在线，则会迅速重新发送给另一个消费者。这样，即使Worker死掉，也可以确保没有任何信息丢失。 没有任何消息超时；当消费者死掉时，RabbitMQ将重新传递消息。即使处理消息需要非常长的时间也没关系。 在前面的例子中，消息确认是被关闭的。现在使用<code>{noAck：false}</code>来打开它们（您也可以完全删除选项），并在完成任务后从Worker发送正确的确认。</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-js" data-lang="js"><span style="color:#a6e22e">ch</span>.<span style="color:#a6e22e">consume</span>(<span style="color:#a6e22e">q</span>, <span style="color:#66d9ef">function</span>(<span style="color:#a6e22e">msg</span>) {
+  <span style="color:#66d9ef">var</span> <span style="color:#a6e22e">secs</span> <span style="color:#f92672">=</span> <span style="color:#a6e22e">msg</span>.<span style="color:#a6e22e">content</span>.<span style="color:#a6e22e">toString</span>().<span style="color:#a6e22e">split</span>(<span style="color:#e6db74">&#39;.&#39;</span>).<span style="color:#a6e22e">length</span> <span style="color:#f92672">-</span> <span style="color:#ae81ff">1</span>;
+
+  <span style="color:#a6e22e">console</span>.<span style="color:#a6e22e">log</span>(<span style="color:#e6db74">&#34; [x] Received %s&#34;</span>, <span style="color:#a6e22e">msg</span>.<span style="color:#a6e22e">content</span>.<span style="color:#a6e22e">toString</span>());
+  <span style="color:#a6e22e">setTimeout</span>(<span style="color:#66d9ef">function</span>() {
+    <span style="color:#a6e22e">console</span>.<span style="color:#a6e22e">log</span>(<span style="color:#e6db74">&#34; [x] Done&#34;</span>);
+    <span style="color:#a6e22e">ch</span>.<span style="color:#a6e22e">ack</span>(<span style="color:#a6e22e">msg</span>);
+  }, <span style="color:#a6e22e">secs</span> <span style="color:#f92672">*</span> <span style="color:#ae81ff">1000</span>);
+}, {<span style="color:#a6e22e">noAck</span><span style="color:#f92672">:</span> <span style="color:#66d9ef">false</span>});
+</code></pre></div><p>使用这段代码，我们可以确定，即使在处理消息的时候使用<code>CTRL+C</code>来杀死一个Worker，也不会丢失任何东西。Worker死后不久，所有未确认的消息将被重新发送。</p>
+<blockquote>
+<p><strong>忘记确认</strong> 丢掉<code>ack</code>是一个常见的错误。这个错误很容易发生，但是后果很严重。当你的客户退出时（这可能看起来像随机的重新传递），消息将被重新传递，但是RabbitMQ将会消耗越来越多的内存，因为它将不能释放任何未被确认的消息。</p>
+</blockquote>
+<p>为了调试这种错误，你可以使用非<code>rabbitmqctl</code>打印<code>messages_unacknowledged</code>字段：</p>
+<pre><code>sudo rabbitmqctl list_queues name messages_ready messages_unacknowledged
+</code></pre>
+<p>在Windows上去掉<code>sudo</code>：</p>
+<pre><code>rabbitmqctl.bat list_queues name messages_ready messages_unacknowledged
+</code></pre>
+<h2 id="消息持久性">消息持久性</h2>
+<p>我们已经学会了如何确保即使消费者死掉，任务也不会丢失。但是如果RabbitMQ服务器停止，我们的任务仍然会丢失。 除非我们设置好，否则当RabbitMQ退出或崩溃时，它会忘记队列和消息。需要做两件事来确保消息不会丢失：我们需要将队列和消息标记为持久。 首先，我们需要确保RabbitMQ永远不会失去队列。为了做到这一点，我们需要宣布它是持久的：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-js" data-lang="js"><span style="color:#a6e22e">ch</span>.<span style="color:#a6e22e">assertQueue</span>(<span style="color:#e6db74">&#39;hello&#39;</span>, {<span style="color:#a6e22e">durable</span><span style="color:#f92672">:</span> <span style="color:#66d9ef">true</span>});
+</code></pre></div><p>虽然这个命令本身是正确的，但是在我们目前的设置中不起作用。这是因为我们已经定义了一个名为<code>hello</code>的队列，这个队列并不具有持久性。RabbitMQ不允许你使用不同的参数重新定义一个已经存在的队列，并且会向任何尝试这样做的程序返回一个错误。但有一个快速的解决方法——声明一个不同名称的队列，例如<code>task_queue</code>：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-js" data-lang="js"><span style="color:#a6e22e">ch</span>.<span style="color:#a6e22e">assertQueue</span>(<span style="color:#e6db74">&#39;task_queue&#39;</span>, {<span style="color:#a6e22e">durable</span><span style="color:#f92672">:</span> <span style="color:#66d9ef">true</span>});
+</code></pre></div><p>这个<code>durable</code>的选项更改需要应用于生产者和消费者代码。 此时我们确信，即使RabbitMQ重新启动，<code>task_queue</code>队列也不会丢失。现在我们需要将消息标记为持久的——通过使用<code>Channel.sendToQueue</code>持久选项。</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-js" data-lang="js"><span style="color:#a6e22e">ch</span>.<span style="color:#a6e22e">sendToQueue</span>(<span style="color:#a6e22e">q</span>, <span style="color:#66d9ef">new</span> <span style="color:#a6e22e">Buffer</span>(<span style="color:#a6e22e">msg</span>), {<span style="color:#a6e22e">persistent</span><span style="color:#f92672">:</span> <span style="color:#66d9ef">true</span>});
+</code></pre></div><blockquote>
+<p><strong>注意消息持久性</strong> 将消息标记为永久并不能完全保证消息不会丢失。尽管它告诉RabbitMQ将消息保存到磁盘，但是当RabbitMQ接收到消息并且还没有保存消息时，仍然有一个很短的时间窗口。此外，RabbitMQ不会为每个消息执行<code>fsync(2)</code>——它可能只是保存到缓存中，而不是写入磁盘。持久性保证不强，但对于我们简单的任务队列已经足够了。如果您需要更强大的保证，那么您可以使用发布者确认。</p>
+</blockquote>
+<h2 id="公平调度">公平调度</h2>
+<p>您可能已经注意到调度仍然不能按照我们的要求工作。例如在有两个Worker的情况下，当所有第奇数个消息都很重且第偶数个消息都很轻的时候，一个Worker就会一直很忙，而另一个Worker几乎不会做任何工作。然而，RabbitMQ不知道任何有关的信息，并将仍然均匀地发送消息。 发生这种情况是因为RabbitMQ只在消息进入队列时调度消息。它没有考虑消费者未确认消息的数量。它只是盲目地把第n条消息分发给第n个消费者。</p>
+<p><img src="/assets/images/posts/middleware/prefetch-count.png" alt=""></p>
+<p>为了解决这个问题，我们可以使用值为1的<code>prefetch</code>方法。这告诉RabbitMQ一次不能给一个Worker多个消息。或者换句话说，在处理完前一个消息之前，不要向Worker发送新消息，它会将新消息分派给下一个还不忙的Worker。</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-js" data-lang="js"><span style="color:#a6e22e">ch</span>.<span style="color:#a6e22e">prefetch</span>(<span style="color:#ae81ff">1</span>);
+</code></pre></div><blockquote>
+<p><strong>关于队列大小的说明</strong> 如果所有的Worker都很忙，你的队伍就可能填满了。你可能想要会增加更多的Worker，或者有其他的策略。</p>
+</blockquote>
+<h2 id="全部代码">全部代码</h2>
+<p><code>new_task.js</code>的最终代码：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-js" data-lang="js"><span style="color:#75715e">#!/usr/bin/env node
+</span><span style="color:#75715e"></span>
+<span style="color:#66d9ef">var</span> <span style="color:#a6e22e">amqp</span> <span style="color:#f92672">=</span> <span style="color:#a6e22e">require</span>(<span style="color:#e6db74">&#39;amqplib/callback_api&#39;</span>);
+
+<span style="color:#a6e22e">amqp</span>.<span style="color:#a6e22e">connect</span>(<span style="color:#e6db74">&#39;amqp://localhost&#39;</span>, <span style="color:#66d9ef">function</span>(<span style="color:#a6e22e">err</span>, <span style="color:#a6e22e">conn</span>) {
+  <span style="color:#a6e22e">conn</span>.<span style="color:#a6e22e">createChannel</span>(<span style="color:#66d9ef">function</span>(<span style="color:#a6e22e">err</span>, <span style="color:#a6e22e">ch</span>) {
+    <span style="color:#66d9ef">var</span> <span style="color:#a6e22e">q</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;task_queue&#39;</span>;
+    <span style="color:#66d9ef">var</span> <span style="color:#a6e22e">msg</span> <span style="color:#f92672">=</span> <span style="color:#a6e22e">process</span>.<span style="color:#a6e22e">argv</span>.<span style="color:#a6e22e">slice</span>(<span style="color:#ae81ff">2</span>).<span style="color:#a6e22e">join</span>(<span style="color:#e6db74">&#39; &#39;</span>) <span style="color:#f92672">||</span> <span style="color:#e6db74">&#34;Hello World!&#34;</span>;
+
+    <span style="color:#a6e22e">ch</span>.<span style="color:#a6e22e">assertQueue</span>(<span style="color:#a6e22e">q</span>, {<span style="color:#a6e22e">durable</span><span style="color:#f92672">:</span> <span style="color:#66d9ef">true</span>});
+    <span style="color:#a6e22e">ch</span>.<span style="color:#a6e22e">sendToQueue</span>(<span style="color:#a6e22e">q</span>, <span style="color:#66d9ef">new</span> <span style="color:#a6e22e">Buffer</span>(<span style="color:#a6e22e">msg</span>), {<span style="color:#a6e22e">persistent</span><span style="color:#f92672">:</span> <span style="color:#66d9ef">true</span>});
+    <span style="color:#a6e22e">console</span>.<span style="color:#a6e22e">log</span>(<span style="color:#e6db74">&#34; [x] Sent &#39;%s&#39;&#34;</span>, <span style="color:#a6e22e">msg</span>);
+  });
+  <span style="color:#a6e22e">setTimeout</span>(<span style="color:#66d9ef">function</span>() { <span style="color:#a6e22e">conn</span>.<span style="color:#a6e22e">close</span>(); <span style="color:#a6e22e">process</span>.<span style="color:#a6e22e">exit</span>(<span style="color:#ae81ff">0</span>) }, <span style="color:#ae81ff">500</span>);
+});
+</code></pre></div><p><code>work.js</code></p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-js" data-lang="js"><span style="color:#75715e">#!/usr/bin/env node
+</span><span style="color:#75715e"></span>
+<span style="color:#66d9ef">var</span> <span style="color:#a6e22e">amqp</span> <span style="color:#f92672">=</span> <span style="color:#a6e22e">require</span>(<span style="color:#e6db74">&#39;amqplib/callback_api&#39;</span>);
+
+<span style="color:#a6e22e">amqp</span>.<span style="color:#a6e22e">connect</span>(<span style="color:#e6db74">&#39;amqp://localhost&#39;</span>, <span style="color:#66d9ef">function</span>(<span style="color:#a6e22e">err</span>, <span style="color:#a6e22e">conn</span>) {
+  <span style="color:#a6e22e">conn</span>.<span style="color:#a6e22e">createChannel</span>(<span style="color:#66d9ef">function</span>(<span style="color:#a6e22e">err</span>, <span style="color:#a6e22e">ch</span>) {
+    <span style="color:#66d9ef">var</span> <span style="color:#a6e22e">q</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;task_queue&#39;</span>;
+
+    <span style="color:#a6e22e">ch</span>.<span style="color:#a6e22e">assertQueue</span>(<span style="color:#a6e22e">q</span>, {<span style="color:#a6e22e">durable</span><span style="color:#f92672">:</span> <span style="color:#66d9ef">true</span>});
+    <span style="color:#a6e22e">ch</span>.<span style="color:#a6e22e">prefetch</span>(<span style="color:#ae81ff">1</span>);
+    <span style="color:#a6e22e">console</span>.<span style="color:#a6e22e">log</span>(<span style="color:#e6db74">&#34; [*] Waiting for messages in %s. To exit press CTRL+C&#34;</span>, <span style="color:#a6e22e">q</span>);
+    <span style="color:#a6e22e">ch</span>.<span style="color:#a6e22e">consume</span>(<span style="color:#a6e22e">q</span>, <span style="color:#66d9ef">function</span>(<span style="color:#a6e22e">msg</span>) {
+      <span style="color:#66d9ef">var</span> <span style="color:#a6e22e">secs</span> <span style="color:#f92672">=</span> <span style="color:#a6e22e">msg</span>.<span style="color:#a6e22e">content</span>.<span style="color:#a6e22e">toString</span>().<span style="color:#a6e22e">split</span>(<span style="color:#e6db74">&#39;.&#39;</span>).<span style="color:#a6e22e">length</span> <span style="color:#f92672">-</span> <span style="color:#ae81ff">1</span>;
+
+      <span style="color:#a6e22e">console</span>.<span style="color:#a6e22e">log</span>(<span style="color:#e6db74">&#34; [x] Received %s&#34;</span>, <span style="color:#a6e22e">msg</span>.<span style="color:#a6e22e">content</span>.<span style="color:#a6e22e">toString</span>());
+      <span style="color:#a6e22e">setTimeout</span>(<span style="color:#66d9ef">function</span>() {
+        <span style="color:#a6e22e">console</span>.<span style="color:#a6e22e">log</span>(<span style="color:#e6db74">&#34; [x] Done&#34;</span>);
+        <span style="color:#a6e22e">ch</span>.<span style="color:#a6e22e">ack</span>(<span style="color:#a6e22e">msg</span>);
+      }, <span style="color:#a6e22e">secs</span> <span style="color:#f92672">*</span> <span style="color:#ae81ff">1000</span>);
+    }, {<span style="color:#a6e22e">noAck</span><span style="color:#f92672">:</span> <span style="color:#66d9ef">false</span>});
+  });
+});
+</code></pre></div><p>使用消息确认和<code>prefetch</code>可以设置一个工作队列。即使RabbitMQ重新启动，持久性选项也能让任务继续存在。 有关Channel方法和消息属性的更多信息，可以浏览<a href="https://www.squaremobius.net/amqp.node/channel_api.html">amqplib文档</a>。 现在我们可以继续阅读教程3，并学习如何向许多消费者传递相同的消息。</p>
+
+    </div>
+
+    
+    
+      <div class="btn-improve-page">
+          <a href="https://github.com/alphajc/mysite/edit/master/content/posts/middleware/rabbitmq/RabbitMQ%20Queue%20with%20Node.md">
+            <i class="fas fa-code-branch"></i>
+            Improve This Page
+          </a>
+      </div>
+    
+
+    
+  <hr />
+    <div class="row next-prev-navigator">
+
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    
+      
+      <div class="col-md-6 previous-article">
+        <a href="/posts/middleware/rabbitmq/rabbitmq-pubsub-with-node/" class="btn btn-outline-info">
+          <span><i class="fas fa-chevron-circle-left"></i> 上一篇</span>
+          <br />
+          <span>Node使用RabbitMQ：发布与订阅</span>
+        </a>
+      </div>
+      
+    
+    
+      
+        
+        
+          
+              
+          
+        
+        <div class="col-md-6 next-article">
+          <a href="/posts/middleware/rabbitmq/rabbitmq-base-with-node/" class="btn btn-outline-info">
+            <span>下一篇 <i class="fas fa-chevron-circle-right"></i></span>
+            <br />
+            <span>Node使用RabbitMQ：入门篇</span>
+          </a>
+        </div>
+      
+    
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+</div>
+
+  <hr />
+  
+  
+      <div id="disqus_thread"></div>
+<script type="text/javascript">
+  (function () {
+    
+    
+    if (window.location.hostname == "localhost") return;
+
+    var dsq = document.createElement("script");
+    dsq.type = "text/javascript";
+    dsq.async = true;
+    var disqus_shortname = "mydream-ink";
+    dsq.src = "//" + disqus_shortname + ".disqus.com/embed.js";
+    (
+      document.getElementsByTagName("head")[0] ||
+      document.getElementsByTagName("body")[0]
+    ).appendChild(dsq);
+  })();
+</script>
+<noscript
+  >请开启 JavaScript 功能
+  <a href="https://disqus.com/?ref_noscript"
+    >comments powered by Disqus.</a
+  ></noscript
+>
+<a href="https://disqus.com/" class="dsq-brlink"
+  >通过 <span class="logo-disqus">Disqus</span> 评论</a
+>
+
+  
+</div>
+
+    </div>
+
+    <footer class="container-fluid text-center align-content-center footer pb-2">
+  <div class="container pt-5">
+    <div class="row text-left">
+      <div class="col-md-4 col-sm-12">
+        <h5>导航</h5>
+        
+        <ul>
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#about">关于</a>
+            </li>
+            
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#skills">技能</a>
+            </li>
+            
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#experiences">经历</a>
+            </li>
+            
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#projects">项目</a>
+            </li>
+            
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#recent-posts">最近文章</a>
+            </li>
+            
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#achievements">成就</a>
+            </li>
+            
+        </ul>
+        
+
+      </div>
+      <div class="col-md-4 col-sm-12">
+        <h5>联系我</h5>
+        <ul>
+          
+          <li><span>电话: </span> <span>&#43;8619980414909</span></li>
+          
+          <li><span>邮箱: </span> <span>jerry@mydream.ink</span></li>
+          
+        </ul>
+      </div>
+      <div class="col-md-4 col-sm-12">
+        
+        <p>接收最新的邮件通知</p>
+        <form>
+          <div class="form-group">
+            <input
+              type="email"
+              class="form-control"
+              id="exampleInputEmail1"
+              aria-describedby="emailHelp"
+              placeholder="输入邮箱"
+            />
+            <small id="emailHelp" class="form-text text-muted"
+              >你的邮件地址不会被共享给他人</small
+            >
+          </div>
+          <button type="submit" class="btn btn-info">提交</button>
+        </form>
+      </div>
+    </div>
+  </div>
+  <hr />
+  <div class="container">
+    <div class="row text-left">
+      <div class="col-md-4">
+        <a id="theme" href="/" target="#">
+          <img src="/assets/images/logo-inverted.png">青云卷</a>
+      </div>
+      <div class="col-md-4"><a href="https://beian.miit.gov.cn">蜀ICP备 2021017630号-1</a>© 2021 Copyright.</div>
+    </div>
+  </div>
+</footer>
+
+    <script src="/assets/js/jquery-3.4.1.min.js"></script>
+<script src="/assets/js/bootstrap.min.js"></script>
+
+<script src="/assets/js/navbar.js"></script>
+<script src="/assets/js/jquery.filterizr.min.js"></script>
+
+
+    
+    
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/highlight.min.js"></script>
+<script src="/assets/js/single.js"></script>
+<script>
+  hljs.initHighlightingOnLoad();
+</script>
+
+
+  </body>
+</html>

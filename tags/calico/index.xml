@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>calico on 青云卷</title>
+    <link>https://mydream.ink/tags/calico/</link>
+    <description>Recent content in calico on 青云卷</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh-cn</language>
+    <lastBuildDate>Thu, 18 Jul 2019 06:57:59 +0800</lastBuildDate><atom:link href="https://mydream.ink/tags/calico/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>docker 容器网络方案：calico 网络模型</title>
+      <link>https://mydream.ink/archive/docker-calico-network/</link>
+      <pubDate>Thu, 18 Jul 2019 06:57:59 +0800</pubDate>
+      
+      <guid>https://mydream.ink/archive/docker-calico-network/</guid>
+      <description>calico 简介 calico 是容器网络的又一种解决方案，和其他虚拟网络最大的不同是，它没有采用 overlay 网络做报文的转发，提供了纯 3 层的网络模型。三层通信模型表示每个容器都通过 IP 直接通信，中间通过路由转发找到对方。在这个过程中，容器所在的节点类似于传统的路由器，提供了路由查找的功能。
+要想路由工作能够正常，每个虚拟路由器（容器所在的主机节点）必须有某种方法知道整个集群的路由信息，calico 采用的是 BGP 路由协议，全称是 Border Gateway Protocol。
+除了能用于 docker 这样的容器外，它还能集成到容器集群平台 kubernetes、共有云平台 AWS、GCE 等， 而且也能很容易地集成到 openstack 等 Iaas 平台。
+这篇文章就介绍 calico 是如何实现 docker 跨主机网络的。
+calico 集群安装和实验 这部分我会在自己的 virtualbox 环境中运行多节点 docker，并使用 calico 实现跨主机的容器网络通信功能。实验环境一共启动了三台 centos7 虚拟机：
+ node00: 172.17.8.100 node01: 172.17.8.101 node02: 172.17.8.102  这三台机器可以通过上面的 IP 地址进行通信，并且有不同的 hostname，推荐使用 vagrant 运行虚拟机集群。
+这部分我们会手动安装 calico 集群，以加深理解，在生产环境中推荐使用自动化安装。
+1. 安装 docker 既然要在 docker 集群中测试 calico 网络，当然要有一个能正常工作的 docker 环境。docker 的安装这里就不说了，请参考官网上的安装手册选择适合自己的方式。</description>
+    </item>
+    
+  </channel>
+</rss>

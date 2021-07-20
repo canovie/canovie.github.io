@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>SDN架构组件</title>
+    <meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta http-equiv="X-UA-Compatible" content="ie=edge" />
+
+
+<link rel="stylesheet" href="/assets/css/bootstrap.min.css" />
+<link rel="stylesheet" href="/assets/css/style.css" />
+<link rel="stylesheet" href="/assets/css/navbar.css" />
+
+
+<link href="https://fonts.googleapis.com/css2?family=Muli:wght@300;400;500;600" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" />
+
+
+<link rel="icon" type="image/png" href="/assets/images/favicon.png" />
+
+
+    
+<link
+  rel="stylesheet"
+  href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/styles/atom-one-dark.min.css"
+/>
+<link rel="stylesheet" href="/assets/css/single.css" />
+
+
+    
+    
+      
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'UA-142765126-1', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+
+    
+  </head>
+
+  <body>
+    <div class="container-fluid bg-dimmed wrapper">
+      
+      
+    <nav class="navbar navbar-expand-lg top-navbar final-navbar shadow">
+    <div class="container">
+      <a class="navbar-brand" href="/posts">
+        <img src="/assets/images/logo.png">青云卷</a>
+      <button class="navbar-toggler navbar-light" type="button" >
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <div class="collapse navbar-collapse" id="top-nav-items">
+        <ul class="navbar-nav ml-auto">
+        </ul>
+      </div>
+    </div>
+</nav>
+
+
+
+      
+      
+<div class="container p-0 read-area">
+  
+  <div class="hero-area col-sm-12" style='background-image: url(https://mydream.ink/assets/images/posts/virtualization/sdn.jpg);'>
+  </div>
+
+  
+  <div class="page-content">
+    <div class="author-profile ml-auto align-self-lg-center">
+      <img class="rounded-circle" src='/assets/images/portrait.jpg'/>
+      <h5 class="author-name">Jerry Chan</h5>
+      <p>October 21, 2017</p>
+    </div>
+
+    <div class="title">
+      <h1>SDN架构组件</h1>
+    </div>
+
+    <div class="post-content" id="post-content">
+      <h2 id="架构组件">架构组件</h2>
+<p>以下定义并解释了各架构组件：</p>
+<p><img src="https://images.weserv.nl/?url=https://upload.wikimedia.org/wikipedia/commons/e/e6/SDN-architecture-overview-transparent.png" alt="架构图"></p>
+<h1 id="sdn应用程序">SDN应用程序</h1>
+<p><code>SDN应用程序</code>是通过<code>北向接口</code>（<code>NBI</code>）显式，直接和编程地将其网络要求和所需网络行为传达给<code>SDN控制器</code>。此外，他们可能会为了内部决策而消耗网络的抽象视图。<code>SDN应用程序</code>由一个_SDN应用程序逻辑_和一个或多个_NBI驱动程序_组成。<code>SDN应用程序</code>本身可能会暴露另一层抽象网络控制，从而通过各自的_NBI代理_提供一个或多个更高级别的<code>NBI</code>。</p>
+<h1 id="sdn控制器">SDN控制器</h1>
+<p><code>SDN控制器</code>是一个逻辑上集中的实体，负责将<code>SDN应用程序</code>的要求转换为<code>SDN数据路径</code>，以及向<code>SDN应用</code>提供网络的抽象视图（可能包括统计信息和事件） 。<code>SDN控制器</code>由一个或多个_NBI代理_，_SDN控制逻辑_和<code>控制层到数据层接口</code>（<code>CDPI</code>）驱动器组成。作为逻辑集中式实体的定义既不规定也不排除实施细节，例如多个控制器的联合，控制器的分层连接，控制器之间的通信接口，以及虚拟化或网络资源的切片。</p>
+<h1 id="sdn数据路径">SDN数据路径</h1>
+<p><code>SDN数据路径</code>是一种逻辑网络设备，可以对其广告转发和数据处理功能进行可见性和无争议的控制。逻辑表示可以包括物理底物资源的全部或子集。<code>SDN数据路径</code>包括_CDPI代理_和一组一个或多个流量转发引擎和零个或多个流量处理功能。这些引擎和功能可能包括数据通路的外部接口或内部流量处理或终止功能之间的简单转发。一个或多个<code>SDN数据路径</code>可以包含在单个（物理）网络元件中——作为单元管理的通信资源的集成物理组合。<code>SDN数据路径</code>也可以跨多个物理网元进行定义。这种逻辑定义既不规定也不排除实现细节，例如物理映射的逻辑映射，共享物理资源的管理，<code>SDN数据通路</code>的虚拟化或分片，与非SDN网络的互操作性，以及数据处理功能，可以包括OSI 4-7层功能。</p>
+<h1 id="控制层到数据层接口">控制层到数据层接口</h1>
+<p>SDN <code>CDPI</code>是在<code>SDN控制器</code>和<code>SDN数据路径</code>之间定义的接口，其至少提供： 1. 对所有转发操作的编程控制， 2. 能力广告， 3. 统计报告， 4. 事件通知。 SDN的一个价值在于期望<code>CDPI</code>以开放，供应商中立和可互操作的方式实施。</p>
+<h1 id="sdn北向接口">SDN北向接口</h1>
+<p>SDN <code>NBI</code>是<code>SDN应用程序</code>和<code>SDN控制器</code>之间的接口，通常提供抽象网络视图，并能够直接表达网络行为和要求。这可能发生在任何抽象级别（纬度）和不同功能集（经度）之间。SDN的一个价值在于期望这些接口以开放，供应商中立和可互操作的方式实现。</p>
+
+    </div>
+
+    
+    
+      <div class="btn-improve-page">
+          <a href="https://github.com/alphajc/mysite/edit/master/content/posts/virtualization/sdn/SDN%20Architecture.md">
+            <i class="fas fa-code-branch"></i>
+            Improve This Page
+          </a>
+      </div>
+    
+
+    
+  <hr />
+    <div class="row next-prev-navigator">
+
+
+  
+
+  
+    
+      
+      <div class="col-md-6 previous-article">
+        <a href="/posts/virtualization/sdn/sdn-definition/" class="btn btn-outline-info">
+          <span><i class="fas fa-chevron-circle-left"></i> 上一篇</span>
+          <br />
+          <span>SDN的定义</span>
+        </a>
+      </div>
+      
+    
+    
+      
+        
+        
+          
+              
+          
+        
+        <div class="col-md-6 next-article">
+          <a href="/posts/virtualization/sdn/openflow/" class="btn btn-outline-info">
+            <span>下一篇 <i class="fas fa-chevron-circle-right"></i></span>
+            <br />
+            <span>OpenFlow简介</span>
+          </a>
+        </div>
+      
+    
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+</div>
+
+  <hr />
+  
+  
+      <div id="disqus_thread"></div>
+<script type="text/javascript">
+  (function () {
+    
+    
+    if (window.location.hostname == "localhost") return;
+
+    var dsq = document.createElement("script");
+    dsq.type = "text/javascript";
+    dsq.async = true;
+    var disqus_shortname = "mydream-ink";
+    dsq.src = "//" + disqus_shortname + ".disqus.com/embed.js";
+    (
+      document.getElementsByTagName("head")[0] ||
+      document.getElementsByTagName("body")[0]
+    ).appendChild(dsq);
+  })();
+</script>
+<noscript
+  >请开启 JavaScript 功能
+  <a href="https://disqus.com/?ref_noscript"
+    >comments powered by Disqus.</a
+  ></noscript
+>
+<a href="https://disqus.com/" class="dsq-brlink"
+  >通过 <span class="logo-disqus">Disqus</span> 评论</a
+>
+
+  
+</div>
+
+    </div>
+
+    <footer class="container-fluid text-center align-content-center footer pb-2">
+  <div class="container pt-5">
+    <div class="row text-left">
+      <div class="col-md-4 col-sm-12">
+        <h5>导航</h5>
+        
+        <ul>
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#about">关于</a>
+            </li>
+            
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#skills">技能</a>
+            </li>
+            
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#experiences">经历</a>
+            </li>
+            
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#projects">项目</a>
+            </li>
+            
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#recent-posts">最近文章</a>
+            </li>
+            
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#achievements">成就</a>
+            </li>
+            
+        </ul>
+        
+
+      </div>
+      <div class="col-md-4 col-sm-12">
+        <h5>联系我</h5>
+        <ul>
+          
+          <li><span>电话: </span> <span>&#43;8619980414909</span></li>
+          
+          <li><span>邮箱: </span> <span>jerry@mydream.ink</span></li>
+          
+        </ul>
+      </div>
+      <div class="col-md-4 col-sm-12">
+        
+        <p>接收最新的邮件通知</p>
+        <form>
+          <div class="form-group">
+            <input
+              type="email"
+              class="form-control"
+              id="exampleInputEmail1"
+              aria-describedby="emailHelp"
+              placeholder="输入邮箱"
+            />
+            <small id="emailHelp" class="form-text text-muted"
+              >你的邮件地址不会被共享给他人</small
+            >
+          </div>
+          <button type="submit" class="btn btn-info">提交</button>
+        </form>
+      </div>
+    </div>
+  </div>
+  <hr />
+  <div class="container">
+    <div class="row text-left">
+      <div class="col-md-4">
+        <a id="theme" href="/" target="#">
+          <img src="/assets/images/logo-inverted.png">青云卷</a>
+      </div>
+      <div class="col-md-4"><a href="https://beian.miit.gov.cn">蜀ICP备 2021017630号-1</a>© 2021 Copyright.</div>
+    </div>
+  </div>
+</footer>
+
+    <script src="/assets/js/jquery-3.4.1.min.js"></script>
+<script src="/assets/js/bootstrap.min.js"></script>
+
+<script src="/assets/js/navbar.js"></script>
+<script src="/assets/js/jquery.filterizr.min.js"></script>
+
+
+    
+    
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/highlight.min.js"></script>
+<script src="/assets/js/single.js"></script>
+<script>
+  hljs.initHighlightingOnLoad();
+</script>
+
+
+  </body>
+</html>

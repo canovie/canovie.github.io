@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>flink on 青云卷</title>
+    <link>https://mydream.ink/tags/flink/</link>
+    <description>Recent content in flink on 青云卷</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh-cn</language>
+    <lastBuildDate>Wed, 06 Jan 2021 15:00:43 +0800</lastBuildDate><atom:link href="https://mydream.ink/tags/flink/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Pyflink in Kubernetes</title>
+      <link>https://mydream.ink/posts/cloud-native/kubernetes/pyflink-in-kubernetes/</link>
+      <pubDate>Wed, 06 Jan 2021 15:00:43 +0800</pubDate>
+      
+      <guid>https://mydream.ink/posts/cloud-native/kubernetes/pyflink-in-kubernetes/</guid>
+      <description>pyFlink on kubernetes  在 TKE 环境下
+ 准备工作 为 flink 创建专用的命名空间、ServiceAccount，并设置好资源配额
+kubectl create ns flink kubectl -n flink create sa flink kubectl -n flink create role flink --verb=* --resource=*.* kubectl -n flink create rolebinding flink --role=flink --serviceaccount=flink:flink cat &amp;lt;&amp;lt; EOF &amp;gt; apiserver.crt # base 集群 apiserver 证书 -----BEGIN CERTIFICATE----- MIICyDCCAbCgAwIBAgIBADANBgkqhkiG9w0BAQsFADAVMRMwEQYDVQQDEwprdWJl cm5ldGVzMB4XDTIwMDMwNTA4MjYzOFoXDTMwMDMwMzA4MjYzOFowFTETMBEGA1UE AxMKa3ViZXJuZXRlczCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAMq/ 6ae6qIZbchBK7b0AaP2714K+tuxtGnl7p3yNwlCgVEnZjfytAr8cvkIzxCBH8xBc vqV2vtDOy0r6HecbIPTkd0bGn6BXjqPp6XZY0ffFgyBhGv6/DD7x7aJIG+A8uSVk /yTGcahGQ9WOQ6CDWDjZvC+K9zkeNqhtj1wm9P/hQcECAQkQbkIqLUF/P8SF4b8N QlodYsrZIg9MDqgQDq744AoFPm/F6G2GfHs1DfesYMoSYQs6ECec0+N/Nf5Kx7XX KW+ARAGEZxC3X7bJmxWr5JSRmmS46rmrN/MUDpMBaWUwtxubVxtIwt1FIFlFqCYz MR9UtvZkTaL6oSd6Q18CAwEAAaMjMCEwDgYDVR0PAQH/BAQDAgKUMA8GA1UdEwEB /wQFMAMBAf8wDQYJKoZIhvcNAQELBQADggEBABXd9WbwOlhlqyFsr/2s9wgf86+/ oo05gZhybHtuKHYvSwzoxAeyaMFGn4b7S2okcLoo3EwjmAN2Pup/qhTtiqM9xNfa +GuN+NX4zjkra+T2NEywIykwhodaFiYB+r6xM0LIHANlKKT7kRtgzkq/s8ui6Wkt b94T8BpE5U3f6YGz/4NtbqpYS6XVjIIjfP5MxoHRCh8H2LXmWs9A2RlmuZAwo0M2 FJjxcfIgvHrgCerPogVcXYT23BavOhMFlx7Jck2GAbDg0HYTabZuLNkj9T1//raL aknXJxuLYHbZe6I1cbsIdXJjav5c83YgqGDKetcJdkQqMgk8lVWW7RIdLb0= -----END CERTIFICATE----- EOF kubectl config --kubeconfig=flink-kubeconfig set-cluster base --server=https://cls-xxxxxxx.</description>
+    </item>
+    
+  </channel>
+</rss>

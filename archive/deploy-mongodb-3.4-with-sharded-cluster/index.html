@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>MongoDB3.4副本集分片集群搭建</title>
+    <meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta http-equiv="X-UA-Compatible" content="ie=edge" />
+
+
+<link rel="stylesheet" href="/assets/css/bootstrap.min.css" />
+<link rel="stylesheet" href="/assets/css/style.css" />
+<link rel="stylesheet" href="/assets/css/navbar.css" />
+
+
+<link href="https://fonts.googleapis.com/css2?family=Muli:wght@300;400;500;600" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" />
+
+
+<link rel="icon" type="image/png" href="/assets/images/favicon.png" />
+
+
+    
+<link
+  rel="stylesheet"
+  href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/styles/atom-one-dark.min.css"
+/>
+<link rel="stylesheet" href="/assets/css/single.css" />
+
+
+    
+    
+      
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'UA-142765126-1', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+
+    
+  </head>
+
+  <body>
+    <div class="container-fluid bg-dimmed wrapper">
+      
+      
+    <nav class="navbar navbar-expand-lg top-navbar final-navbar shadow">
+    <div class="container">
+      <a class="navbar-brand" href="/posts">
+        <img src="/assets/images/logo.png">青云卷</a>
+      <button class="navbar-toggler navbar-light" type="button" >
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <div class="collapse navbar-collapse" id="top-nav-items">
+        <ul class="navbar-nav ml-auto">
+        </ul>
+      </div>
+    </div>
+</nav>
+
+
+
+      
+      
+<div class="container p-0 read-area">
+  
+  <div class="hero-area col-sm-12" style='background-image: url(https://mydream.ink/assets/images/default-hero.jpg);'>
+  </div>
+
+  
+  <div class="page-content">
+    <div class="author-profile ml-auto align-self-lg-center">
+      <img class="rounded-circle" src='/assets/images/default-avatar.png'/>
+      <h5 class="author-name">John Doe</h5>
+      <p>July 6, 2019</p>
+    </div>
+
+    <div class="title">
+      <h1>MongoDB3.4副本集分片集群搭建</h1>
+    </div>
+
+    <div class="post-content" id="post-content">
+      <p>mongdb3.4 的副本集搭建与以前的版本有些区别，最主要的区别就是 configdb强制复制集(CSRS)。网上很多的教程都没有注意到这一点，所以在使用3.4版本的时候搭建不成功。</p>
+<p>搭建时遇到不少坑，几乎放弃的情况下，借助谷歌翻译查看了官方文档，问题迎刃而解。</p>
+<p>官方文档：<a href="https://docs.mongodb.com/v3.4/sharding/">Sharding - MongoDB Manual 3.4</a></p>
+<h1 id="一测试环境">一、测试环境</h1>
+<p>操作体统：VMware + ubuntu16.04 + 静态IP
+mongodb版本：mongodb-3.4</p>
+<h1 id="二布局预览">二、布局预览</h1>
+<p><img src="/assets/archive/v2-8062f692d687cad20536d3e44c1bf1fb_hd.png" alt=""></p>
+<h1 id="三资源分配">三、资源分配</h1>
+<p>IP分配：</p>
+<ol>
+<li>机器1：192.168.80.61</li>
+<li>机器2：192.168.80.62</li>
+<li>机器3：192.168.80.63</li>
+<li>机器4：192.168.80.64</li>
+<li>机器5：192.168.80.65</li>
+<li>机器6：192.168.80.66</li>
+</ol>
+<p>端口分配：</p>
+<ul>
+<li>mongos：18000</li>
+<li>config：17000</li>
+<li>shard01：18001</li>
+<li>shard02：18002</li>
+<li>shard03：18003</li>
+<li>shard04：18004</li>
+<li>shard05：18005</li>
+<li>shard06：18006</li>
+</ul>
+<p>表1:</p>
+<p><img src="/assets/archive/v2-7049f11c786ea34e9f2969c60c84ef6d_hd.png" alt=""></p>
+<p>三台主机分别新建如下目录：</p>
+<ul>
+<li>/home/ubuntu/data/mongodb/config/data</li>
+<li>/home/ubuntu/data/mongodb/config/log/</li>
+<li>/home/ubuntu/data/mongodb/mongos/log</li>
+</ul>
+<p>六台机器分别创建 表1 对应的分片，每台机器三个分片</p>
+<ul>
+<li>/home/ubuntu/data/mongodb/shard0X/data</li>
+<li>/home/ubuntu/data/mongodb/shard0X/log</li>
+</ul>
+<h1 id="四启动配置服务器">四、启动配置服务器</h1>
+<p>这是最关键的一步，网上一些教程报错的主要原因就在于congfigsvr配置不是针对版本3.4分别</p>
+<ol>
+<li>
+<p>在每一台路由机器上启动配置服务器（非第一次启动加<code>--logappend</code>）</p>
+<pre><code> mongod –configsvr --replSet cfgsvr –port 17000 –dbpath /home/ubuntu/data/mongodb/config/data  --logpath /home/ubuntu/data/mongodb/config/log/config.log –fork
+</code></pre>
+</li>
+<li>
+<p>登录任意一台配置服务器，初始化配置副本集</p>
+<pre><code> mongo 127.0.0.1:17000
+
+ &gt; config = {_id:&quot;cfgsvr&quot;, configsvr:true, members:[
+
+ {_id:0, host:&quot;192.168.80.61:17000&quot;},
+
+ {_id:0, host:&quot;192.168.80.62:17000&quot;},
+
+ {_id:0, host:&quot;192.168.80.63:17000&quot;}
+
+ ]}
+
+ &gt; rs.initiate(config)
+</code></pre>
+</li>
+</ol>
+<h1 id="五启动分片">五、启动分片</h1>
+<p>分别在每台机器上启动的设计的分片（例见上图）shardxx、shardxx、shardxx。（非第一次启动加<code>--logappend</code>）</p>
+<p><strong>#Shard01</strong>：</p>
+<pre><code>mongod --shardsvr --replSet shard01 --port 18001 --dbpath /home/ubuntu/data/mongodb/shard01/data --logpath /home/ubuntu/data/mongodb/shard01/log/shard01.log --fork
+</code></pre>
+<p><strong>#Shard02</strong>：</p>
+<pre><code>mongod --shardsvr --replSet shard02 --port 18002 --dbpath /home/ubuntu/data/mongodb/shard02/data --logpath /home/ubuntu/data/mongodb/shard02/log/shard02.log --fork
+</code></pre>
+<p><strong>#Shard03</strong>：</p>
+<pre><code>mongod --shardsvr --replSet shard03 --port 18003 --dbpath /home/ubuntu/data/mongodb/shard03/data --logpath /home/ubuntu/data/mongodb/shard03/log/shard03.log --fork
+</code></pre>
+<p><strong>#Shard04</strong>：</p>
+<pre><code>mongod --shardsvr --replSet shard04 --port 18004 --dbpath /home/ubuntu/data/mongodb/shard04/data --logpath /home/ubuntu/data/mongodb/shard04/log/shard04.log --fork
+</code></pre>
+<p><strong>#Shard05</strong>：</p>
+<pre><code>mongod --shardsvr --replSet shard05 --port 18005 --dbpath /home/ubuntu/data/mongodb/shard05/data --logpath /home/ubuntu/data/mongodb/shard05/log/shard05.log --fork
+</code></pre>
+<p><strong>#Shard06</strong>：</p>
+<pre><code>mongod --shardsvr --replSet shard06 --port 18006 --dbpath /home/ubuntu/data/mongodb/shard06/data --logpath /home/ubuntu/data/mongodb/shard06/log/shard06.log --fork
+</code></pre>
+<h1 id="六启动mongos服务器">六、启动mongos服务器</h1>
+<p>分别在每一台路由机器上启动mongos服务器，（非第一次启动加<code>--logappend</code>）注意命令：<code>mongos</code>不是<code>mongod</code></p>
+<pre><code>mongos --configdb cfgsvr/192.168.80.61:17000, 192.168.80.62:17000, 192.168.80.63:17000 --port 18000 --logpath /home/ubuntu/data/mongodb/mongos/log/mongos.log --fork
+</code></pre>
+<h1 id="七初始化分片">七、初始化分片</h1>
+<p>在任一机器（机器上有对应shardxx即可，可在1、4号机器），通过分片端口登陆分片，并初始化分片</p>
+<p><strong>#Shard01</strong>：</p>
+<pre><code>mongo 127.0.0.1:18001
+
+&gt; use admin
+
+&gt; config = { _id:&quot;shard01&quot;, members:[
+
+{_id:0,host:&quot;192.168.80.61:18001&quot;},
+
+{_id:1,host:&quot;192.168.80.66:18001&quot;},
+
+{_id:2,host:&quot;192.168.80.65:18001&quot;}]
+
+}
+
+&gt; rs.initiate(config)
+</code></pre>
+<p><strong>#Shard02</strong>：</p>
+<pre><code>mongo 127.0.0.1:18002
+
+&gt; use admin
+
+&gt; config = { _id:&quot;shard02&quot;, members:[
+
+{_id:0,host:&quot;192.168.80.62:18002&quot;},
+
+{_id:1,host:&quot;192.168.80.61:18002&quot;},
+
+{_id:2,host:&quot;192.168.80.66:18002&quot;}]
+
+}
+
+&gt; rs.initiate(config)
+</code></pre>
+<p><strong>#Shard03</strong>：</p>
+<pre><code>mongo 127.0.0.1:18003
+
+&gt; use admin
+
+&gt; config = { _id:&quot;shard03&quot;, members:[
+
+{_id:0,host:&quot;192.168.80.63:18003&quot;},
+
+{_id:1,host:&quot;192.168.80.62:18003&quot;},
+
+{_id:2,host:&quot;192.168.80.61:18003&quot;}]
+
+}
+
+&gt; rs.initiate(config)
+</code></pre>
+<p><strong>#Shard04</strong>：</p>
+<pre><code>mongo 127.0.0.1:18004
+
+&gt; use admin
+
+&gt; config = { _id:&quot;shard04&quot;, members:[
+
+{_id:0,host:&quot;192.168.80.64:18004&quot;},
+
+{_id:1,host:&quot;192.168.80.63:18004&quot;},
+
+{_id:2,host:&quot;192.168.80.62:18004&quot;}]
+
+}
+
+&gt; rs.initiate(config)
+</code></pre>
+<p><strong>#Shard05</strong>：</p>
+<pre><code>mongo 127.0.0.1:18005
+
+&gt; use admin
+
+&gt; config = { _id:&quot;shard05&quot;, members:[
+
+{_id:0,host:&quot;192.168.80.65:18005&quot;},
+
+{_id:1,host:&quot;192.168.80.64:18005&quot;},
+
+{_id:2,host:&quot;192.168.80.63:18005&quot;}]
+
+}
+
+&gt; rs.initiate(config)
+</code></pre>
+<p><strong>#Shard06</strong>：</p>
+<pre><code>mongo 127.0.0.1:18006
+
+&gt; use admin
+
+&gt; config = { _id:&quot;shard06&quot;, members:[
+
+{_id:0,host:&quot;192.168.80.66:18006&quot;},
+
+{_id:1,host:&quot;192.168.80.65:18006&quot;},
+
+{_id:2,host:&quot;192.168.80.64:18006&quot;}]
+
+}
+
+&gt; rs.initiate(config)
+</code></pre>
+<h1 id="八启用分片">八、启用分片</h1>
+<p>登陆mongos，添加所有分片</p>
+<pre><code>mongo 127.0.0.1:18000
+
+&gt; use  admin
+&gt; sh.addShard(&quot;shard01/192.168.80.61:18001,192.168.80.66:18001,192.168.80.65:18001&quot;})
+&gt; sh.addShard(&quot;shard02/192.168.80.62:18002,192.168.80.61:18002,192.168.80.66:18002&quot;})
+&gt; sh.addShard(&quot;shard03/192.168.80.63:18003,192.168.80.62:18003,192.168.80.61:18003&quot;})
+&gt; sh.addShard(&quot;shard04/192.168.80.64:18004,192.168.80.63:18004,192.168.80.62:18004&quot;})
+&gt; sh.addShard(&quot;shard05/192.168.80.65:18005,192.168.80.64:18005,192.168.80.63:18005&quot;})
+&gt; sh.addShard(&quot;shard06/192.168.80.66:18006,192.168.80.65:18006,192.168.80.64:18006&quot;})
+</code></pre>
+<h1 id="九指定数据库集合片键">九、指定数据库、集合、片键</h1>
+<p>登陆mongos，这里可以选择hash分片还是range分片</p>
+<pre><code>mongo 127.0.0.1:18000
+
+&gt; sh.enableSharding(&quot;testdb&quot;)
+
+&gt;Sh.shardCollection(&quot;testdb.table1&quot;,{id:1}})
+</code></pre>
+
+    </div>
+
+    
+    
+      <div class="btn-improve-page">
+          <a href="https://github.com/alphajc/mysite/edit/master/content/archive/Deploy%20MongoDB%203.4%20With%20Sharded%20Cluster.md">
+            <i class="fas fa-code-branch"></i>
+            Improve This Page
+          </a>
+      </div>
+    
+
+    
+  <hr />
+    <div class="row next-prev-navigator">
+
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+</div>
+
+  <hr />
+  
+  
+      <div id="disqus_thread"></div>
+<script type="text/javascript">
+  (function () {
+    
+    
+    if (window.location.hostname == "localhost") return;
+
+    var dsq = document.createElement("script");
+    dsq.type = "text/javascript";
+    dsq.async = true;
+    var disqus_shortname = "mydream-ink";
+    dsq.src = "//" + disqus_shortname + ".disqus.com/embed.js";
+    (
+      document.getElementsByTagName("head")[0] ||
+      document.getElementsByTagName("body")[0]
+    ).appendChild(dsq);
+  })();
+</script>
+<noscript
+  >请开启 JavaScript 功能
+  <a href="https://disqus.com/?ref_noscript"
+    >comments powered by Disqus.</a
+  ></noscript
+>
+<a href="https://disqus.com/" class="dsq-brlink"
+  >通过 <span class="logo-disqus">Disqus</span> 评论</a
+>
+
+  
+</div>
+
+    </div>
+
+    <footer class="container-fluid text-center align-content-center footer pb-2">
+  <div class="container pt-5">
+    <div class="row text-left">
+      <div class="col-md-4 col-sm-12">
+        <h5>导航</h5>
+        
+        <ul>
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#about">关于</a>
+            </li>
+            
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#skills">技能</a>
+            </li>
+            
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#experiences">经历</a>
+            </li>
+            
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#projects">项目</a>
+            </li>
+            
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#recent-posts">最近文章</a>
+            </li>
+            
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#achievements">成就</a>
+            </li>
+            
+        </ul>
+        
+
+      </div>
+      <div class="col-md-4 col-sm-12">
+        <h5>联系我</h5>
+        <ul>
+          
+          <li><span>电话: </span> <span>&#43;8619980414909</span></li>
+          
+          <li><span>邮箱: </span> <span>jerry@mydream.ink</span></li>
+          
+        </ul>
+      </div>
+      <div class="col-md-4 col-sm-12">
+        
+        <p>接收最新的邮件通知</p>
+        <form>
+          <div class="form-group">
+            <input
+              type="email"
+              class="form-control"
+              id="exampleInputEmail1"
+              aria-describedby="emailHelp"
+              placeholder="输入邮箱"
+            />
+            <small id="emailHelp" class="form-text text-muted"
+              >你的邮件地址不会被共享给他人</small
+            >
+          </div>
+          <button type="submit" class="btn btn-info">提交</button>
+        </form>
+      </div>
+    </div>
+  </div>
+  <hr />
+  <div class="container">
+    <div class="row text-left">
+      <div class="col-md-4">
+        <a id="theme" href="/" target="#">
+          <img src="/assets/images/logo-inverted.png">青云卷</a>
+      </div>
+      <div class="col-md-4"><a href="https://beian.miit.gov.cn">蜀ICP备 2021017630号-1</a>© 2021 Copyright.</div>
+    </div>
+  </div>
+</footer>
+
+    <script src="/assets/js/jquery-3.4.1.min.js"></script>
+<script src="/assets/js/bootstrap.min.js"></script>
+
+<script src="/assets/js/navbar.js"></script>
+<script src="/assets/js/jquery.filterizr.min.js"></script>
+
+
+    
+    
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/highlight.min.js"></script>
+<script src="/assets/js/single.js"></script>
+<script>
+  hljs.initHighlightingOnLoad();
+</script>
+
+
+  </body>
+</html>

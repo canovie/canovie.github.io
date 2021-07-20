@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Rabbit MQ on 青云卷</title>
+    <link>https://mydream.ink/posts/middleware/rabbitmq/</link>
+    <description>Recent content in Rabbit MQ on 青云卷</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh-cn</language>
+    <lastBuildDate>Fri, 16 Feb 2018 08:52:19 +0800</lastBuildDate><atom:link href="https://mydream.ink/posts/middleware/rabbitmq/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Node使用RabbitMQ：远程过程调用（RPC）</title>
+      <link>https://mydream.ink/posts/middleware/rabbitmq/rabbitmq-rpc-with-node/</link>
+      <pubDate>Fri, 16 Feb 2018 08:52:19 +0800</pubDate>
+      
+      <guid>https://mydream.ink/posts/middleware/rabbitmq/rabbitmq-rpc-with-node/</guid>
+      <description>前提条件 本教程假定RabbitMQ已安装并在标准端口（5672）上的本地主机上运行。如果您使用不同的主机，端口或凭据，连接设置将需要调整。
+（使用amqp.node客户端） 在第二个教程中，我们学习了如何使用工作队列在多个Worker之间分配耗时的任务。 但是如果我们需要在远程计算机上运行一个函数并等待结果呢？那么，这是件不同的事。这种模式通常被称为远程过程调用或RPC。 在本教程中，我们将使用RabbitMQ构建一个RPC系统：一个客户端和一个可扩展的RPC服务器。由于我们没有任何值得分发的耗时任务，所以我们将创建一个返回斐波那契数列的虚拟RPC服务。
+回调队列 一般来讲，通过RabbitMQ使用RPC是非常容易的。客户端发送请求消息，服务器回复响应消息。为了收到回应，请求时，我们需要发送一个callback队列地址。我们可以使用默认队列。让我们试试看：
+ch.assertQueue(&amp;#39;&amp;#39;, {exclusive: true}); ch.sendToQueue(&amp;#39;rpc_queue&amp;#39;,new Buffer(&amp;#39;10&amp;#39;), { replyTo: queue_name }); # ... then code to read a response message from the callback queue ...  消息属性 AMQP 0-9-1协议预定义了一组与消息一起的14个属性。除了以下属性，大多数属性很少使用： persistent：将消息标记为persistent（值为true）或transient（false）。您可能会从第二个教程中了解到这个属性。 content_type：用于描述编码的MIME类型。例如，对于经常使用的JSON编码，将此属性设置为application/json是一个很好的习惯。 reply_to：通常用于命名回调队列。 correlation_id：用于将RPC响应与请求相关联。
+ 关联标识（correlation id） 在上面介绍的方法中，我们建议为每个RPC请求创建一个回调队列。这是非常低效的，但幸运的是有一个更好的方法——让我们创建一个单一的客户端回调队列。 这引发了一个新的问题，在该队列中收到回复，不清楚回复属于哪个请求。什么时候使用correlation_id属性？我们将把它设置为每个请求的唯一值。之后，当我们在回调队列中收到一条消息时，我们将查看这个属性，并基于这个属性，我们可以将响应与请求进行匹配。如果我们看到一个未知的correlation_id值，我们可以放心地丢弃这个消息——这不属于我们的请求。 您可能会问，为什么我们应该忽略回调队列中的未知消息，而不是失败并报一个错误？这是由于在服务器端的竞争条件的可能性。虽然不太可能，但在发送给我们答复之后，在发送请求的确认消息之前，RPC服务器可能会死亡。如果发生这种情况，重新启动的RPC服务器将再次处理该请求。这就是为什么在客户端，我们必须优雅地处理重复的响应，理想情况下RPC应该是幂等的。
+总结 我们的RPC调用像这样： 当客户端启动的时候，它创建一个匿名的独占式回调队列。 对于一个RPC请求，客户端会发送具有这两个属性的消息：reply_to，用于设置回调队列；correlation_id，作为请求标识。 请求被发送到一个rpc_queue队列。 RPC Worker（又名：服务器）在队列上等待请求。当出现一个请求时，它执行这个工作，并使用reply_to字段中的队列将结果发送回客户端。 客户端在回调队列中等待数据。出现消息时，会检查correlation_id属性。如果它匹配来自请求的值，则返回对应用程序的响应。
+全部代码 斐波那契函数：
+function fibonacci(n) { if (n == 0 || n == 1) return n; else return fibonacci(n - 1) + fibonacci(n - 2); } 我们声明斐波那契函数。它只假定有效的正整数输入（不要指望这个函数可以使用大数字，因为这可能是最慢的递归实现）。 我们的RPC服务器rpc_server.</description>
+    </item>
+    
+    <item>
+      <title>Node使用RabbitMQ：主题交换器</title>
+      <link>https://mydream.ink/posts/middleware/rabbitmq/rabbitmq-exchange-with-node/</link>
+      <pubDate>Thu, 15 Feb 2018 08:52:19 +0800</pubDate>
+      
+      <guid>https://mydream.ink/posts/middleware/rabbitmq/rabbitmq-exchange-with-node/</guid>
+      <description>前提条件 本教程假定RabbitMQ已安装并在标准端口（5672）上的本地主机上运行。如果您使用不同的主机，端口或凭据，连接设置将需要调整。
+（使用amqp.node客户端） 在之前的教程中，我们改良了我们的日志系统。我们没有使用只有虚拟广播的fanout交换器，而是使用direct交换器，提供了有选择性地接收日志的可能性。 虽然使用direct交换器改良了我们的系统，但是他还是存在一些限制——它不能根据多种标准路由。 在我们的日志系统中，我们可能不仅想要订阅基于严重性级别的日志，可能还有基于日志出处的。你可能从syslog unix工具知道这个概念，它根据严重性（info/warn/crit &amp;hellip;）和设备（auth/cron/kern &amp;hellip;）来路由日志。 这会给我们很大的灵活性——我们可能想要获取来自&amp;rsquo;cron&amp;rsquo;的严重错误，而且还要听取来自&amp;rsquo;kern&amp;rsquo;的所有日志。 为了在我们的日志系统中实现这一点，我们需要了解更复杂的主题（topic）交换器。
+主题交换器 发送到主题交换的消息不能有任意的routing_key——它必须是由点分隔的单词列表。单词可以是任何东西，但通常它们指定连接到消息的一些功能。一些有效的路由键例子： stock.usd.nyse，nyse.vmw，quick.orange.rabbit。在路由选择键中可以有许多单词，最多255个字母。 绑定键也必须有相同的形式。主题交换器背后的逻辑类似于直接的——使用特定的路由键发送的消息将被传送到与匹配的绑定键绑定的所有队列。但是绑定键有两个重要的特殊情况：
+ *（星号）可以代替一个单词。 #（井号）可以代替另个或者多个单词。  举个简单的例子：
+在这个例子中，我们将发送所有描述动物的信息。消息将使用由三个单词（两个点）组成的路由键发送。路由键中的第一个单词将描述速度，第二个颜色和第三个种类：&amp;lt;speed&amp;gt;.&amp;lt;color&amp;gt;.&amp;lt;species&amp;gt;。 我们将创建三个绑定：Q1的绑定键是*.orange.*，Q2是*.*.rabbit和lazy.#。 什么含义呢？
+ Q1对所有橘色动物感兴趣。 Q2想要监听所有的兔子和和所有懒惰的动物。  一条路由键为quick.orange.rabbit将会被分发到两个队列，同样的，lazy.orange.elephant也将被分发到两个队列。而quick.orange.fox只会被发送到第一个队列中，lazy.brown.fox只会被发送到第二个。lazy.pink.rabbit虽然匹配第二个队列中的两个绑定键，但是它只会被发送一次。auick.brown.fox不匹配任何绑定键所以会被直接取消并且被丢掉。 如果违反我们的约定，发送一个或四个单词，如orange或quick.orange.male.rabbit的消息会发生什么？它们也将因为不匹配绑定键而被丢掉。 另一方面，lazy.orange.male.rabbit即使有四个单词，也会匹配最后一个绑定键，并被传递到第二个队列。
+ 主题交换器 主题交换器功能强大能够拥有其它交换器的功能。 当一个队列使用“＃”（井号）绑定键绑定时，它将接收所有的消息，而不管路由键如何——类似于fanout交换器。 当在绑定中不使用特殊字符“*”（星号）和“＃”（井号）时，主题交换器将像直接交换器一样。
+ 全部代码 我们将在我们的日志系统中使用主题交换器。我们首先假定日志的路由键有两个单词：&amp;lt;facility&amp;gt;.&amp;lt;severity&amp;gt;。 这个代码和前一个教程基本一样。 emit_log_topic.js：
+#!/usr/bin/env node  var amqp = require(&amp;#39;amqplib/callback_api&amp;#39;); amqp.connect(&amp;#39;amqp://localhost&amp;#39;, function(err, conn) { conn.createChannel(function(err, ch) { var ex = &amp;#39;topic_logs&amp;#39;; var args = process.argv.slice(2); var key = (args.length &amp;gt; 0) ? args[0] : &amp;#39;anonymous.</description>
+    </item>
+    
+    <item>
+      <title>Node使用RabbitMQ：路由</title>
+      <link>https://mydream.ink/posts/middleware/rabbitmq/rabbitmq-route-with-node/</link>
+      <pubDate>Wed, 14 Feb 2018 08:52:19 +0800</pubDate>
+      
+      <guid>https://mydream.ink/posts/middleware/rabbitmq/rabbitmq-route-with-node/</guid>
+      <description>前提条件 本教程假定RabbitMQ已安装并在标准端口（5672）上的本地主机上运行。如果您使用不同的主机，端口或凭据，连接设置将需要调整。
+（使用amqp.node客户端） 在之前的教程中，我们构建了一个简单的日志系统我们能够将日志消息广播给许多接收者。 在本教程中，我们将添加一个功能——只订阅一部分消息。比如说，我们只把最严重的错误输出到日志文件（写到盘），而在控制台上打印所有的日志信息。
+绑定 在前面的教程中我们已经创建过绑定了，这里我们可以重新使用：
+ch.bindQueue(q.queue, ex, &amp;#39;&amp;#39;); 一个绑定将一个交换器和一个队列关联起来。我们可以这样简单理解：队列将会对该交换器里的消息感兴趣。 绑定可以采用额外的绑定键参数（上面代码中的空字符串）。这是我们如何创建一个带key的绑定：
+ch.bindQueue(queue_name, exchange_name, &amp;#39;black&amp;#39;); 绑定键的含义取决于交换类型。我们之前使用的fanout交换机，简单地忽略了它的值。
+直接交换器（Direct exchange） 我们在前面的教程中创建的日志系统将广播所有的信息给消费者。我们希望扩展这个功能，以便根据消息的严重性来过滤消息。例如我们可能希望将日志写入磁盘的脚本只接收到严重的错误，而不会浪费磁盘去存储info和warning的日志。 我们之前使用了一个fanout交换器，这并没有给我们太大的灵活性——它只能够无意识地广播。 现在我们使用direct交换器代替。direct交换器背后的路由算法很简单——消息将进入binding key与消息的routing key完全匹配的队列。 为了阐释清楚，我们可以参考一下示意图：
+如图，我们可以看到direct交换器X绑定了两个队列。第一个队列的绑定键是orange，第二个队列有两个绑定，两个绑定键分别是black和green。 此图中，发布一个路由键为orange的消息到交换器中，将被路由到Q1队列中。路由键为black或者是green的消息将路由到Q2队列中。所有其他消息将被取消。
+多绑定 相同的绑定键绑定多个队列是完全合法的。在上述例子中，我们完全可以使用绑定键black绑定X和Q1。如此一来这个直接交换器就跟删除交换器一样将会把消息广播给匹配的队列。带有路由键black的消息将被同时推送到Q1和Q2。
+发送日志 我们将使用我们的日志系统模型，以直接交换器代替删除交换器，以日志的严重性级别作为路由键。这样接收脚本可以选择自己想接收的级别的日志。我们先关注发送日志。 我们总需要首先去创建一个交换器：
+var ex = &amp;#39;direct_logs&amp;#39;; ch.assertExchange(ex, &amp;#39;direct&amp;#39;, {durable: false}); 然后准备发送一个消息：
+var ex = &amp;#39;direct_logs&amp;#39;; ch.assertExchange(ex, &amp;#39;direct&amp;#39;, {durable: false}); ch.publish(ex, severity, new Buffer(msg)); 为了简化事情，我们将假定“严重性”可以是info，warning，error之一。
+订阅 接收消息的方式与上一个教程中的一样，除了一个例外——我们将为每个我们感兴趣的严重级别创建一个新的绑定。
+args.forEach(function(severity) { ch.bindQueue(q.queue, exchange, severity); }); 全部代码 emit_log_direct.js脚本的代码：
+#!/usr/bin/env node  var amqp = require(&amp;#39;amqplib/callback_api&amp;#39;); amqp.</description>
+    </item>
+    
+    <item>
+      <title>Node使用RabbitMQ：发布与订阅</title>
+      <link>https://mydream.ink/posts/middleware/rabbitmq/rabbitmq-pubsub-with-node/</link>
+      <pubDate>Tue, 13 Feb 2018 08:52:19 +0800</pubDate>
+      
+      <guid>https://mydream.ink/posts/middleware/rabbitmq/rabbitmq-pubsub-with-node/</guid>
+      <description>前提条件 本教程假定RabbitMQ已安装并在标准端口（5672）上的本地主机上运行。如果您使用不同的主机，端口或凭据，连接设置将需要调整。
+（使用amqp.node客户端） 在前面的教程中，我们创建了一个工作队列，假设每个任务只被传递给一个Worker。在这一部分，我们将做一些完全不同的事情——我们会向多个消费者传递信息。这种模式被称为“发布与订阅”。 为了说明这个模式，我们将建立一个简单的日志系统。它将包含两个程序 - 第一个将发送日志消息，第二个将接收并打印它们。 在我们的日志系统中，接收程序的每个运行副本都会收到消息。这样我们就可以运行一个接收器并将日志定向到磁盘，同时将能够运行另一个接收器并输出到屏幕上以便查看日志。 本质上，发布的日志消息将被广播给所有的接收者。
+交换器（exchange） 在本教程的前面部分，我们发送和接收来自队列的消息。现在是时候在Rabbit中引入完整的消息模型了。 让我们快速回顾一下前面的教程中介绍的内容：
+ 生产者（producer）是发送消息的用户应用程序。 队列（queue）是存储消息的缓冲区。 消费者（consumer）是接收消息的用户应用程序。  RabbitMQ中消息传递模型的核心思想是生产者永远不会将任何消息直接发送到队列中。实际上，生产者通常甚至不知道邮件是否会被传送到任何队列中。 生产者只能将消息发送给交换器。交换器非常简单，它一面接受来自生产者的消息，一面将接收到的消息推送给队列。交换器必须知道如何处理接收到的消息：是否应该附加到特定的队列？是否应该附加到许多队列？还是应该丢弃。这些规则是由交换类型定义的。
+有几种可用的交换类型：direct，topic，headers和fanout。我们将关注最后一个 ——fanout。让我们创建一个这种类型的交换器，并将其称为logs：
+ch.assertExchange(&amp;#39;logs&amp;#39;, &amp;#39;fanout&amp;#39;, {durable: false}) fanout交换非常简单。正如你可能从名字中猜到的那样，它只是将所有收到的消息广播到它所知道的所有队列中。这正是我们日志系统所需要的。
+ 列出交换器 要列出服务器上的交换，您可以运行有用的rabbitmqctl：
+sudo rabbitmqctl list_exchanges  在这个列表中将会有一些amq.*交换和默认（未命名）交换。这些是默认创建的，但目前不太可能需要使用它们。 默认交换器 在本教程的以前部分，我们对交换器一无所知，但仍能够将消息发送到队列。这是可能的，因为我们正在使用一个默认的交换，这是由空字符串（&amp;quot;&amp;quot;）标识。 回顾一下我们之前如何发布消息：
+ ch.sendToQueue(&amp;#39;hello&amp;#39;, new Buffer(&amp;#39;Hello World!&amp;#39;));  这里我们使用默认的或无名的交换：消息被路由到队列中，如果它存在的话，该消息被指定为第一个参数。
+ 现在，我们可以发布到我们的命名交换：
+ch.publish(&amp;#39;logs&amp;#39;, &amp;#39;&amp;#39;, new Buffer(&amp;#39;Hello World!&amp;#39;)); 作为第二个参数的空字符串意味着我们不想将消息发送到任何特定的队列。我们只想将其发布到我们的logs交换器。
+临时队列 正如你以前可能记得我们使用的是具有指定名称的队列（请记住hello和task_queue？）。给队列命名是很重要的——我们需要给Workers指定相同的队列。当你想在生产者和消费者之间共享队列时，一定要给队列命名。 但是我们的日志系统并不是这样。我们想要监听所有日志消息，而不仅仅是其中的一部分。我们也只对目前流动的消息感兴趣，而不是旧消息。要解决这个问题，我们需要两件事。 首先，每当我们连接到Rabbit，我们需要一个新的、空的队列。要做到这一点，我们可以创建一个随机名称的队列，或者最好是让服务器为我们选择一个随机队列名称。 其次，一旦我们断开消费者，队列应该被自动删除。 在amqp.node客户端中，当我们将队列名称作为空字符串提供时，我们使用生成的名称创建一个非持久队列：
+ch.assertQueue(&amp;#39;&amp;#39;, {exclusive: true}); 当方法返回时，队列实例包含由RabbitMQ生成的随机队列名称。例如，它可能看起来像amq.gen-JzTY20BRgKO-HjmUJj0wLg。 当声明它的连接关闭时，队列将被删除，因为它被声明为独占（exclusive）。
+绑定 我们已经创建了一个扇出交换器和一个队列。现在我们需要告诉交换器把消息发送到我们的队列。交换器和队列之间的关系被称为绑定。
+ch.bindQueue(queue_name, &amp;#39;logs&amp;#39;, &amp;#39;&amp;#39;); 此后，logs交换器将把消息附加到我们的队列中。
+ 列出绑定 你可以通过以下方式列出所有的绑定：</description>
+    </item>
+    
+    <item>
+      <title>Node使用RabbitMQ：工作队列</title>
+      <link>https://mydream.ink/posts/middleware/rabbitmq/rabbitmq-queue-with-node/</link>
+      <pubDate>Mon, 12 Feb 2018 08:52:19 +0800</pubDate>
+      
+      <guid>https://mydream.ink/posts/middleware/rabbitmq/rabbitmq-queue-with-node/</guid>
+      <description>前提条件 本教程假定RabbitMQ已安装并在标准端口（5672）上的本地主机上运行。如果您使用不同的主机，端口或凭据，连接设置将需要调整。
+（使用amqp.node客户端） 在第一个教程中，我们编写了用于从命名队列发送和接收消息的程序。在这一个中，我们将创建一个工作队列，用于在多个Worker之间分配耗时的任务。 工作队列（又名：任务队列）主要目的是避免立即执行资源密集型任务，避免必须等待任务完成。取而代之的是，安排稍后完成任务。我们把一个任务封装成一个消息并发送给一个队列。在后台运行的工作进程将弹出任务并最终执行作业。当你运行许多Worker时，任务将在他们之间共享。 这个概念在web应用程序中特别有用，在短的HTTP请求窗口中不可能处理复杂的任务。
+准备 在本教程的前一部分，我们发送了一个包含“Hello World！”的消息。现在我们将发送代表复杂任务的字符串。我们没有真正的任务，比如图像被重新调整大小或者渲染PDF文件，所以让我们假装我们忙——通过使用setTimeout方法。 我们稍微修改前面例子中的send.js代码，以允许从命令行发送任意消息。这个程序将安排任务到我们的工作队列，所以让我们把它命名为new_task.js：
+var q = &amp;#39;task_queue&amp;#39;; var msg = process.argv.slice(2).join(&amp;#39; &amp;#39;) || &amp;#34;Hello World!&amp;#34;; ch.assertQueue(q, {durable: true}); ch.sendToQueue(q, new Buffer(msg), {persistent: true}); console.log(&amp;#34; [x] Sent &amp;#39;%s&amp;#39;&amp;#34;, msg); 我们旧的receive.js脚本也需要进行一些更改：它需要伪造邮件正文中每个点的第二个工作。它将从队列中弹出消息并执行任务，所以我们称之为worker.js：
+ch.consume(q, function(msg) { var secs = msg.content.toString().split(&amp;#39;.&amp;#39;).length - 1; console.log(&amp;#34; [x] Received %s&amp;#34;, msg.content.toString()); setTimeout(function() { console.log(&amp;#34; [x] Done&amp;#34;); }, secs * 1000); }, {noAck: true}); 请注意，我们的假任务模拟执行时间。 按照教程1运行它们：
+# shell 1 ./worker.js # shell 2 .</description>
+    </item>
+    
+    <item>
+      <title>Node使用RabbitMQ：入门篇</title>
+      <link>https://mydream.ink/posts/middleware/rabbitmq/rabbitmq-base-with-node/</link>
+      <pubDate>Sun, 11 Feb 2018 08:52:19 +0800</pubDate>
+      
+      <guid>https://mydream.ink/posts/middleware/rabbitmq/rabbitmq-base-with-node/</guid>
+      <description>前提条件 本教程假定RabbitMQ已安装并在本地主机的标准端口（5672）上运行。如果您使用不同的主机，端口或凭据，连接设置将需要调整。
+简介 RabbitMQ是一个消息broker：它接受和转发消息。你可以把它想象成一个邮局：当你把邮件放在邮箱里时，你可以确定邮差先生最终会把邮件发送给你的收件人。在这个比喻中，RabbitMQ是整个邮政系统即信箱、邮局和邮递员。 RabbitMQ与邮局的主要区别是它不处理纸张，而是接受，存储和转发数据的二进制数据块——消息。 RabbitMQ和一般的消息传递使用了一些术语。
+ 生产（producing）只不过是发送而已。一个发送消息的程序是一个生产者（producer）：
+队列（queue）是RabbitMQ内部的邮箱名称。尽管消息流经RabbitMQ和您的应用程序，但它们只能存储在队列（queue）中。队列（queue）只受主机的内存和磁盘限制，实质上是一个大的消息缓冲区。许多生产者（producer）可以发送消息到一个队列（queue），许多消费者（consumers）可以尝试从一个队列（queue）接收数据。这就是我们代表队列（queue）的方式：
+消费（consuming）与接受有类似的意义。消费者（consumer）是主要等待接收消息的程序：
+ 请注意，producer，consumer和broker不必在同一主机上；事实上在大多数应用程序中都不会。
+(使用amqp.node客户端) 在本教程的这一部分，我们将用Node编写两个小程序；发送单个消息的生产者，以及接收消息并将其打印出来的消费者。我们将详细介绍amqp.node API中的一些细节，将注意力集中在这个非常简单的事情上，以便开始。这是一个消息传递的“Hello World”。 在下图中，“P”是我们的生产者，“C”是我们的消费者。中间的盒子是一个队列——RabbitMQ消费者的消息缓冲区。  amqp.node客户端库 RabbitMQ提供多种协议。本教程使用AMQP 0-9-1，这是一个开放，通用的消息传递协议。 RabbitMQ有许多不同的语言客户端。我们将在本教程中使用amqp.node客户端。 首先，使用npm安装amqp.node：
+ npm install amqplib 现在我们安装了amqp.node，我们可以写一些代码。
+发送端 我们将调用我们的消息发布者（发送者）send.js和我们的消息使用者（接收者）receive.js。发布者将连接到RabbitMQ，发送一条消息，然后退出。 在send.js中，我们需要首先需要库：
+#!/usr/bin/env node  var amqp = require(&amp;#39;amqplib/callback_api&amp;#39;); 然后连接到RabbitMQ服务器
+amqp.connect(&amp;#39;amqp://localhost&amp;#39;, function(err, conn) {}); 接下来我们创建一个频道（channel），这是大部分API所需要做的：
+amqp.connect(&amp;#39;amqp://localhost&amp;#39;, function(err, conn) { conn.createChannel(function(err, ch) {}); }); 发送，我们必须申报队列给我们发送；然后我们可以发布消息到队列中：
+amqp.connect(&amp;#39;amqp://localhost&amp;#39;, function(err, conn) { conn.createChannel(function(err, ch) { var q = &amp;#39;hello&amp;#39;; ch.assertQueue(q, {durable: false}); // Note: on Node 6 Buffer.</description>
+    </item>
+    
+  </channel>
+</rss>

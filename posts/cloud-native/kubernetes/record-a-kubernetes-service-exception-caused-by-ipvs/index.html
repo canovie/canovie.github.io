@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>记一次 IPVS 引起的 kubernetes 服务异常</title>
+    <meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta http-equiv="X-UA-Compatible" content="ie=edge" />
+
+
+<link rel="stylesheet" href="/assets/css/bootstrap.min.css" />
+<link rel="stylesheet" href="/assets/css/style.css" />
+<link rel="stylesheet" href="/assets/css/navbar.css" />
+
+
+<link href="https://fonts.googleapis.com/css2?family=Muli:wght@300;400;500;600" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" />
+
+
+<link rel="icon" type="image/png" href="/assets/images/favicon.png" />
+
+
+    
+<link
+  rel="stylesheet"
+  href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/styles/atom-one-dark.min.css"
+/>
+<link rel="stylesheet" href="/assets/css/single.css" />
+
+
+    
+    
+      
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'UA-142765126-1', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+
+    
+  </head>
+
+  <body>
+    <div class="container-fluid bg-dimmed wrapper">
+      
+      
+    <nav class="navbar navbar-expand-lg top-navbar final-navbar shadow">
+    <div class="container">
+      <a class="navbar-brand" href="/posts">
+        <img src="/assets/images/logo.png">青云卷</a>
+      <button class="navbar-toggler navbar-light" type="button" >
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <div class="collapse navbar-collapse" id="top-nav-items">
+        <ul class="navbar-nav ml-auto">
+        </ul>
+      </div>
+    </div>
+</nav>
+
+
+
+      
+      
+<div class="container p-0 read-area">
+  
+  <div class="hero-area col-sm-12" style='background-image: url(https://mydream.ink/assets/images/posts/cloud-native/ipvs-p1.png);'>
+  </div>
+
+  
+  <div class="page-content">
+    <div class="author-profile ml-auto align-self-lg-center">
+      <img class="rounded-circle" src='/assets/images/portrait.jpg'/>
+      <h5 class="author-name">Jerry Chan</h5>
+      <p>December 6, 2020</p>
+    </div>
+
+    <div class="title">
+      <h1>记一次 IPVS 引起的 kubernetes 服务异常</h1>
+    </div>
+
+    <div class="post-content" id="post-content">
+      <h2 id="问题描述">问题描述</h2>
+<p>在我们的环境中，业务 A 会访问业务 B（也即 B 是 A 的上游服务），当 B 发版时，A 的请求偶尔会出现 timeout。现象看起来是流量路由到了已经不能提供服务的老的 pod 中。</p>
+<h2 id="问题处理">问题处理</h2>
+<h3 id="排查点一">排查点一</h3>
+<p>当 pod 下线时，endpoint controller 未及时将 pod 从 endpoint 中取出，导致流量进入了旧的 pod。</p>
+<p>由于集群 master 是托管部署的，所以我们没有办法查看相关日志和负载，求助于腾讯云的同时，自己这边也在排查。排查分两步进行，监控服务 B endpoint 的变化，同时滚动重启该服务。</p>
+<ul>
+<li>
+<p><em>监控 ep 变化</em></p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">watch -n <span style="color:#ae81ff">1</span> kubectl -n production describe ep wk-dispatcher
+</code></pre></div></li>
+<li>
+<p><em>重启服务</em></p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">kubectl -n production rollout restart deployment wk-dispatcher
+</code></pre></div></li>
+</ul>
+<p>通过排查发现，跟 endpoint controller 并没有关系，因为 ep 变化很及时，加上至少 30 秒的优雅终止时间，基本可以确定在服务结束前，pod 是从 ep 中移除了的。</p>
+<p>那不是这个原因，又会是什么原因呢？既然 ep 已经及时卸载了 pod，那是不是 kube-proxy 没有及时将相关规则改掉呢？</p>
+<h3 id="排查点二">排查点二</h3>
+<p>kube-proxy 没有及时将相关规则改掉</p>
+<p>虽然按照我的理解，这么长的优雅终止时间，怎么着规则都应该同步了才对，那可能同步时间加上请求处理时间超过了优雅终止时间，如果这样也还是有可能的，无论如何观察一下总是好的。</p>
+<ul>
+<li>
+<p><em>查看 ipvs 规则变化</em></p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">CLUSTERIP<span style="color:#f92672">=</span><span style="color:#e6db74">`</span>kubectl -n production get svc wk-dispatcher -o<span style="color:#f92672">=</span>jsonpath<span style="color:#f92672">={</span>.spec.clusterIP<span style="color:#f92672">}</span><span style="color:#e6db74">`</span>
+PORT<span style="color:#f92672">=</span><span style="color:#e6db74">`</span>kubectl -n production get svc wk-dispatcher -o<span style="color:#f92672">=</span>jsonpath<span style="color:#f92672">={</span>.spec.ports<span style="color:#f92672">[</span>0<span style="color:#f92672">]</span>.port<span style="color:#f92672">}</span><span style="color:#e6db74">`</span>
+watch -n <span style="color:#ae81ff">1</span> ipvsadm -Ln -t $CLUSTERIP:$PORT
+</code></pre></div><p>同时也需要重启服务</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">kubectl -n production rollout restart deployment wk-dispatcher
+</code></pre></div></li>
+</ul>
+<p>这时候发现 ipvs 规则变化也很快（随着一些新的 rs 加入，老的 rs 的权重会变为0），虽然权重很快变为 0，但是老的 rs 并不会立即消失，直到 <code>ActiveConn </code>＋ <code>InActConn</code> = 0，老的 rs 才会真正移除。</p>
+<p>既然 endpoint 的变化和 ipvs 规则同步都很快，那问题极有可能出现在权重变为 0 到真正消失的之段时间。</p>
+<h3 id="排查点三">排查点三</h3>
+<p>流量路由到了权重为 0 的 rs</p>
+<p>带着这样的疑惑，我们找到了 TKE 团队。在 TKE 的指导下，我们查询了一下<code>net.ipv4.vs.conn_reuse_mode</code>，发现其值为 0。随后他们给了我们个<a href="https://github.com/kubernetes/kubernetes/issues/81775">关键 issue</a>。</p>
+<p>ipvs 相关内核参数的说明如下：</p>
+<blockquote>
+<p>conn_reuse_mode - INTEGER</p>
+<p>1 - default</p>
+<p>Controls how ipvs will deal with connections that are detected port reuse. It is a bitmap, with the values being:</p>
+<p>0: disable any special handling on port reuse. The new connection will be delivered to the same real server that was servicing the previous connection. This will effectively disable expire_nodest_conn.<br>
+禁用对端口重用的任何特殊处理。 新连接将被传递到为先前连接提供服务的同一台真实服务器。 这将有效地禁用expire_nodest_conn。</p>
+<p>bit 1: enable rescheduling of new connections when it is safe. That is, whenever expire_nodest_conn and for TCP sockets, when the connection is in TIME_WAIT state (which is only possible if you use NAT mode).<br>
+NAT 模式下，连接处于 TIME_WAIT 状态时，新的连接请求将会重新调度而不再复用。</p>
+<p>bit 2: it is bit 1 plus, for TCP connections, when connections are in FIN_WAIT state, as this is the last state seen by load balancer in Direct Routing mode. This bit helps on adding new real servers to a very busy cluster.</p>
+<p>expire_nodest_conn - BOOLEAN</p>
+<p>0 - disabled (default)<br>
+not 0 - enabled</p>
+<p>The default value is 0, the load balancer will silently drop packets when its destination server is not available. It may be useful, when user-space monitoring program deletes the destination server (because of server overload or wrong detection) and add back the server later, and the connections to the server can continue.</p>
+<p>If this feature is enabled, the load balancer will expire the connection immediately when a packet arrives and its destination server is not available, then the client program will be notified that the connection is closed. This is equivalent to the feature some people requires to flush connections when its destination is not available.</p>
+</blockquote>
+<p>有关 ipvs 超时时间的说明：</p>
+<blockquote>
+<p>ipvs default timeouts (900s for TCP, 120s for TCPFIN and 300s for UDP) are very high, especially in conjonction with conn_reuse_mode=0 (increased chances of bad port reuse). We can definitely decrease them but it&rsquo;s not perfect.<br>
+The better option would be to set weight to 0 on backend removal from endpoint and delete the realserver when the pod is completely deleted, but this would require modifying the endpoint controller and the associated API.</p>
+</blockquote>
+<h2 id="原因分析">原因分析</h2>
+<p>我们 kubernetes 节点机<code>sys.net.ipv4.vs.conn_reuse_mode</code>值为 0，ipvs 中，系统使用<code>conntrack</code>跟踪连接，<code>conntrack</code>使用三元组（即源IP、源端口、协议）定位具体连接，当客户端产生大量短连接时，其本身可能与之前的端口复用，而 TCP 在<code>conntrack</code>中的超时时间达 900s，也就是说<code>conntrack</code>中记录的连接可能存在很长时间，客户端过来的新连接极有可能复用老连接，此时已经 TIME_WAIT
+的老连接无法响应请求，从而导致超时。可通过设置<code>sys.net.ipv4.vs.conn_reuse_mode</code>的值为 1 来解决，但这有可能引入一个<a href="https://marc.info/?t=151683118100004&amp;r=1&amp;w=2">一秒延时的问题</a>。</p>
+<h2 id="最终解决">最终解决</h2>
+<blockquote>
+<p><strong>一秒延时问题</strong>:</p>
+<p>当<code>sys.net.ipv4.vs.conn_reuse_mode</code>的值为 1 时，SYN 包到达<code>conntrack</code>时发现该连接处于 TIME_WAIT 状态，将会直接丢弃包，直至超时重发，这个时间大概一秒，打了补丁后包不会被丢弃而是在新进程中新建连接。</p>
+</blockquote>
+<p>将节点的操作系统升级到打了<a href="https://lkml.org/lkml/2020/6/16/254">补丁</a>（解决一秒延时问题）的版本，同时将<code>sys.net.ipv4.vs.conn_reuse_mode</code>的值调整为 1。</p>
+
+    </div>
+
+    
+    
+      <div class="btn-improve-page">
+          <a href="https://github.com/alphajc/mysite/edit/master/content/posts/cloud-native/kubernetes/record-a-kubernetes-service-exception-caused-by-ipvs.md">
+            <i class="fas fa-code-branch"></i>
+            Improve This Page
+          </a>
+      </div>
+    
+
+    
+  <hr />
+    <div class="row next-prev-navigator">
+
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    
+      
+      <div class="col-md-6 previous-article">
+        <a href="/posts/cloud-native/kubernetes/pyflink-in-kubernetes/" class="btn btn-outline-info">
+          <span><i class="fas fa-chevron-circle-left"></i> 上一篇</span>
+          <br />
+          <span>Pyflink in Kubernetes</span>
+        </a>
+      </div>
+      
+    
+    
+      
+        
+        
+          
+              
+          
+        
+        <div class="col-md-6 next-article">
+          <a href="/posts/tools/ldap-clients-in-everywhere/" class="btn btn-outline-info">
+            <span>下一篇 <i class="fas fa-chevron-circle-right"></i></span>
+            <br />
+            <span>使用LDAP的各种客户端进行统一身份认证</span>
+          </a>
+        </div>
+      
+    
+  
+
+  
+
+</div>
+
+  <hr />
+  
+  
+      <div id="disqus_thread"></div>
+<script type="text/javascript">
+  (function () {
+    
+    
+    if (window.location.hostname == "localhost") return;
+
+    var dsq = document.createElement("script");
+    dsq.type = "text/javascript";
+    dsq.async = true;
+    var disqus_shortname = "mydream-ink";
+    dsq.src = "//" + disqus_shortname + ".disqus.com/embed.js";
+    (
+      document.getElementsByTagName("head")[0] ||
+      document.getElementsByTagName("body")[0]
+    ).appendChild(dsq);
+  })();
+</script>
+<noscript
+  >请开启 JavaScript 功能
+  <a href="https://disqus.com/?ref_noscript"
+    >comments powered by Disqus.</a
+  ></noscript
+>
+<a href="https://disqus.com/" class="dsq-brlink"
+  >通过 <span class="logo-disqus">Disqus</span> 评论</a
+>
+
+  
+</div>
+
+    </div>
+
+    <footer class="container-fluid text-center align-content-center footer pb-2">
+  <div class="container pt-5">
+    <div class="row text-left">
+      <div class="col-md-4 col-sm-12">
+        <h5>导航</h5>
+        
+        <ul>
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#about">关于</a>
+            </li>
+            
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#skills">技能</a>
+            </li>
+            
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#experiences">经历</a>
+            </li>
+            
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#projects">项目</a>
+            </li>
+            
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#recent-posts">最近文章</a>
+            </li>
+            
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#achievements">成就</a>
+            </li>
+            
+        </ul>
+        
+
+      </div>
+      <div class="col-md-4 col-sm-12">
+        <h5>联系我</h5>
+        <ul>
+          
+          <li><span>电话: </span> <span>&#43;8619980414909</span></li>
+          
+          <li><span>邮箱: </span> <span>jerry@mydream.ink</span></li>
+          
+        </ul>
+      </div>
+      <div class="col-md-4 col-sm-12">
+        
+        <p>接收最新的邮件通知</p>
+        <form>
+          <div class="form-group">
+            <input
+              type="email"
+              class="form-control"
+              id="exampleInputEmail1"
+              aria-describedby="emailHelp"
+              placeholder="输入邮箱"
+            />
+            <small id="emailHelp" class="form-text text-muted"
+              >你的邮件地址不会被共享给他人</small
+            >
+          </div>
+          <button type="submit" class="btn btn-info">提交</button>
+        </form>
+      </div>
+    </div>
+  </div>
+  <hr />
+  <div class="container">
+    <div class="row text-left">
+      <div class="col-md-4">
+        <a id="theme" href="/" target="#">
+          <img src="/assets/images/logo-inverted.png">青云卷</a>
+      </div>
+      <div class="col-md-4"><a href="https://beian.miit.gov.cn">蜀ICP备 2021017630号-1</a>© 2021 Copyright.</div>
+    </div>
+  </div>
+</footer>
+
+    <script src="/assets/js/jquery-3.4.1.min.js"></script>
+<script src="/assets/js/bootstrap.min.js"></script>
+
+<script src="/assets/js/navbar.js"></script>
+<script src="/assets/js/jquery.filterizr.min.js"></script>
+
+
+    
+    
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/highlight.min.js"></script>
+<script src="/assets/js/single.js"></script>
+<script>
+  hljs.initHighlightingOnLoad();
+</script>
+
+
+  </body>
+</html>

@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>CentOS7 on 青云卷</title>
+    <link>https://mydream.ink/tags/centos7/</link>
+    <description>Recent content in CentOS7 on 青云卷</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh-cn</language>
+    <lastBuildDate>Sun, 07 Jul 2019 10:52:34 +0800</lastBuildDate><atom:link href="https://mydream.ink/tags/centos7/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>CentOS7安装PPTP</title>
+      <link>https://mydream.ink/archive/install-pptp-on-centos7/</link>
+      <pubDate>Sun, 07 Jul 2019 10:52:34 +0800</pubDate>
+      
+      <guid>https://mydream.ink/archive/install-pptp-on-centos7/</guid>
+      <description>CentOS7安装PPTP VPN（开启firewall防火墙）
+  准备一个CentOS7服务器
+  检查是否支持PPTP
+modprobe ppp-compress-18 &amp;amp;&amp;amp; echo ok #返回OK zgrep MPPE /proc/config.gz #返回CONFIG_PPP_MPPE=y 或 =m cat /dev/net/tun #返回cat: /dev/net/tun: File descriptor in bad state 以上三条命令满足一条即为支持PPTP
+  安装PPP
+ yum install -y ppp    安装PPTPD
+  添加EPEL源：
+ wget http://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm    安装EPEL源：
+ rpm -ivh epel-release-latest-7.noarch.rpm    检查是否已添加到源列表中：
+ yum repolist    更新源列表：
+ yum -y update    安装PPTPD：</description>
+    </item>
+    
+  </channel>
+</rss>

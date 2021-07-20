@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>LXC简介</title>
+    <meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta http-equiv="X-UA-Compatible" content="ie=edge" />
+
+
+<link rel="stylesheet" href="/assets/css/bootstrap.min.css" />
+<link rel="stylesheet" href="/assets/css/style.css" />
+<link rel="stylesheet" href="/assets/css/navbar.css" />
+
+
+<link href="https://fonts.googleapis.com/css2?family=Muli:wght@300;400;500;600" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" />
+
+
+<link rel="icon" type="image/png" href="/assets/images/favicon.png" />
+
+
+    
+<link
+  rel="stylesheet"
+  href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/styles/atom-one-dark.min.css"
+/>
+<link rel="stylesheet" href="/assets/css/single.css" />
+
+
+    
+    
+      
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'UA-142765126-1', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+
+    
+  </head>
+
+  <body>
+    <div class="container-fluid bg-dimmed wrapper">
+      
+      
+    <nav class="navbar navbar-expand-lg top-navbar final-navbar shadow">
+    <div class="container">
+      <a class="navbar-brand" href="/posts">
+        <img src="/assets/images/logo.png">青云卷</a>
+      <button class="navbar-toggler navbar-light" type="button" >
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <div class="collapse navbar-collapse" id="top-nav-items">
+        <ul class="navbar-nav ml-auto">
+        </ul>
+      </div>
+    </div>
+</nav>
+
+
+
+      
+      
+<div class="container p-0 read-area">
+  
+  <div class="hero-area col-sm-12" style='background-image: url(https://mydream.ink/assets/images/posts/cloud-native/linux_containers.jpg);'>
+  </div>
+
+  
+  <div class="page-content">
+    <div class="author-profile ml-auto align-self-lg-center">
+      <img class="rounded-circle" src='/assets/images/portrait.jpg'/>
+      <h5 class="author-name">Jerry Chan</h5>
+      <p>November 5, 2017</p>
+    </div>
+
+    <div class="title">
+      <h1>LXC简介</h1>
+    </div>
+
+    <div class="post-content" id="post-content">
+      <h1 id="lxc">LXC</h1>
+<p>LXC是著名的经过严格测试的底层Linux容器运行库。从2008年开始发展，现已在世界各地的关键生产环境中得到证明。其中一些核心贡献者是帮助在Linux内核中实现各种知名集装箱功能的人员。</p>
+<h2 id="系统容器">系统容器</h2>
+<p>LXC的主要重点是系统容器。也就是说，提供尽可能接近VM但没有运行单独内核并模拟所有硬件的开销的容器。 这是通过内核安全功能（如命名空间，强制访问控制和控制组合）实现的。</p>
+<h2 id="非特权容器">非特权容器</h2>
+<p>非特权容器是没有任何权限运行的容器。这需要对内核中运行容器的用户名空间的支持。用户命名空间合并到主线内核之后，LXC是第一个支持非特权容器的运行库。 实质上，用户名空间隔离给定的UID和GID集合。这通过在主机上的一系列UID和GID之间建立到容器中UID和GID的不同（非特权）范围之间的映射来实现。内核将以这样一种方式转换此映射，即在容器内部，所有UID和GID按照您期望的从主机显示，而在主机上，这些UID和GID实际上是无特权的。例如，在容器内作为UID和GID 0运行的进程可能在主机上显示为UID和GID 100000。可以从相应的用户命名空间手册页中收集实现和工作细节。 由于非特权容器是一种安全增强功能，因此它们自然会受到内核强制执行的一些限制。为了提供一个功能齐全的非特权容器LXC与3个setuid代码交互：</p>
+<ul>
+<li>lxc-user-nic（setuid帮助器创建一个veth对，并在主机上桥接它）</li>
+<li>newuidmap（从shawdow库中，设置一个uid映射）</li>
+<li>newgidmap（从shawdow库中，设置一个gid映射）</li>
+</ul>
+<p>一切都是以您自己的用户身份运行，也可以作为用户拥有的uid运行。 一般来说，LXC的目标是利用内核中可用的每个安全功能。这意味着LXC的配置管理将使经验丰富的用户根据自己的需要对LXC进行复杂的调整。 有关LXC安全性的更详细的介绍可以在以下链接中找到：</p>
+<ul>
+<li><a href="https://linuxcontainers.org/lxc/security/">https://linuxcontainers.org/lxc/security/</a></li>
+</ul>
+<h2 id="移除特权">移除特权</h2>
+<p>LXC在没有正确的配置这些工具的情况下是可以运行的。只不过你这种容器的用途通常是非常有限的。这里突出两个最常见的问题：</p>
+<ol>
+<li>网络：没有依赖一个setuid帮助器为非特权用户设置适当的网络设备（参见LXC的<code>lxc-user-nic</code>二进制文件），唯一的选择是与主机共享网络命名空间。虽然原则上应该是安全的，但共享主机的网络命名空间仍然是减少隔离的一个步骤，并增加攻击向量。此外，当主机和容器共享相同的网络命名空间时，内核将拒绝任何sysfs挂接。这通常意味着容器内的init二进制文件将无法正确启动。</li>
+<li>用户命名空间：如上所述，用户名空间是一个很大的安全性增强。但是，不依赖特权帮助者，主机上无权限的用户只能将自己的UID映射到容器中。然而，标准的POSIX系统需要65536个UID和GID来保证完整的功能。</li>
+</ol>
+<h2 id="配置">配置</h2>
+<p>LXC通过一些简单的关键字配置，例如：</p>
+<ul>
+<li>lxc.rootfs.path</li>
+<li>lxc.mount.entry</li>
+</ul>
+<p>LXC通过使用单点命名空间配置关键字。这意味着复杂的配置关键字（如<code>lxc.net.0</code>）会展示各种子项，例如<code>lxc.net.0.type</code>，<code>lxc.net.0.link</code>，<code>lxc.net.0.ipv6.address</code>等一些更精细的配置。 LXC被用作LXD的默认运行库，LXD是容器管理程序，它暴露出设计良好且稳定的REST-api。</p>
+<h2 id="内核需求">内核需求</h2>
+<p>LXC在2.6.32以上的任何内核上运行。所有它需要的是一个功能C编译器。 LXC适用于提供必要内核功能的所有架构。这包括（但不限于）：</p>
+<ul>
+<li>i686</li>
+<li>x86_64</li>
+<li>ppc,ppc64,ppc64le</li>
+<li>s390x</li>
+<li>armvl7,arm64</li>
+</ul>
+<p>LXC至少还支持以下C标准库：</p>
+<ul>
+<li>glibc</li>
+<li>musl</li>
+<li>bionic(Android&rsquo;s libc)</li>
+</ul>
+<h2 id="向后兼容">向后兼容</h2>
+<p>LXC一直专注于强大的向后兼容性。事实上，API从1.0.0版起没有被破坏。主LXC目前处于版本2。</p>
+
+    </div>
+
+    
+    
+      <div class="btn-improve-page">
+          <a href="https://github.com/alphajc/mysite/edit/master/content/posts/cloud-native/container/LXC0.md">
+            <i class="fas fa-code-branch"></i>
+            Improve This Page
+          </a>
+      </div>
+    
+
+    
+  <hr />
+    <div class="row next-prev-navigator">
+
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    
+      
+      <div class="col-md-6 previous-article">
+        <a href="/posts/cloud-native/container/lxc1/" class="btn btn-outline-info">
+          <span><i class="fas fa-chevron-circle-left"></i> 上一篇</span>
+          <br />
+          <span>LXC介绍</span>
+        </a>
+      </div>
+      
+    
+    
+      
+        
+        
+          
+              
+          
+        
+        <div class="col-md-6 next-article">
+          <a href="/posts/virtualization/sdn/sdn-development/" class="btn btn-outline-info">
+            <span>下一篇 <i class="fas fa-chevron-circle-right"></i></span>
+            <br />
+            <span>SDN发展必然</span>
+          </a>
+        </div>
+      
+    
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+</div>
+
+  <hr />
+  
+  
+      <div id="disqus_thread"></div>
+<script type="text/javascript">
+  (function () {
+    
+    
+    if (window.location.hostname == "localhost") return;
+
+    var dsq = document.createElement("script");
+    dsq.type = "text/javascript";
+    dsq.async = true;
+    var disqus_shortname = "mydream-ink";
+    dsq.src = "//" + disqus_shortname + ".disqus.com/embed.js";
+    (
+      document.getElementsByTagName("head")[0] ||
+      document.getElementsByTagName("body")[0]
+    ).appendChild(dsq);
+  })();
+</script>
+<noscript
+  >请开启 JavaScript 功能
+  <a href="https://disqus.com/?ref_noscript"
+    >comments powered by Disqus.</a
+  ></noscript
+>
+<a href="https://disqus.com/" class="dsq-brlink"
+  >通过 <span class="logo-disqus">Disqus</span> 评论</a
+>
+
+  
+</div>
+
+    </div>
+
+    <footer class="container-fluid text-center align-content-center footer pb-2">
+  <div class="container pt-5">
+    <div class="row text-left">
+      <div class="col-md-4 col-sm-12">
+        <h5>导航</h5>
+        
+        <ul>
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#about">关于</a>
+            </li>
+            
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#skills">技能</a>
+            </li>
+            
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#experiences">经历</a>
+            </li>
+            
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#projects">项目</a>
+            </li>
+            
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#recent-posts">最近文章</a>
+            </li>
+            
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#achievements">成就</a>
+            </li>
+            
+        </ul>
+        
+
+      </div>
+      <div class="col-md-4 col-sm-12">
+        <h5>联系我</h5>
+        <ul>
+          
+          <li><span>电话: </span> <span>&#43;8619980414909</span></li>
+          
+          <li><span>邮箱: </span> <span>jerry@mydream.ink</span></li>
+          
+        </ul>
+      </div>
+      <div class="col-md-4 col-sm-12">
+        
+        <p>接收最新的邮件通知</p>
+        <form>
+          <div class="form-group">
+            <input
+              type="email"
+              class="form-control"
+              id="exampleInputEmail1"
+              aria-describedby="emailHelp"
+              placeholder="输入邮箱"
+            />
+            <small id="emailHelp" class="form-text text-muted"
+              >你的邮件地址不会被共享给他人</small
+            >
+          </div>
+          <button type="submit" class="btn btn-info">提交</button>
+        </form>
+      </div>
+    </div>
+  </div>
+  <hr />
+  <div class="container">
+    <div class="row text-left">
+      <div class="col-md-4">
+        <a id="theme" href="/" target="#">
+          <img src="/assets/images/logo-inverted.png">青云卷</a>
+      </div>
+      <div class="col-md-4"><a href="https://beian.miit.gov.cn">蜀ICP备 2021017630号-1</a>© 2021 Copyright.</div>
+    </div>
+  </div>
+</footer>
+
+    <script src="/assets/js/jquery-3.4.1.min.js"></script>
+<script src="/assets/js/bootstrap.min.js"></script>
+
+<script src="/assets/js/navbar.js"></script>
+<script src="/assets/js/jquery.filterizr.min.js"></script>
+
+
+    
+    
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/highlight.min.js"></script>
+<script src="/assets/js/single.js"></script>
+<script>
+  hljs.initHighlightingOnLoad();
+</script>
+
+
+  </body>
+</html>

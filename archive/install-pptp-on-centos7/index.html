@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>CentOS7安装PPTP</title>
+    <meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta http-equiv="X-UA-Compatible" content="ie=edge" />
+
+
+<link rel="stylesheet" href="/assets/css/bootstrap.min.css" />
+<link rel="stylesheet" href="/assets/css/style.css" />
+<link rel="stylesheet" href="/assets/css/navbar.css" />
+
+
+<link href="https://fonts.googleapis.com/css2?family=Muli:wght@300;400;500;600" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" />
+
+
+<link rel="icon" type="image/png" href="/assets/images/favicon.png" />
+
+
+    
+<link
+  rel="stylesheet"
+  href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/styles/atom-one-dark.min.css"
+/>
+<link rel="stylesheet" href="/assets/css/single.css" />
+
+
+    
+    
+      
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'UA-142765126-1', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+
+    
+  </head>
+
+  <body>
+    <div class="container-fluid bg-dimmed wrapper">
+      
+      
+    <nav class="navbar navbar-expand-lg top-navbar final-navbar shadow">
+    <div class="container">
+      <a class="navbar-brand" href="/posts">
+        <img src="/assets/images/logo.png">青云卷</a>
+      <button class="navbar-toggler navbar-light" type="button" >
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <div class="collapse navbar-collapse" id="top-nav-items">
+        <ul class="navbar-nav ml-auto">
+        </ul>
+      </div>
+    </div>
+</nav>
+
+
+
+      
+      
+<div class="container p-0 read-area">
+  
+  <div class="hero-area col-sm-12" style='background-image: url(https://mydream.ink/assets/images/default-hero.jpg);'>
+  </div>
+
+  
+  <div class="page-content">
+    <div class="author-profile ml-auto align-self-lg-center">
+      <img class="rounded-circle" src='/assets/images/default-avatar.png'/>
+      <h5 class="author-name">John Doe</h5>
+      <p>July 7, 2019</p>
+    </div>
+
+    <div class="title">
+      <h1>CentOS7安装PPTP</h1>
+    </div>
+
+    <div class="post-content" id="post-content">
+      <p>CentOS7安装PPTP VPN（开启firewall防火墙）</p>
+<ol>
+<li>
+<p>准备一个CentOS7服务器</p>
+</li>
+<li>
+<p>检查是否支持PPTP</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">modprobe ppp-compress-18 <span style="color:#f92672">&amp;&amp;</span> echo ok <span style="color:#75715e">#返回OK</span>
+zgrep MPPE /proc/config.gz <span style="color:#75715e">#返回CONFIG_PPP_MPPE=y 或 =m</span>
+cat /dev/net/tun <span style="color:#75715e">#返回cat: /dev/net/tun: File descriptor in bad state</span>
+</code></pre></div><p>以上三条命令满足一条即为支持PPTP</p>
+</li>
+<li>
+<p>安装PPP</p>
+<pre><code> yum install -y ppp
+</code></pre>
+</li>
+<li>
+<p>安装PPTPD</p>
+<ol>
+<li>
+<p>添加EPEL源：</p>
+<pre><code>  wget http://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
+</code></pre>
+</li>
+<li>
+<p>安装EPEL源：</p>
+<pre><code>  rpm -ivh epel-release-latest-7.noarch.rpm
+</code></pre>
+</li>
+<li>
+<p>检查是否已添加到源列表中：</p>
+<pre><code>  yum repolist
+</code></pre>
+</li>
+<li>
+<p>更新源列表：</p>
+<pre><code> yum -y update
+</code></pre>
+</li>
+<li>
+<p>安装PPTPD：</p>
+<pre><code> yum install -y pptpd
+</code></pre>
+</li>
+</ol>
+</li>
+<li>
+<p>编辑/etc/pptpd.conf设置VPN内网IP段</p>
+<p>最后IP设置改为：</p>
+<pre><code class="language-dns" data-lang="dns">localip 192.168.0.1
+remoteip 192.168.0.214,192.168.0.245
+</code></pre></li>
+<li>
+<p>编辑/etc/ppp/options.pptpd</p>
+<ol>
+<li>
+<p>更改DNS项：</p>
+<pre><code class="language-dns" data-lang="dns">ms-dns 8.8.8.8
+ms-dns 8.8.4.4
+</code></pre></li>
+<li>
+<p>修改日志记录：</p>
+<pre><code>  nologfd
+  logfile /var/log/pptpd.log
+</code></pre>
+</li>
+</ol>
+</li>
+<li>
+<p>编辑/etc/ppp/chap-secrets设置VPN账号密码</p>
+<pre><code> 用户名 pptpd 密码 *
+</code></pre>
+<blockquote>
+<p>每个字段之间用tab键隔开  *表示用任意IP连接VPN都可以</p>
+</blockquote>
+<p>样例：登录账号为root 密码为123  这样写：</p>
+<pre><code> root        pptpd     123         *
+</code></pre>
+</li>
+<li>
+<p>编辑/etc/sysctl.conf修改内核参数支持内核转发</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ini" data-lang="ini"><span style="color:#a6e22e">net.ipv4.ip_forward</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">1</span>
+</code></pre></div><p>输入命令生效：<code>sysctl -p</code></p>
+</li>
+<li>
+<p>修改防火墙设置：</p>
+<ol>
+<li>
+<p>创建规则文件：</p>
+<pre><code>touch /usr/lib/firewalld/services/pptpd.xml
+</code></pre>
+</li>
+<li>
+<p>修改规则文件</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-xml" data-lang="xml"><span style="color:#75715e">&lt;?xml version=&#34;1.0&#34; encoding=&#34;utf-8&#34;?&gt;</span>
+<span style="color:#f92672">&lt;service&gt;</span>
+    <span style="color:#f92672">&lt;short&gt;</span>pptpd<span style="color:#f92672">&lt;/short&gt;</span>
+    <span style="color:#f92672">&lt;description&gt;</span>PPTP<span style="color:#f92672">&lt;/description&gt;</span>
+    <span style="color:#f92672">&lt;port</span> <span style="color:#a6e22e">protocol=</span><span style="color:#e6db74">&#34;tcp&#34;</span> <span style="color:#a6e22e">port=</span><span style="color:#e6db74">&#34;1723&#34;</span><span style="color:#f92672">/&gt;</span>
+<span style="color:#f92672">&lt;/service&gt;</span>
+</code></pre></div></li>
+<li>
+<p>启动或重启防火墙：</p>
+<pre><code>systemctl start firewalld.service
+firewall-cmd --reload # 或者
+</code></pre>
+</li>
+<li>
+<p>添加服务：</p>
+<pre><code>firewall-cmd --permanent --zone=public --add-service=pptpd
+</code></pre>
+</li>
+<li>
+<p>允许防火墙伪装IP：</p>
+<pre><code>firewall-cmd --add-masquerade
+</code></pre>
+</li>
+<li>
+<p>开启47及1723端口：</p>
+<pre><code>firewall-cmd --permanent --zone=public --add-port=47/tcp
+firewall-cmd --permanent --zone=public --add-port=1723/tcp
+</code></pre>
+</li>
+<li>
+<p>允许gre协议：</p>
+<pre><code>firewall-cmd --permanent --direct --add-rule ipv4 filter INPUT 0 -p gre -j ACCEPT
+firewall-cmd --permanent --direct --add-rule ipv4 filter OUTPUT 0 -p gre -j ACCEPT
+</code></pre>
+</li>
+<li>
+<p>设置规则允许数据包由eth0和ppp+接口中进出</p>
+<pre><code>firewall-cmd --permanent --direct --add-rule ipv4 filter FORWARD 0 -i ppp+ -o eth0 -j ACCEPT
+firewall-cmd --permanent --direct --add-rule ipv4 filter FORWARD 0 -i eth0 -o ppp+ -j ACCEPT
+</code></pre>
+</li>
+<li>
+<p>设置转发规则，从源地址发出的所有包都进行伪装，改变地址，由eth0发出：</p>
+<pre><code>firewall-cmd --permanent --direct --passthrough ipv4 -t nat -I POSTROUTING -o eth0 -j MASQUERADE -s 192.168.0.0/24
+</code></pre>
+</li>
+</ol>
+</li>
+<li>
+<p>重启服务器：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">firewall-cmd --reload
+systemctl restart pptpd
+</code></pre></div></li>
+</ol>
+
+    </div>
+
+    
+    
+      <div class="btn-improve-page">
+          <a href="https://github.com/alphajc/mysite/edit/master/content/archive/Install%20PPTP%20on%20CentOS7.md">
+            <i class="fas fa-code-branch"></i>
+            Improve This Page
+          </a>
+      </div>
+    
+
+    
+  <hr />
+    <div class="row next-prev-navigator">
+
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+</div>
+
+  <hr />
+  
+  
+      <div id="disqus_thread"></div>
+<script type="text/javascript">
+  (function () {
+    
+    
+    if (window.location.hostname == "localhost") return;
+
+    var dsq = document.createElement("script");
+    dsq.type = "text/javascript";
+    dsq.async = true;
+    var disqus_shortname = "mydream-ink";
+    dsq.src = "//" + disqus_shortname + ".disqus.com/embed.js";
+    (
+      document.getElementsByTagName("head")[0] ||
+      document.getElementsByTagName("body")[0]
+    ).appendChild(dsq);
+  })();
+</script>
+<noscript
+  >请开启 JavaScript 功能
+  <a href="https://disqus.com/?ref_noscript"
+    >comments powered by Disqus.</a
+  ></noscript
+>
+<a href="https://disqus.com/" class="dsq-brlink"
+  >通过 <span class="logo-disqus">Disqus</span> 评论</a
+>
+
+  
+</div>
+
+    </div>
+
+    <footer class="container-fluid text-center align-content-center footer pb-2">
+  <div class="container pt-5">
+    <div class="row text-left">
+      <div class="col-md-4 col-sm-12">
+        <h5>导航</h5>
+        
+        <ul>
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#about">关于</a>
+            </li>
+            
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#skills">技能</a>
+            </li>
+            
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#experiences">经历</a>
+            </li>
+            
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#projects">项目</a>
+            </li>
+            
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#recent-posts">最近文章</a>
+            </li>
+            
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#achievements">成就</a>
+            </li>
+            
+        </ul>
+        
+
+      </div>
+      <div class="col-md-4 col-sm-12">
+        <h5>联系我</h5>
+        <ul>
+          
+          <li><span>电话: </span> <span>&#43;8619980414909</span></li>
+          
+          <li><span>邮箱: </span> <span>jerry@mydream.ink</span></li>
+          
+        </ul>
+      </div>
+      <div class="col-md-4 col-sm-12">
+        
+        <p>接收最新的邮件通知</p>
+        <form>
+          <div class="form-group">
+            <input
+              type="email"
+              class="form-control"
+              id="exampleInputEmail1"
+              aria-describedby="emailHelp"
+              placeholder="输入邮箱"
+            />
+            <small id="emailHelp" class="form-text text-muted"
+              >你的邮件地址不会被共享给他人</small
+            >
+          </div>
+          <button type="submit" class="btn btn-info">提交</button>
+        </form>
+      </div>
+    </div>
+  </div>
+  <hr />
+  <div class="container">
+    <div class="row text-left">
+      <div class="col-md-4">
+        <a id="theme" href="/" target="#">
+          <img src="/assets/images/logo-inverted.png">青云卷</a>
+      </div>
+      <div class="col-md-4"><a href="https://beian.miit.gov.cn">蜀ICP备 2021017630号-1</a>© 2021 Copyright.</div>
+    </div>
+  </div>
+</footer>
+
+    <script src="/assets/js/jquery-3.4.1.min.js"></script>
+<script src="/assets/js/bootstrap.min.js"></script>
+
+<script src="/assets/js/navbar.js"></script>
+<script src="/assets/js/jquery.filterizr.min.js"></script>
+
+
+    
+    
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/highlight.min.js"></script>
+<script src="/assets/js/single.js"></script>
+<script>
+  hljs.initHighlightingOnLoad();
+</script>
+
+
+  </body>
+</html>

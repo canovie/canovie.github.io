@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>kubeadm on 青云卷</title>
+    <link>https://mydream.ink/tags/kubeadm/</link>
+    <description>Recent content in kubeadm on 青云卷</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh-cn</language>
+    <lastBuildDate>Fri, 09 Mar 2018 00:00:00 +0000</lastBuildDate><atom:link href="https://mydream.ink/tags/kubeadm/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>使用 kubeadm 安装 Kubernetes 1.10.0</title>
+      <link>https://mydream.ink/posts/cloud-native/kubernetes/kubeadm/</link>
+      <pubDate>Fri, 09 Mar 2018 00:00:00 +0000</pubDate>
+      
+      <guid>https://mydream.ink/posts/cloud-native/kubernetes/kubeadm/</guid>
+      <description>kubernetes可以使用多种容器runtime，此处使用当前最常见的docker。
+安装docker 在各种机器上安装docker的方式不同，我曾翻译过一篇ubuntu安装docker的文章，还有一些没来的及翻译的，可以参考官方文档。推荐的docker版本为v1.12，v1.11, v1.13 和 17.03 也行，其它的官方就没测试过了，不过我使用当前最新的v18.03也行。
+docker官方  使用Ubuntu安装docker-ce Mac和Windows桌面安装docker-ce  下载Mac版本的docker-ce，执行即安装 下载Windows版本的docker-ce，执行即可安装   CentOS安装docker-ce Fedora安装docker-ce 二进制安装方式  kubernetes推荐   Ubuntu/Debian/HypriotOS 从Ubuntu的库安装
+apt-get update apt-get install -y docker.io 使用docker库安装v17.03
+apt-get update apt-get install -y \  apt-transport-https \  ca-certificates \  curl \  software-properties-common curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add - add-apt-repository \  &amp;#34;deb https://download.docker.com/linux/$(. /etc/os-release; echo &amp;#34;$ID&amp;#34;)\ $(lsb_release -cs)\ stable&amp;#34; apt-get update &amp;amp;&amp;amp; apt-get install -y docker-ce=$(apt-cache madison docker-ce | grep 17.</description>
+    </item>
+    
+  </channel>
+</rss>

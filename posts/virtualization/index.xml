@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>虚拟化 on 青云卷</title>
+    <link>https://mydream.ink/posts/virtualization/</link>
+    <description>Recent content in 虚拟化 on 青云卷</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh-cn</language>
+    <lastBuildDate>Thu, 25 Jan 2018 08:52:19 +0800</lastBuildDate><atom:link href="https://mydream.ink/posts/virtualization/index.xml" rel="self" type="application/rss+xml" />
+  </channel>
+</rss>

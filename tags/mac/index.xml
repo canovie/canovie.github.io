@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>mac on 青云卷</title>
+    <link>https://mydream.ink/tags/mac/</link>
+    <description>Recent content in mac on 青云卷</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh-cn</language>
+    <lastBuildDate>Fri, 12 Jul 2019 20:23:13 +0800</lastBuildDate><atom:link href="https://mydream.ink/tags/mac/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>在 Mac 上使用 Docker 自带的 Kubernetes</title>
+      <link>https://mydream.ink/posts/cloud-native/kubernetes/use-kubernetes-from-docker-on-mac/</link>
+      <pubDate>Fri, 12 Jul 2019 20:23:13 +0800</pubDate>
+      
+      <guid>https://mydream.ink/posts/cloud-native/kubernetes/use-kubernetes-from-docker-on-mac/</guid>
+      <description>Mac 安装 Docker 的方法不再赘述，很简单，官方下载安装即可。
+安装完成后，kubectl的二进制文件就已经存在了。我们仅需要下载镜像，开启 kubernetes。
+下载镜像 查看一下你的 Docker 和 Kubernetes 版本：
+使用以下脚本，记得将镜像版本改成你所需要的🍁
+#!/bin/bash  set -e KUBE_VERSION=v1.10.11 KUBE_PAUSE_VERSION=3.1 ETCD_VERSION=3.1.12 DNS_VERSION=1.14.8 DOCKER_TOOL_VERSION=v0.4.12 GCR_URL=k8s.gcr.io ALIYUN_URL=registry.cn-hangzhou.aliyuncs.com/google_containers images=(kube-proxy-amd64:${KUBE_VERSION} kube-scheduler-amd64:${KUBE_VERSION} kube-controller-manager-amd64:${KUBE_VERSION} kube-apiserver-amd64:${KUBE_VERSION} pause-amd64:${KUBE_PAUSE_VERSION} etcd-amd64:${ETCD_VERSION} k8s-dns-sidecar-amd64:${DNS_VERSION} k8s-dns-kube-dns-amd64:${DNS_VERSION} k8s-dns-dnsmasq-nanny-amd64:${DNS_VERSION}) for image in ${images[@]} ; do docker pull ${ALIYUN_URL}/${image} docker tag ${ALIYUN_URL}/${image} ${GCR_URL}/${image} docker rmi ${ALIYUN_URL}/${image} done # 拉取 Docker 相关镜像 docker pull docker/kube-compose-api-server:${DOCKER_TOOL_VERSION} docker pull docker/kube-compose-controller:${DOCKER_TOOL_VERSION} 执行该脚本，将从阿里镜像库获得所需镜像。
+启动 Kubernetes 功能 打开 Docker 配置面板，请至少勾选 Enable Kubernetes 以开启 Kubernetes 服务。</description>
+    </item>
+    
+  </channel>
+</rss>

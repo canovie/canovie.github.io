@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Node使用RabbitMQ：入门篇</title>
+    <meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta http-equiv="X-UA-Compatible" content="ie=edge" />
+
+
+<link rel="stylesheet" href="/assets/css/bootstrap.min.css" />
+<link rel="stylesheet" href="/assets/css/style.css" />
+<link rel="stylesheet" href="/assets/css/navbar.css" />
+
+
+<link href="https://fonts.googleapis.com/css2?family=Muli:wght@300;400;500;600" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" />
+
+
+<link rel="icon" type="image/png" href="/assets/images/favicon.png" />
+
+
+    
+<link
+  rel="stylesheet"
+  href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/styles/atom-one-dark.min.css"
+/>
+<link rel="stylesheet" href="/assets/css/single.css" />
+
+
+    
+    
+      
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'UA-142765126-1', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+
+    
+  </head>
+
+  <body>
+    <div class="container-fluid bg-dimmed wrapper">
+      
+      
+    <nav class="navbar navbar-expand-lg top-navbar final-navbar shadow">
+    <div class="container">
+      <a class="navbar-brand" href="/posts">
+        <img src="/assets/images/logo.png">青云卷</a>
+      <button class="navbar-toggler navbar-light" type="button" >
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <div class="collapse navbar-collapse" id="top-nav-items">
+        <ul class="navbar-nav ml-auto">
+        </ul>
+      </div>
+    </div>
+</nav>
+
+
+
+      
+      
+<div class="container p-0 read-area">
+  
+  <div class="hero-area col-sm-12" style='background-image: url(https://mydream.ink/assets/images/posts/middleware/rabbitmq_node.jpg);'>
+  </div>
+
+  
+  <div class="page-content">
+    <div class="author-profile ml-auto align-self-lg-center">
+      <img class="rounded-circle" src='/assets/images/portrait.jpg'/>
+      <h5 class="author-name">Jerry Chan</h5>
+      <p>February 11, 2018</p>
+    </div>
+
+    <div class="title">
+      <h1>Node使用RabbitMQ：入门篇</h1>
+    </div>
+
+    <div class="post-content" id="post-content">
+      <h1 id="前提条件">前提条件</h1>
+<p>本教程假定RabbitMQ已安装并在本地主机的标准端口（5672）上运行。如果您使用不同的主机，端口或凭据，连接设置将需要调整。</p>
+<h1 id="简介">简介</h1>
+<p>RabbitMQ是一个消息broker：它接受和转发消息。你可以把它想象成一个邮局：当你把邮件放在邮箱里时，你可以确定邮差先生最终会把邮件发送给你的收件人。在这个比喻中，RabbitMQ是整个邮政系统即信箱、邮局和邮递员。 RabbitMQ与邮局的主要区别是它不处理纸张，而是接受，存储和转发数据的二进制数据块——消息。 RabbitMQ和一般的消息传递使用了一些术语。</p>
+<blockquote>
+<p>生产（<em>producing</em>）只不过是发送而已。一个发送消息的程序是一个生产者（<em>producer</em>）：</p>
+<p><img src="/assets/images/posts/middleware/producer.png" alt=""></p>
+<p>队列（<em>queue</em>）是RabbitMQ内部的邮箱名称。尽管消息流经RabbitMQ和您的应用程序，但它们只能存储在队列（<em>queue</em>）中。队列（<em>queue</em>）只受主机的内存和磁盘限制，实质上是一个大的消息缓冲区。许多生产者（<em>producer</em>）可以发送消息到一个队列（<em>queue</em>），许多消费者（<em>consumers</em>）可以尝试从一个队列（<em>queue</em>）接收数据。这就是我们代表队列（<em>queue</em>）的方式：</p>
+<p><img src="/assets/images/posts/middleware/queue.png" alt=""></p>
+<p>消费（<em>consuming</em>）与接受有类似的意义。消费者（<em>consumer</em>）是主要等待接收消息的程序：</p>
+<p><img src="/assets/images/posts/middleware/consumer.png" alt=""></p>
+</blockquote>
+<p>请注意，producer，consumer和broker不必在同一主机上；事实上在大多数应用程序中都不会。</p>
+<h1 id="使用amqpnode客户端">(使用amqp.node客户端)</h1>
+<p>在本教程的这一部分，我们将用Node编写两个小程序；发送单个消息的生产者，以及接收消息并将其打印出来的消费者。我们将详细介绍<a href="https://www.squaremobius.net/amqp.node/">amqp.node</a> API中的一些细节，将注意力集中在这个非常简单的事情上，以便开始。这是一个消息传递的“Hello World”。 在下图中，“P”是我们的生产者，“C”是我们的消费者。中间的盒子是一个队列——RabbitMQ消费者的消息缓冲区。 <img src="/assets/images/posts/middleware/python-one.png" alt=""></p>
+<blockquote>
+<p><strong>amqp.node客户端库</strong> RabbitMQ提供多种协议。本教程使用AMQP 0-9-1，这是一个开放，通用的消息传递协议。 RabbitMQ有许多不同的语言客户端。我们将在本教程中使用amqp.node客户端。 首先，使用<a href="https://www.npmjs.com/">npm</a>安装amqp.node：</p>
+</blockquote>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">npm install amqplib
+</code></pre></div><p>现在我们安装了amqp.node，我们可以写一些代码。</p>
+<h2 id="发送端">发送端</h2>
+<p><img src="/assets/images/posts/middleware/sending.png" alt=""></p>
+<p>我们将调用我们的消息发布者（发送者）<code>send.js</code>和我们的消息使用者（接收者）<code>receive.js</code>。发布者将连接到RabbitMQ，发送一条消息，然后退出。 在send.js中，我们需要首先需要库：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-js" data-lang="js"><span style="color:#75715e">#!/usr/bin/env node
+</span><span style="color:#75715e"></span>
+<span style="color:#66d9ef">var</span> <span style="color:#a6e22e">amqp</span> <span style="color:#f92672">=</span> <span style="color:#a6e22e">require</span>(<span style="color:#e6db74">&#39;amqplib/callback_api&#39;</span>);
+</code></pre></div><p>然后连接到RabbitMQ服务器</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-js" data-lang="js"><span style="color:#a6e22e">amqp</span>.<span style="color:#a6e22e">connect</span>(<span style="color:#e6db74">&#39;amqp://localhost&#39;</span>, <span style="color:#66d9ef">function</span>(<span style="color:#a6e22e">err</span>, <span style="color:#a6e22e">conn</span>) {});
+</code></pre></div><p>接下来我们创建一个频道（channel），这是大部分API所需要做的：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-js" data-lang="js"><span style="color:#a6e22e">amqp</span>.<span style="color:#a6e22e">connect</span>(<span style="color:#e6db74">&#39;amqp://localhost&#39;</span>, <span style="color:#66d9ef">function</span>(<span style="color:#a6e22e">err</span>, <span style="color:#a6e22e">conn</span>) {
+  <span style="color:#a6e22e">conn</span>.<span style="color:#a6e22e">createChannel</span>(<span style="color:#66d9ef">function</span>(<span style="color:#a6e22e">err</span>, <span style="color:#a6e22e">ch</span>) {});
+});
+</code></pre></div><p>发送，我们必须申报队列给我们发送；然后我们可以发布消息到队列中：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-js" data-lang="js"><span style="color:#a6e22e">amqp</span>.<span style="color:#a6e22e">connect</span>(<span style="color:#e6db74">&#39;amqp://localhost&#39;</span>, <span style="color:#66d9ef">function</span>(<span style="color:#a6e22e">err</span>, <span style="color:#a6e22e">conn</span>) {
+  <span style="color:#a6e22e">conn</span>.<span style="color:#a6e22e">createChannel</span>(<span style="color:#66d9ef">function</span>(<span style="color:#a6e22e">err</span>, <span style="color:#a6e22e">ch</span>) {
+    <span style="color:#66d9ef">var</span> <span style="color:#a6e22e">q</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;hello&#39;</span>;
+
+    <span style="color:#a6e22e">ch</span>.<span style="color:#a6e22e">assertQueue</span>(<span style="color:#a6e22e">q</span>, {<span style="color:#a6e22e">durable</span><span style="color:#f92672">:</span> <span style="color:#66d9ef">false</span>});
+    <span style="color:#75715e">// Note: on Node 6 Buffer.from(msg) should be used
+</span><span style="color:#75715e"></span>    <span style="color:#a6e22e">ch</span>.<span style="color:#a6e22e">sendToQueue</span>(<span style="color:#a6e22e">q</span>, <span style="color:#66d9ef">new</span> <span style="color:#a6e22e">Buffer</span>(<span style="color:#e6db74">&#39;Hello World!&#39;</span>));
+    <span style="color:#a6e22e">console</span>.<span style="color:#a6e22e">log</span>(<span style="color:#e6db74">&#34; [x] Sent &#39;Hello World!&#39;&#34;</span>);
+  });
+});
+</code></pre></div><p>声明一个队列是幂等的——只有当它不存在时才会被创建。消息内容是一个字节数组，所以你可以使用任何编码。 最后，我们关闭连接并退出：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-js" data-lang="js"><span style="color:#a6e22e">setTimeout</span>(<span style="color:#66d9ef">function</span>() { <span style="color:#a6e22e">conn</span>.<span style="color:#a6e22e">close</span>(); <span style="color:#a6e22e">process</span>.<span style="color:#a6e22e">exit</span>(<span style="color:#ae81ff">0</span>) }, <span style="color:#ae81ff">500</span>);
+</code></pre></div><p>所以，整个代码如下：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-js" data-lang="js"><span style="color:#75715e">#!/usr/bin/env node
+</span><span style="color:#75715e"></span>
+<span style="color:#66d9ef">var</span> <span style="color:#a6e22e">amqp</span> <span style="color:#f92672">=</span> <span style="color:#a6e22e">require</span>(<span style="color:#e6db74">&#39;amqplib/callback_api&#39;</span>);
+
+<span style="color:#a6e22e">amqp</span>.<span style="color:#a6e22e">connect</span>(<span style="color:#e6db74">&#39;amqp://localhost&#39;</span>, <span style="color:#66d9ef">function</span>(<span style="color:#a6e22e">err</span>, <span style="color:#a6e22e">conn</span>) {
+  <span style="color:#a6e22e">conn</span>.<span style="color:#a6e22e">createChannel</span>(<span style="color:#66d9ef">function</span>(<span style="color:#a6e22e">err</span>, <span style="color:#a6e22e">ch</span>) {
+    <span style="color:#66d9ef">var</span> <span style="color:#a6e22e">q</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;hello&#39;</span>;
+    <span style="color:#66d9ef">var</span> <span style="color:#a6e22e">msg</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;Hello World!&#39;</span>;
+
+    <span style="color:#a6e22e">ch</span>.<span style="color:#a6e22e">assertQueue</span>(<span style="color:#a6e22e">q</span>, {<span style="color:#a6e22e">durable</span><span style="color:#f92672">:</span> <span style="color:#66d9ef">false</span>});
+    <span style="color:#75715e">// Note: on Node 6 Buffer.from(msg) should be used
+</span><span style="color:#75715e"></span>    <span style="color:#a6e22e">ch</span>.<span style="color:#a6e22e">sendToQueue</span>(<span style="color:#a6e22e">q</span>, <span style="color:#66d9ef">new</span> <span style="color:#a6e22e">Buffer</span>(<span style="color:#a6e22e">msg</span>));
+    <span style="color:#a6e22e">console</span>.<span style="color:#a6e22e">log</span>(<span style="color:#e6db74">&#34; [x] Sent %s&#34;</span>, <span style="color:#a6e22e">msg</span>);
+  });
+  <span style="color:#a6e22e">setTimeout</span>(<span style="color:#66d9ef">function</span>() { <span style="color:#a6e22e">conn</span>.<span style="color:#a6e22e">close</span>(); <span style="color:#a6e22e">process</span>.<span style="color:#a6e22e">exit</span>(<span style="color:#ae81ff">0</span>) }, <span style="color:#ae81ff">500</span>);
+});
+</code></pre></div><blockquote>
+<p><strong>发送端故障</strong> 如果这是您第一次使用RabbitMQ，并且您没有看到“已发送”消息，那么您可能会不知所措。也许broker启动没有足够的可用磁盘空间（默认情况下，它至少需要200 MB空闲空间），因此拒绝接受消息。检查代理日志文件以确认并在必要时减少限制。<a href="https://www.rabbitmq.com/configure.html#config-items">配置文件文档</a>将告诉你如何设置<code>disk_free_limit</code>。</p>
+</blockquote>
+<h2 id="接收端">接收端</h2>
+<p>这是我们的接收方。消费者获取从RabbitMQ推送的消息，因此与发布单个消息的发布者不同，我们将持续运行以监听消息并将其打印出来。</p>
+<p><img src="/assets/images/posts/middleware/receiving.webp" alt=""></p>
+<p>代码（在<code>receive.js</code>中）和send有相同的要求：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-js" data-lang="js"><span style="color:#75715e">#!/usr/bin/env node
+</span><span style="color:#75715e"></span>
+<span style="color:#66d9ef">var</span> <span style="color:#a6e22e">amqp</span> <span style="color:#f92672">=</span> <span style="color:#a6e22e">require</span>(<span style="color:#e6db74">&#39;amqplib/callback_api&#39;</span>);
+</code></pre></div><p>设置与发布者相同；我们打开一个连接和一个通道，并声明我们将要使用的队列。注意这与<code>sendToQueue</code>发布到的队列相匹配。</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-js" data-lang="js"><span style="color:#a6e22e">amqp</span>.<span style="color:#a6e22e">connect</span>(<span style="color:#e6db74">&#39;amqp://localhost&#39;</span>, <span style="color:#66d9ef">function</span>(<span style="color:#a6e22e">err</span>, <span style="color:#a6e22e">conn</span>) {
+  <span style="color:#a6e22e">conn</span>.<span style="color:#a6e22e">createChannel</span>(<span style="color:#66d9ef">function</span>(<span style="color:#a6e22e">err</span>, <span style="color:#a6e22e">ch</span>) {
+    <span style="color:#66d9ef">var</span> <span style="color:#a6e22e">q</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;hello&#39;</span>;
+
+    <span style="color:#a6e22e">ch</span>.<span style="color:#a6e22e">assertQueue</span>(<span style="color:#a6e22e">q</span>, {<span style="color:#a6e22e">durable</span><span style="color:#f92672">:</span> <span style="color:#66d9ef">false</span>});
+  });
+});
+</code></pre></div><p>请注意，我们在这里也声明队列。因为我们可能会在发布者之前启动消费者，所以我们希望确保队列存在，然后再试图使用消息。 我们即将告诉服务器将队列中的消息传递给我们。由于它会异步推送消息，因此我们提供了一个回调函数，当RabbitMQ向消费者推送消息时，将执行回调函数。这是<code>Channel.consume</code>所做的。</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-js" data-lang="js"><span style="color:#a6e22e">console</span>.<span style="color:#a6e22e">log</span>(<span style="color:#e6db74">&#34; [*] Waiting for messages in %s. To exit press CTRL+C&#34;</span>, <span style="color:#a6e22e">q</span>);
+<span style="color:#a6e22e">ch</span>.<span style="color:#a6e22e">consume</span>(<span style="color:#a6e22e">q</span>, <span style="color:#66d9ef">function</span>(<span style="color:#a6e22e">msg</span>) {
+  <span style="color:#a6e22e">console</span>.<span style="color:#a6e22e">log</span>(<span style="color:#e6db74">&#34; [x] Received %s&#34;</span>, <span style="color:#a6e22e">msg</span>.<span style="color:#a6e22e">content</span>.<span style="color:#a6e22e">toString</span>());
+}, {<span style="color:#a6e22e">noAck</span><span style="color:#f92672">:</span> <span style="color:#66d9ef">true</span>});
+</code></pre></div><p>完整<code>receive.js</code>如下：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-js" data-lang="js"><span style="color:#75715e">#!/usr/bin/env node
+</span><span style="color:#75715e"></span>
+<span style="color:#66d9ef">var</span> <span style="color:#a6e22e">amqp</span> <span style="color:#f92672">=</span> <span style="color:#a6e22e">require</span>(<span style="color:#e6db74">&#39;amqplib/callback_api&#39;</span>);
+
+<span style="color:#a6e22e">amqp</span>.<span style="color:#a6e22e">connect</span>(<span style="color:#e6db74">&#39;amqp://localhost&#39;</span>, <span style="color:#66d9ef">function</span>(<span style="color:#a6e22e">err</span>, <span style="color:#a6e22e">conn</span>) {
+  <span style="color:#a6e22e">conn</span>.<span style="color:#a6e22e">createChannel</span>(<span style="color:#66d9ef">function</span>(<span style="color:#a6e22e">err</span>, <span style="color:#a6e22e">ch</span>) {
+    <span style="color:#66d9ef">var</span> <span style="color:#a6e22e">q</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;hello&#39;</span>;
+
+    <span style="color:#a6e22e">ch</span>.<span style="color:#a6e22e">assertQueue</span>(<span style="color:#a6e22e">q</span>, {<span style="color:#a6e22e">durable</span><span style="color:#f92672">:</span> <span style="color:#66d9ef">false</span>});
+    <span style="color:#a6e22e">console</span>.<span style="color:#a6e22e">log</span>(<span style="color:#e6db74">&#34; [*] Waiting for messages in %s. To exit press CTRL+C&#34;</span>, <span style="color:#a6e22e">q</span>);
+    <span style="color:#a6e22e">ch</span>.<span style="color:#a6e22e">consume</span>(<span style="color:#a6e22e">q</span>, <span style="color:#66d9ef">function</span>(<span style="color:#a6e22e">msg</span>) {
+      <span style="color:#a6e22e">console</span>.<span style="color:#a6e22e">log</span>(<span style="color:#e6db74">&#34; [x] Received %s&#34;</span>, <span style="color:#a6e22e">msg</span>.<span style="color:#a6e22e">content</span>.<span style="color:#a6e22e">toString</span>());
+    }, {<span style="color:#a6e22e">noAck</span><span style="color:#f92672">:</span> <span style="color:#66d9ef">true</span>});
+  });
+});
+</code></pre></div><h2 id="执行">执行</h2>
+<p>现在我们可以运行这两个脚本。在终端中，运行发布者：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./send.js
+</code></pre></div><p>然后运行接收者：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./receive.js
+</code></pre></div><p>消费者将通过RabbitMQ打印从发布者处获得的消息。消费者将继续运行，等待消息（使用Ctrl-C停止它），所以尝试从另一个终端运行发布者。</p>
+<blockquote>
+<p><strong>列出队列</strong> 你可能想看看RabbitMQ有什么队列，有多少条消息。您可以作为特权用户使用<code>rabbitmqctl</code>工具执行此操作：</p>
+<pre><code>sudo rabbitmqctl list_queues
+</code></pre>
+<p>在Windows上，省略sudo：</p>
+<pre><code>rabbitmqctl.bat list_queues
+</code></pre>
+</blockquote>
+
+    </div>
+
+    
+    
+      <div class="btn-improve-page">
+          <a href="https://github.com/alphajc/mysite/edit/master/content/posts/middleware/rabbitmq/RabbitMQ%20Base%20with%20Node.md">
+            <i class="fas fa-code-branch"></i>
+            Improve This Page
+          </a>
+      </div>
+    
+
+    
+  <hr />
+    <div class="row next-prev-navigator">
+
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    
+      
+      <div class="col-md-6 previous-article">
+        <a href="/posts/middleware/rabbitmq/rabbitmq-queue-with-node/" class="btn btn-outline-info">
+          <span><i class="fas fa-chevron-circle-left"></i> 上一篇</span>
+          <br />
+          <span>Node使用RabbitMQ：工作队列</span>
+        </a>
+      </div>
+      
+    
+    
+      
+        
+        
+          
+              
+          
+        
+        <div class="col-md-6 next-article">
+          <a href="/posts/virtualization/vmware/vmware-vcenter/" class="btn btn-outline-info">
+            <span>下一篇 <i class="fas fa-chevron-circle-right"></i></span>
+            <br />
+            <span>详解VMware vCenter Server</span>
+          </a>
+        </div>
+      
+    
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+</div>
+
+  <hr />
+  
+  
+      <div id="disqus_thread"></div>
+<script type="text/javascript">
+  (function () {
+    
+    
+    if (window.location.hostname == "localhost") return;
+
+    var dsq = document.createElement("script");
+    dsq.type = "text/javascript";
+    dsq.async = true;
+    var disqus_shortname = "mydream-ink";
+    dsq.src = "//" + disqus_shortname + ".disqus.com/embed.js";
+    (
+      document.getElementsByTagName("head")[0] ||
+      document.getElementsByTagName("body")[0]
+    ).appendChild(dsq);
+  })();
+</script>
+<noscript
+  >请开启 JavaScript 功能
+  <a href="https://disqus.com/?ref_noscript"
+    >comments powered by Disqus.</a
+  ></noscript
+>
+<a href="https://disqus.com/" class="dsq-brlink"
+  >通过 <span class="logo-disqus">Disqus</span> 评论</a
+>
+
+  
+</div>
+
+    </div>
+
+    <footer class="container-fluid text-center align-content-center footer pb-2">
+  <div class="container pt-5">
+    <div class="row text-left">
+      <div class="col-md-4 col-sm-12">
+        <h5>导航</h5>
+        
+        <ul>
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#about">关于</a>
+            </li>
+            
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#skills">技能</a>
+            </li>
+            
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#experiences">经历</a>
+            </li>
+            
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#projects">项目</a>
+            </li>
+            
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#recent-posts">最近文章</a>
+            </li>
+            
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#achievements">成就</a>
+            </li>
+            
+        </ul>
+        
+
+      </div>
+      <div class="col-md-4 col-sm-12">
+        <h5>联系我</h5>
+        <ul>
+          
+          <li><span>电话: </span> <span>&#43;8619980414909</span></li>
+          
+          <li><span>邮箱: </span> <span>jerry@mydream.ink</span></li>
+          
+        </ul>
+      </div>
+      <div class="col-md-4 col-sm-12">
+        
+        <p>接收最新的邮件通知</p>
+        <form>
+          <div class="form-group">
+            <input
+              type="email"
+              class="form-control"
+              id="exampleInputEmail1"
+              aria-describedby="emailHelp"
+              placeholder="输入邮箱"
+            />
+            <small id="emailHelp" class="form-text text-muted"
+              >你的邮件地址不会被共享给他人</small
+            >
+          </div>
+          <button type="submit" class="btn btn-info">提交</button>
+        </form>
+      </div>
+    </div>
+  </div>
+  <hr />
+  <div class="container">
+    <div class="row text-left">
+      <div class="col-md-4">
+        <a id="theme" href="/" target="#">
+          <img src="/assets/images/logo-inverted.png">青云卷</a>
+      </div>
+      <div class="col-md-4"><a href="https://beian.miit.gov.cn">蜀ICP备 2021017630号-1</a>© 2021 Copyright.</div>
+    </div>
+  </div>
+</footer>
+
+    <script src="/assets/js/jquery-3.4.1.min.js"></script>
+<script src="/assets/js/bootstrap.min.js"></script>
+
+<script src="/assets/js/navbar.js"></script>
+<script src="/assets/js/jquery.filterizr.min.js"></script>
+
+
+    
+    
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/highlight.min.js"></script>
+<script src="/assets/js/single.js"></script>
+<script>
+  hljs.initHighlightingOnLoad();
+</script>
+
+
+  </body>
+</html>

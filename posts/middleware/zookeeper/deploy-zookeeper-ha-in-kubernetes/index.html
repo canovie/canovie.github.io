@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Kubernetes 中部署高可用的 Zookeeper</title>
+    <meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta http-equiv="X-UA-Compatible" content="ie=edge" />
+
+
+<link rel="stylesheet" href="/assets/css/bootstrap.min.css" />
+<link rel="stylesheet" href="/assets/css/style.css" />
+<link rel="stylesheet" href="/assets/css/navbar.css" />
+
+
+<link href="https://fonts.googleapis.com/css2?family=Muli:wght@300;400;500;600" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" />
+
+
+<link rel="icon" type="image/png" href="/assets/images/favicon.png" />
+
+
+    
+<link
+  rel="stylesheet"
+  href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/styles/atom-one-dark.min.css"
+/>
+<link rel="stylesheet" href="/assets/css/single.css" />
+
+
+    
+    
+      
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'UA-142765126-1', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+
+    
+  </head>
+
+  <body>
+    <div class="container-fluid bg-dimmed wrapper">
+      
+      
+    <nav class="navbar navbar-expand-lg top-navbar final-navbar shadow">
+    <div class="container">
+      <a class="navbar-brand" href="/posts">
+        <img src="/assets/images/logo.png">青云卷</a>
+      <button class="navbar-toggler navbar-light" type="button" >
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <div class="collapse navbar-collapse" id="top-nav-items">
+        <ul class="navbar-nav ml-auto">
+        </ul>
+      </div>
+    </div>
+</nav>
+
+
+
+      
+      
+<div class="container p-0 read-area">
+  
+  <div class="hero-area col-sm-12" style='background-image: url(https://mydream.ink/assets/images/posts/middleware/zookeeper.png);'>
+  </div>
+
+  
+  <div class="page-content">
+    <div class="author-profile ml-auto align-self-lg-center">
+      <img class="rounded-circle" src='/assets/images/portrait.jpg'/>
+      <h5 class="author-name">Jerry Chan</h5>
+      <p>November 2, 2019</p>
+    </div>
+
+    <div class="title">
+      <h1>Kubernetes 中部署高可用的 Zookeeper</h1>
+    </div>
+
+    <div class="post-content" id="post-content">
+      <p>本文主要使用 <a href="https://github.com/helm/charts/tree/master/incubator/zookeeper">helm chart</a> 进行 zookeeper 的高可用部署。</p>
+<h2 id="环境说明">环境说明</h2>
+<p>本文使用的是 TKE 托管环境，在该环境中安中了 cbs-csi 的 operator，为了方便持久卷备份，后文中的持久化存储会统一采用。CSI的解决方案在各种环境中都会有，我仅描述 cbs。</p>
+<ul>
+<li>
+<p>kubernetes 版本：<code>v1.14.3-tke.4</code></p>
+</li>
+<li>
+<p>helm 版本：<code>v2.10.0</code>（TKE控制台支持的版本）</p>
+</li>
+<li>
+<p>按步骤安装好的 <a href="https://github.com/TencentCloud/kubernetes-csi-tencentcloud">cbs-csi</a></p>
+<blockquote>
+<p>值得说明的是 cbs 存储不可跨可用区挂载，默认情况下先建存储再建 pod 的方式无法满足生产需要，所以才引入的 cbs-csi。但在建立 storageClass 时要注意加入 <code>volumeBindingMode: WaitForFirstConsumer</code> 以保证 pod 完成调度之后再创建卷，从而使得存储不用影响 pod 的调度。sc 参考如下：</p>
+</blockquote>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#f92672">apiVersion</span>: <span style="color:#ae81ff">storage.k8s.io/v1</span>
+<span style="color:#f92672">kind</span>: <span style="color:#ae81ff">StorageClass</span>
+<span style="color:#f92672">metadata</span>:
+<span style="color:#f92672">annotations</span>:
+    <span style="color:#f92672">storageclass.beta.kubernetes.io/is-default-class</span>: <span style="color:#e6db74">&#34;true&#34;</span>
+<span style="color:#f92672">name</span>: <span style="color:#ae81ff">cbs-csi-topo</span>
+<span style="color:#f92672">parameters</span>:
+    <span style="color:#f92672">diskType</span>: <span style="color:#ae81ff">CLOUD_PREMIUM</span>
+<span style="color:#f92672">provisioner</span>: <span style="color:#ae81ff">com.tencent.cloud.csi.cbs</span>
+<span style="color:#f92672">reclaimPolicy</span>: <span style="color:#ae81ff">Delete</span>
+<span style="color:#f92672">volumeBindingMode</span>: <span style="color:#ae81ff">WaitForFirstConsumer</span>
+</code></pre></div></li>
+<li>
+<p>已经部署好了的 prometheus 的监控方案，包括 <code>serviceMonitor</code> 这样的 CRD</p>
+</li>
+</ul>
+<h2 id="部署">部署</h2>
+<ol>
+<li>
+<p>下载 chart：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">git clone git@github.com:helm/charts.git
+</code></pre></div></li>
+<li>
+<p>确定部署参数：</p>
+<p>部署时传参有命令行和文件两种方式，这里创建一个 <code>custom.yaml</code> 的文件，填入想要修改的变量</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#f92672">exporters</span>:
+<span style="color:#f92672">jmx</span>:
+    <span style="color:#f92672">enabled</span>: <span style="color:#66d9ef">true</span> <span style="color:#75715e"># jmx 监控</span>
+<span style="color:#f92672">zookeeper</span>:
+    <span style="color:#f92672">enabled</span>: <span style="color:#66d9ef">true</span> <span style="color:#75715e"># zookeeper 应用级监控</span>
+<span style="color:#f92672">prometheus</span>:
+    <span style="color:#f92672">serviceMonitor</span>:
+        <span style="color:#f92672">enabled</span>: <span style="color:#66d9ef">true</span> <span style="color:#75715e"># 使用 serviceMonitor 作为 prometheus 的配置方案</span>
+        <span style="color:#f92672">selector</span>:
+            <span style="color:#f92672">release</span>: <span style="color:#ae81ff">monitor</span> <span style="color:#75715e"># 这需要与 promethus 的 serviceMonitorSelector.matchLabels 匹配，否则 promethus 无法获取该配置</span>
+<span style="color:#f92672">persistence</span>:
+    <span style="color:#f92672">storageClass</span>: <span style="color:#ae81ff">cbs-csi-topo</span> <span style="color:#75715e"># 符合需求的 sc</span>
+    <span style="color:#f92672">size</span>: <span style="color:#ae81ff">10Gi</span> <span style="color:#75715e"># zookeeper 持久卷的大小，视数据大小而定</span>
+<span style="color:#f92672">image</span>:
+    <span style="color:#f92672">tag</span>: <span style="color:#ae81ff">3.5.6</span> <span style="color:#75715e"># zookeepr 的镜像版本，从 https://hub.docker.com/_/zookeeper 选择自己需要的</span>
+<span style="color:#75715e"># 如果以上这些参数还满足不也自己的需求，就在 values.yaml 中找</span>
+</code></pre></div></li>
+<li>
+<p>安装</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">helm install --namespace &lt;NS&gt; -f custom.yaml incubator/zookeeper
+</code></pre></div><p>这会生成一个名字随机的 Release，解决了取名字的烦恼，也可以通过 <code>--name</code> 指定名字，如果是二次安装，环境对原来的名字形成了依赖，则需要指定原来的名字。</p>
+</li>
+</ol>
+
+    </div>
+
+    
+    
+      <div class="btn-improve-page">
+          <a href="https://github.com/alphajc/mysite/edit/master/content/posts/middleware/zookeeper/deploy-zookeeper-ha-in-kubernetes.md">
+            <i class="fas fa-code-branch"></i>
+            Improve This Page
+          </a>
+      </div>
+    
+
+    
+  <hr />
+    <div class="row next-prev-navigator">
+
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    
+      
+      <div class="col-md-6 previous-article">
+        <a href="/posts/middleware/zookeeper/deploy-zookeeper-observer-across-vpc/" class="btn btn-outline-info">
+          <span><i class="fas fa-chevron-circle-left"></i> 上一篇</span>
+          <br />
+          <span>跨 VPC 部署 zookeeper observer</span>
+        </a>
+      </div>
+      
+    
+    
+      
+        
+        
+          
+              
+          
+        
+        <div class="col-md-6 next-article">
+          <a href="/posts/devops/auto-devops-auto-build/" class="btn btn-outline-info">
+            <span>下一篇 <i class="fas fa-chevron-circle-right"></i></span>
+            <br />
+            <span>自动化运维之自动构建</span>
+          </a>
+        </div>
+      
+    
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+</div>
+
+  <hr />
+  
+  
+      <div id="disqus_thread"></div>
+<script type="text/javascript">
+  (function () {
+    
+    
+    if (window.location.hostname == "localhost") return;
+
+    var dsq = document.createElement("script");
+    dsq.type = "text/javascript";
+    dsq.async = true;
+    var disqus_shortname = "mydream-ink";
+    dsq.src = "//" + disqus_shortname + ".disqus.com/embed.js";
+    (
+      document.getElementsByTagName("head")[0] ||
+      document.getElementsByTagName("body")[0]
+    ).appendChild(dsq);
+  })();
+</script>
+<noscript
+  >请开启 JavaScript 功能
+  <a href="https://disqus.com/?ref_noscript"
+    >comments powered by Disqus.</a
+  ></noscript
+>
+<a href="https://disqus.com/" class="dsq-brlink"
+  >通过 <span class="logo-disqus">Disqus</span> 评论</a
+>
+
+  
+</div>
+
+    </div>
+
+    <footer class="container-fluid text-center align-content-center footer pb-2">
+  <div class="container pt-5">
+    <div class="row text-left">
+      <div class="col-md-4 col-sm-12">
+        <h5>导航</h5>
+        
+        <ul>
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#about">关于</a>
+            </li>
+            
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#skills">技能</a>
+            </li>
+            
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#experiences">经历</a>
+            </li>
+            
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#projects">项目</a>
+            </li>
+            
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#recent-posts">最近文章</a>
+            </li>
+            
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#achievements">成就</a>
+            </li>
+            
+        </ul>
+        
+
+      </div>
+      <div class="col-md-4 col-sm-12">
+        <h5>联系我</h5>
+        <ul>
+          
+          <li><span>电话: </span> <span>&#43;8619980414909</span></li>
+          
+          <li><span>邮箱: </span> <span>jerry@mydream.ink</span></li>
+          
+        </ul>
+      </div>
+      <div class="col-md-4 col-sm-12">
+        
+        <p>接收最新的邮件通知</p>
+        <form>
+          <div class="form-group">
+            <input
+              type="email"
+              class="form-control"
+              id="exampleInputEmail1"
+              aria-describedby="emailHelp"
+              placeholder="输入邮箱"
+            />
+            <small id="emailHelp" class="form-text text-muted"
+              >你的邮件地址不会被共享给他人</small
+            >
+          </div>
+          <button type="submit" class="btn btn-info">提交</button>
+        </form>
+      </div>
+    </div>
+  </div>
+  <hr />
+  <div class="container">
+    <div class="row text-left">
+      <div class="col-md-4">
+        <a id="theme" href="/" target="#">
+          <img src="/assets/images/logo-inverted.png">青云卷</a>
+      </div>
+      <div class="col-md-4"><a href="https://beian.miit.gov.cn">蜀ICP备 2021017630号-1</a>© 2021 Copyright.</div>
+    </div>
+  </div>
+</footer>
+
+    <script src="/assets/js/jquery-3.4.1.min.js"></script>
+<script src="/assets/js/bootstrap.min.js"></script>
+
+<script src="/assets/js/navbar.js"></script>
+<script src="/assets/js/jquery.filterizr.min.js"></script>
+
+
+    
+    
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/highlight.min.js"></script>
+<script src="/assets/js/single.js"></script>
+<script>
+  hljs.initHighlightingOnLoad();
+</script>
+
+
+  </body>
+</html>

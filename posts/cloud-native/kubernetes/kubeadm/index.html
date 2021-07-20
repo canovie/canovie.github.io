@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>使用 kubeadm 安装 Kubernetes 1.10.0</title>
+    <meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta http-equiv="X-UA-Compatible" content="ie=edge" />
+
+
+<link rel="stylesheet" href="/assets/css/bootstrap.min.css" />
+<link rel="stylesheet" href="/assets/css/style.css" />
+<link rel="stylesheet" href="/assets/css/navbar.css" />
+
+
+<link href="https://fonts.googleapis.com/css2?family=Muli:wght@300;400;500;600" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" />
+
+
+<link rel="icon" type="image/png" href="/assets/images/favicon.png" />
+
+
+    
+<link
+  rel="stylesheet"
+  href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/styles/atom-one-dark.min.css"
+/>
+<link rel="stylesheet" href="/assets/css/single.css" />
+
+
+    
+    
+      
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'UA-142765126-1', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+
+    
+  </head>
+
+  <body>
+    <div class="container-fluid bg-dimmed wrapper">
+      
+      
+    <nav class="navbar navbar-expand-lg top-navbar final-navbar shadow">
+    <div class="container">
+      <a class="navbar-brand" href="/posts">
+        <img src="/assets/images/logo.png">青云卷</a>
+      <button class="navbar-toggler navbar-light" type="button" >
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <div class="collapse navbar-collapse" id="top-nav-items">
+        <ul class="navbar-nav ml-auto">
+        </ul>
+      </div>
+    </div>
+</nav>
+
+
+
+      
+      
+<div class="container p-0 read-area">
+  
+  <div class="hero-area col-sm-12" style='background-image: url(https://mydream.ink/assets/images/posts/cloud-native/kubernetes.jpg);'>
+  </div>
+
+  
+  <div class="page-content">
+    <div class="author-profile ml-auto align-self-lg-center">
+      <img class="rounded-circle" src='/assets/images/portrait.jpg'/>
+      <h5 class="author-name">Jerry Chan</h5>
+      <p>March 9, 2018</p>
+    </div>
+
+    <div class="title">
+      <h1>使用 kubeadm 安装 Kubernetes 1.10.0</h1>
+    </div>
+
+    <div class="post-content" id="post-content">
+      <p>kubernetes可以使用多种容器<code>runtime</code>，此处使用当前最常见的<code>docker</code>。</p>
+<h2 id="安装docker">安装docker</h2>
+<p>在各种机器上安装docker的方式不同，我曾翻译过一篇ubuntu安装docker的文章，还有一些没来的及翻译的，可以参考官方文档。推荐的docker版本为v1.12，v1.11, v1.13 和 17.03 也行，其它的官方就没测试过了，不过我使用当前最新的v18.03也行。</p>
+<h1 id="docker官方">docker官方</h1>
+<ol>
+<li><a href="https://www.geekare.com/2018/01/07/ubuntu%E5%AE%89%E8%A3%85-docker%E7%A4%BE%E5%8C%BA%E7%89%88/">使用Ubuntu安装docker-ce</a></li>
+<li>Mac和Windows桌面安装docker-ce
+<ul>
+<li>下载<a href="https://download.docker.com/mac/stable/Docker.dmg">Mac版本</a>的docker-ce，执行即安装</li>
+<li>下载<a href="https://download.docker.com/win/stable/Docker%20for%20Windows%20Installer.exe">Windows版本</a>的docker-ce，执行即可安装</li>
+</ul>
+</li>
+<li><a href="https://docs.docker.com/install/linux/docker-ce/centos/">CentOS安装docker-ce</a></li>
+<li><a href="https://docs.docker.com/install/linux/docker-ce/fedora/">Fedora安装docker-ce</a></li>
+<li><a href="https://docs.docker.com/install/linux/docker-ce/binaries/">二进制安装方式</a></li>
+</ol>
+<h1 id="kubernetes推荐"><strong>kubernetes推荐</strong></h1>
+<ul>
+<li>
+<p>Ubuntu/Debian/HypriotOS 从Ubuntu的库安装</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">apt-get update
+apt-get install -y docker.io
+</code></pre></div><p>使用docker库安装v17.03</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">apt-get update
+apt-get install -y <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>    apt-transport-https <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>    ca-certificates <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>    curl <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>    software-properties-common
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add -
+add-apt-repository <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>    <span style="color:#e6db74">&#34;deb https://download.docker.com/linux/</span><span style="color:#66d9ef">$(</span>. /etc/os-release; echo <span style="color:#e6db74">&#34;</span>$ID<span style="color:#e6db74">&#34;</span><span style="color:#66d9ef">)</span><span style="color:#e6db74"> \
+</span><span style="color:#e6db74">    </span><span style="color:#66d9ef">$(</span>lsb_release -cs<span style="color:#66d9ef">)</span><span style="color:#e6db74"> \
+</span><span style="color:#e6db74">    stable&#34;</span>
+apt-get update <span style="color:#f92672">&amp;&amp;</span> apt-get install -y docker-ce<span style="color:#f92672">=</span><span style="color:#66d9ef">$(</span>apt-cache madison docker-ce | grep 17.03 | head -1 | awk <span style="color:#e6db74">&#39;{print $3}&#39;</span><span style="color:#66d9ef">)</span>
+</code></pre></div></li>
+<li>
+<p>CentOS/RHEL/Fedora</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">yum install -y docker
+systemctl enable docker <span style="color:#f92672">&amp;&amp;</span> systemctl start docker
+</code></pre></div></li>
+<li>
+<p>Container Linux</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">systemctl enable docker <span style="color:#f92672">&amp;&amp;</span> systemctl start docker
+</code></pre></div></li>
+</ul>
+<p>如果安装速度太慢建议翻墙先把安装包下载回来。 文末附了红帽离线包供下载。</p>
+<h2 id="安装kubeadmkubectl和kubelet">安装kubeadm、kubectl和kubelet</h2>
+<ul>
+<li>
+<p>Ubuntu/Debian/HypriotOS</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">apt-get update <span style="color:#f92672">&amp;&amp;</span> apt-get install -y apt-transport-https curl
+curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -
+cat <span style="color:#e6db74">&lt;&lt;EOF &gt;/etc/apt/sources.list.d/kubernetes.list
+</span><span style="color:#e6db74">deb http://apt.kubernetes.io/ kubernetes-xenial main
+</span><span style="color:#e6db74">EOF</span>
+apt-get update
+apt-get install -y kubelet kubeadm kubectl
+</code></pre></div></li>
+<li>
+<p>CentOS/RHEL/Fedora</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">cat <span style="color:#e6db74">&lt;&lt;EOF &gt; /etc/yum.repos.d/kubernetes.repo
+</span><span style="color:#e6db74">[kubernetes]
+</span><span style="color:#e6db74">name=Kubernetes
+</span><span style="color:#e6db74">baseurl=https://packages.cloud.google.com/yum/repos/kubernetes-el7-\$basearch
+</span><span style="color:#e6db74">enabled=1
+</span><span style="color:#e6db74">gpgcheck=1
+</span><span style="color:#e6db74">repo_gpgcheck=1
+</span><span style="color:#e6db74">gpgkey=https://packages.cloud.google.com/yum/doc/yum-key.gpg https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
+</span><span style="color:#e6db74">EOF</span>
+setenforce <span style="color:#ae81ff">0</span>
+yum install -y kubelet kubeadm kubectl
+systemctl enable kubelet <span style="color:#f92672">&amp;&amp;</span> systemctl start kubelet
+</code></pre></div><p>确保net.bridge.bridge-nf-call-iptables值为1</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">cat <span style="color:#e6db74">&lt;&lt;EOF &gt;  /etc/sysctl.d/k8s.conf
+</span><span style="color:#e6db74">net.bridge.bridge-nf-call-ip6tables = 1
+</span><span style="color:#e6db74">net.bridge.bridge-nf-call-iptables = 1
+</span><span style="color:#e6db74">EOF</span>
+sysctl --system
+</code></pre></div></li>
+<li>
+<p>Container Linux 先安装CNI插件</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">CNI_VERSION<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;v0.6.0&#34;</span>
+mkdir -p /opt/cni/bin
+curl -L <span style="color:#e6db74">&#34;https://github.com/containernetworking/plugins/releases/download/</span><span style="color:#e6db74">${</span>CNI_VERSION<span style="color:#e6db74">}</span><span style="color:#e6db74">/cni-plugins-amd64-</span><span style="color:#e6db74">${</span>CNI_VERSION<span style="color:#e6db74">}</span><span style="color:#e6db74">.tgz&#34;</span> | tar -C /opt/cni/bin -xz
+</code></pre></div><p>安装 kubeadm, kubelet, kubectl 并添加kubelet systemd服务：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">RELEASE<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;</span><span style="color:#66d9ef">$(</span>curl -sSL https://dl.k8s.io/release/stable.txt<span style="color:#66d9ef">)</span><span style="color:#e6db74">&#34;</span>
+
+mkdir -p /opt/bin
+cd /opt/bin
+curl -L --remote-name-all https://storage.googleapis.com/kubernetes-release/release/<span style="color:#e6db74">${</span>RELEASE<span style="color:#e6db74">}</span>/bin/linux/amd64/<span style="color:#f92672">{</span>kubeadm,kubelet,kubectl<span style="color:#f92672">}</span>
+chmod +x <span style="color:#f92672">{</span>kubeadm,kubelet,kubectl<span style="color:#f92672">}</span>
+
+curl -sSL <span style="color:#e6db74">&#34;https://raw.githubusercontent.com/kubernetes/kubernetes/</span><span style="color:#e6db74">${</span>RELEASE<span style="color:#e6db74">}</span><span style="color:#e6db74">/build/debs/kubelet.service&#34;</span> | sed <span style="color:#e6db74">&#34;s:/usr/bin:/opt/bin:g&#34;</span> &gt; /etc/systemd/system/kubelet.service
+mkdir -p /etc/systemd/system/kubelet.service.d
+curl -sSL <span style="color:#e6db74">&#34;https://raw.githubusercontent.com/kubernetes/kubernetes/</span><span style="color:#e6db74">${</span>RELEASE<span style="color:#e6db74">}</span><span style="color:#e6db74">/build/debs/10-kubeadm.conf&#34;</span> | sed <span style="color:#e6db74">&#34;s:/usr/bin:/opt/bin:g&#34;</span> &gt; /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
+</code></pre></div><p>enable并启动kubelet</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">systemctl enable kubelet <span style="color:#f92672">&amp;&amp;</span> systemctl start kubelet
+</code></pre></div></li>
+</ul>
+<h2 id="在主节点上配置kubelet使用的cgroup驱动程序">在主节点上配置kubelet使用的cgroup驱动程序</h2>
+<p>确保docker使用的cgroup驱动和kubelet一样</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker info | grep -i cgroup
+cat /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
+</code></pre></div><p>如果不同则，使kubelet与docker的cgroup驱动相同</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">sed -i <span style="color:#e6db74">&#34;s/cgroup-driver=systemd/cgroup-driver=cgroupfs/g&#34;</span> /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
+</code></pre></div><p>重启kubelet</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">systemctl daemon-reload
+systemctl restart kubelet
+</code></pre></div><p>文末附了红帽离线包供下载。</p>
+<h2 id="创建集群httpskubernetesiodocssetupindependentcreate-cluster-kubeadm"><a href="https://kubernetes.io/docs/setup/independent/create-cluster-kubeadm/">创建集群</a></h2>
+<h2 id="离线安装">离线安装</h2>
+<blockquote>
+<p>yum安装离线资源 docker load 装载离线的docker镜像</p>
+</blockquote>
+<h1 id="资源">资源</h1>
+<ul>
+<li>CentOS安装kubeadm需要的相关资源：（链接: <a href="https://pan.baidu.com/s/1r7-LqH1Ju-5YTAIvRTcIUg">https://pan.baidu.com/s/1r7-LqH1Ju-5YTAIvRTcIUg</a> 密码: c2nf）</li>
+<li>安装kubernetes需要的Docker镜像：（链接: <a href="https://pan.baidu.com/s/1fGQtWnuvxJ7pXK5attP8Jw">https://pan.baidu.com/s/1fGQtWnuvxJ7pXK5attP8Jw</a> 密码: mty5）</li>
+</ul>
+
+    </div>
+
+    
+    
+      <div class="btn-improve-page">
+          <a href="https://github.com/alphajc/mysite/edit/master/content/posts/cloud-native/kubernetes/kubeadm.md">
+            <i class="fas fa-code-branch"></i>
+            Improve This Page
+          </a>
+      </div>
+    
+
+    
+  <hr />
+    <div class="row next-prev-navigator">
+
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    
+      
+      <div class="col-md-6 previous-article">
+        <a href="/posts/tools/gnu-sed/" class="btn btn-outline-info">
+          <span><i class="fas fa-chevron-circle-left"></i> 上一篇</span>
+          <br />
+          <span>GNU sed用户手册</span>
+        </a>
+      </div>
+      
+    
+    
+      
+        
+        
+          
+              
+          
+        
+        <div class="col-md-6 next-article">
+          <a href="/posts/middleware/rabbitmq/rabbitmq-rpc-with-node/" class="btn btn-outline-info">
+            <span>下一篇 <i class="fas fa-chevron-circle-right"></i></span>
+            <br />
+            <span>Node使用RabbitMQ：远程过程调用（RPC）</span>
+          </a>
+        </div>
+      
+    
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+</div>
+
+  <hr />
+  
+  
+      <div id="disqus_thread"></div>
+<script type="text/javascript">
+  (function () {
+    
+    
+    if (window.location.hostname == "localhost") return;
+
+    var dsq = document.createElement("script");
+    dsq.type = "text/javascript";
+    dsq.async = true;
+    var disqus_shortname = "mydream-ink";
+    dsq.src = "//" + disqus_shortname + ".disqus.com/embed.js";
+    (
+      document.getElementsByTagName("head")[0] ||
+      document.getElementsByTagName("body")[0]
+    ).appendChild(dsq);
+  })();
+</script>
+<noscript
+  >请开启 JavaScript 功能
+  <a href="https://disqus.com/?ref_noscript"
+    >comments powered by Disqus.</a
+  ></noscript
+>
+<a href="https://disqus.com/" class="dsq-brlink"
+  >通过 <span class="logo-disqus">Disqus</span> 评论</a
+>
+
+  
+</div>
+
+    </div>
+
+    <footer class="container-fluid text-center align-content-center footer pb-2">
+  <div class="container pt-5">
+    <div class="row text-left">
+      <div class="col-md-4 col-sm-12">
+        <h5>导航</h5>
+        
+        <ul>
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#about">关于</a>
+            </li>
+            
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#skills">技能</a>
+            </li>
+            
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#experiences">经历</a>
+            </li>
+            
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#projects">项目</a>
+            </li>
+            
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#recent-posts">最近文章</a>
+            </li>
+            
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#achievements">成就</a>
+            </li>
+            
+        </ul>
+        
+
+      </div>
+      <div class="col-md-4 col-sm-12">
+        <h5>联系我</h5>
+        <ul>
+          
+          <li><span>电话: </span> <span>&#43;8619980414909</span></li>
+          
+          <li><span>邮箱: </span> <span>jerry@mydream.ink</span></li>
+          
+        </ul>
+      </div>
+      <div class="col-md-4 col-sm-12">
+        
+        <p>接收最新的邮件通知</p>
+        <form>
+          <div class="form-group">
+            <input
+              type="email"
+              class="form-control"
+              id="exampleInputEmail1"
+              aria-describedby="emailHelp"
+              placeholder="输入邮箱"
+            />
+            <small id="emailHelp" class="form-text text-muted"
+              >你的邮件地址不会被共享给他人</small
+            >
+          </div>
+          <button type="submit" class="btn btn-info">提交</button>
+        </form>
+      </div>
+    </div>
+  </div>
+  <hr />
+  <div class="container">
+    <div class="row text-left">
+      <div class="col-md-4">
+        <a id="theme" href="/" target="#">
+          <img src="/assets/images/logo-inverted.png">青云卷</a>
+      </div>
+      <div class="col-md-4"><a href="https://beian.miit.gov.cn">蜀ICP备 2021017630号-1</a>© 2021 Copyright.</div>
+    </div>
+  </div>
+</footer>
+
+    <script src="/assets/js/jquery-3.4.1.min.js"></script>
+<script src="/assets/js/bootstrap.min.js"></script>
+
+<script src="/assets/js/navbar.js"></script>
+<script src="/assets/js/jquery.filterizr.min.js"></script>
+
+
+    
+    
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/highlight.min.js"></script>
+<script src="/assets/js/single.js"></script>
+<script>
+  hljs.initHighlightingOnLoad();
+</script>
+
+
+  </body>
+</html>

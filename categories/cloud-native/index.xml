@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>cloud-native on 青云卷</title>
+    <link>https://mydream.ink/categories/cloud-native/</link>
+    <description>Recent content in cloud-native on 青云卷</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh-cn</language>
+    <lastBuildDate>Wed, 06 Jan 2021 15:00:43 +0800</lastBuildDate><atom:link href="https://mydream.ink/categories/cloud-native/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Pyflink in Kubernetes</title>
+      <link>https://mydream.ink/posts/cloud-native/kubernetes/pyflink-in-kubernetes/</link>
+      <pubDate>Wed, 06 Jan 2021 15:00:43 +0800</pubDate>
+      
+      <guid>https://mydream.ink/posts/cloud-native/kubernetes/pyflink-in-kubernetes/</guid>
+      <description>pyFlink on kubernetes  在 TKE 环境下
+ 准备工作 为 flink 创建专用的命名空间、ServiceAccount，并设置好资源配额
+kubectl create ns flink kubectl -n flink create sa flink kubectl -n flink create role flink --verb=* --resource=*.* kubectl -n flink create rolebinding flink --role=flink --serviceaccount=flink:flink cat &amp;lt;&amp;lt; EOF &amp;gt; apiserver.crt # base 集群 apiserver 证书 -----BEGIN CERTIFICATE----- MIICyDCCAbCgAwIBAgIBADANBgkqhkiG9w0BAQsFADAVMRMwEQYDVQQDEwprdWJl cm5ldGVzMB4XDTIwMDMwNTA4MjYzOFoXDTMwMDMwMzA4MjYzOFowFTETMBEGA1UE AxMKa3ViZXJuZXRlczCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAMq/ 6ae6qIZbchBK7b0AaP2714K+tuxtGnl7p3yNwlCgVEnZjfytAr8cvkIzxCBH8xBc vqV2vtDOy0r6HecbIPTkd0bGn6BXjqPp6XZY0ffFgyBhGv6/DD7x7aJIG+A8uSVk /yTGcahGQ9WOQ6CDWDjZvC+K9zkeNqhtj1wm9P/hQcECAQkQbkIqLUF/P8SF4b8N QlodYsrZIg9MDqgQDq744AoFPm/F6G2GfHs1DfesYMoSYQs6ECec0+N/Nf5Kx7XX KW+ARAGEZxC3X7bJmxWr5JSRmmS46rmrN/MUDpMBaWUwtxubVxtIwt1FIFlFqCYz MR9UtvZkTaL6oSd6Q18CAwEAAaMjMCEwDgYDVR0PAQH/BAQDAgKUMA8GA1UdEwEB /wQFMAMBAf8wDQYJKoZIhvcNAQELBQADggEBABXd9WbwOlhlqyFsr/2s9wgf86+/ oo05gZhybHtuKHYvSwzoxAeyaMFGn4b7S2okcLoo3EwjmAN2Pup/qhTtiqM9xNfa +GuN+NX4zjkra+T2NEywIykwhodaFiYB+r6xM0LIHANlKKT7kRtgzkq/s8ui6Wkt b94T8BpE5U3f6YGz/4NtbqpYS6XVjIIjfP5MxoHRCh8H2LXmWs9A2RlmuZAwo0M2 FJjxcfIgvHrgCerPogVcXYT23BavOhMFlx7Jck2GAbDg0HYTabZuLNkj9T1//raL aknXJxuLYHbZe6I1cbsIdXJjav5c83YgqGDKetcJdkQqMgk8lVWW7RIdLb0= -----END CERTIFICATE----- EOF kubectl config --kubeconfig=flink-kubeconfig set-cluster base --server=https://cls-xxxxxxx.</description>
+    </item>
+    
+    <item>
+      <title>记一次 IPVS 引起的 kubernetes 服务异常</title>
+      <link>https://mydream.ink/posts/cloud-native/kubernetes/record-a-kubernetes-service-exception-caused-by-ipvs/</link>
+      <pubDate>Sun, 06 Dec 2020 17:14:02 +0800</pubDate>
+      
+      <guid>https://mydream.ink/posts/cloud-native/kubernetes/record-a-kubernetes-service-exception-caused-by-ipvs/</guid>
+      <description>问题描述 在我们的环境中，业务 A 会访问业务 B（也即 B 是 A 的上游服务），当 B 发版时，A 的请求偶尔会出现 timeout。现象看起来是流量路由到了已经不能提供服务的老的 pod 中。
+问题处理 排查点一 当 pod 下线时，endpoint controller 未及时将 pod 从 endpoint 中取出，导致流量进入了旧的 pod。
+由于集群 master 是托管部署的，所以我们没有办法查看相关日志和负载，求助于腾讯云的同时，自己这边也在排查。排查分两步进行，监控服务 B endpoint 的变化，同时滚动重启该服务。
+  监控 ep 变化
+watch -n 1 kubectl -n production describe ep wk-dispatcher   重启服务
+kubectl -n production rollout restart deployment wk-dispatcher   通过排查发现，跟 endpoint controller 并没有关系，因为 ep 变化很及时，加上至少 30 秒的优雅终止时间，基本可以确定在服务结束前，pod 是从 ep 中移除了的。</description>
+    </item>
+    
+    <item>
+      <title>使用 cert-manager 自动管理 tls 证书</title>
+      <link>https://mydream.ink/posts/cloud-native/kubernetes/use-cert-manager-in-kubernetes/</link>
+      <pubDate>Sat, 09 Nov 2019 08:49:39 +0800</pubDate>
+      
+      <guid>https://mydream.ink/posts/cloud-native/kubernetes/use-cert-manager-in-kubernetes/</guid>
+      <description>http 协议是一个全明文传输的协议，不加任何处理的 http 报文将在因特网中裸奔，只要有人对监听你的报文，你所有隐私将被人一览无余。Let’s Encrypt 是一家免费、开放、自动化的证书颁发机构（CA），为公众的利益而运行。它是一项由 Internet Security Research Group（ISRG）提供的服务。本着想要创建一个更安全，更尊重隐私的 Web 环境的初衷，Let’s Encrypt 以尽可能对用户友好的方式免费提供为网站启用 HTTPS（SSL/TLS）所需的数字证书。
+但是 Let’s Encrypt 颁发的证书有个特点，有效期只有三个月。这意味着我们需要频繁续期证书，倘若手动续期，无疑会增加运维成本。有什么方式可以为我们自动颁发证书吗？当然有！ACME 无疑就是我们的最佳选择。
+有一款很好用的 ACME 客户端叫 Certbot，可以帮助自动颁发、续期证书。在 kubernetes 的生态中有没有什么好的工具能帮助我们非常方便地使用证书么？当然有，那就是本期主题——cert-manager。
+cert-manager 是本地 Kubernetes 证书管理控制器。它可以帮助从各种来源颁发证书，例如 Let&amp;rsquo;s Encrypt，HashiCorp Vault，Venafi，简单的签名密钥对或自签名。它将确保证书有效并且是最新的，并在到期前尝试在配置的时间续订证书。
+原理比较简单，本文就不讲了，主要谈谈来安装和使用。
+安装 YAML 安装   创建 namespace
+kubectl create namespace cert-manager   安装 crd 和 cert-manager
+kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/v0.11.0/cert-manager.yaml  值得说明的是：在 kubernetes 1.15 以前的版本需要在执行kubectl apply时添加一个参数--validate=false，否则在创建 CustomResourceDefinition 资源时会收到与 x-kubernetes-preserve-unknown-fields 字段有关的验证错误。
+   helm 安装 依次执行下述命令：</description>
+    </item>
+    
+    <item>
+      <title>在 Mac 上使用 Docker 自带的 Kubernetes</title>
+      <link>https://mydream.ink/posts/cloud-native/kubernetes/use-kubernetes-from-docker-on-mac/</link>
+      <pubDate>Fri, 12 Jul 2019 20:23:13 +0800</pubDate>
+      
+      <guid>https://mydream.ink/posts/cloud-native/kubernetes/use-kubernetes-from-docker-on-mac/</guid>
+      <description>Mac 安装 Docker 的方法不再赘述，很简单，官方下载安装即可。
+安装完成后，kubectl的二进制文件就已经存在了。我们仅需要下载镜像，开启 kubernetes。
+下载镜像 查看一下你的 Docker 和 Kubernetes 版本：
+使用以下脚本，记得将镜像版本改成你所需要的🍁
+#!/bin/bash  set -e KUBE_VERSION=v1.10.11 KUBE_PAUSE_VERSION=3.1 ETCD_VERSION=3.1.12 DNS_VERSION=1.14.8 DOCKER_TOOL_VERSION=v0.4.12 GCR_URL=k8s.gcr.io ALIYUN_URL=registry.cn-hangzhou.aliyuncs.com/google_containers images=(kube-proxy-amd64:${KUBE_VERSION} kube-scheduler-amd64:${KUBE_VERSION} kube-controller-manager-amd64:${KUBE_VERSION} kube-apiserver-amd64:${KUBE_VERSION} pause-amd64:${KUBE_PAUSE_VERSION} etcd-amd64:${ETCD_VERSION} k8s-dns-sidecar-amd64:${DNS_VERSION} k8s-dns-kube-dns-amd64:${DNS_VERSION} k8s-dns-dnsmasq-nanny-amd64:${DNS_VERSION}) for image in ${images[@]} ; do docker pull ${ALIYUN_URL}/${image} docker tag ${ALIYUN_URL}/${image} ${GCR_URL}/${image} docker rmi ${ALIYUN_URL}/${image} done # 拉取 Docker 相关镜像 docker pull docker/kube-compose-api-server:${DOCKER_TOOL_VERSION} docker pull docker/kube-compose-controller:${DOCKER_TOOL_VERSION} 执行该脚本，将从阿里镜像库获得所需镜像。
+启动 Kubernetes 功能 打开 Docker 配置面板，请至少勾选 Enable Kubernetes 以开启 Kubernetes 服务。</description>
+    </item>
+    
+    <item>
+      <title>在 CentOS7 上安装新版 Docker CE（使用国内源）</title>
+      <link>https://mydream.ink/posts/cloud-native/container/install-docker-on-centos7/</link>
+      <pubDate>Fri, 12 Jul 2019 10:46:25 +0800</pubDate>
+      
+      <guid>https://mydream.ink/posts/cloud-native/container/install-docker-on-centos7/</guid>
+      <description>卸载老版本 $ sudo yum remove docker \  docker-client \  docker-client-latest \  docker-common \  docker-latest \  docker-latest-logrotate \  docker-logrotate \  docker-engine 如果曾经安装过，/var/lib/docker/中会有原来的镜像、容器、卷以及网络残留，如果不需要可将之一并删除。
+安装 Docker CE 安装 Docker 国内源   安装 yum 配置管理工具
+$ sudo yum install -y yum-utils \ device-mapper-persistent-data \ lvm2   安装清华大学的 Docker 安装源（本网站有效，该命令就有效）
+$ sudo yum-config-manager \ --add-repo \ https://mydream.ink/utils/container/docker-ce.repo 你可能会遇到如下问题：
+ adding repo from: https://mydream.ink/utils/container/docker-ce.repo grabbing file https://mydream.ink/utils/container/docker-ce.repo to /etc/yum.</description>
+    </item>
+    
+    <item>
+      <title>使用 kubeadm 安装 Kubernetes 1.10.0</title>
+      <link>https://mydream.ink/posts/cloud-native/kubernetes/kubeadm/</link>
+      <pubDate>Fri, 09 Mar 2018 00:00:00 +0000</pubDate>
+      
+      <guid>https://mydream.ink/posts/cloud-native/kubernetes/kubeadm/</guid>
+      <description>kubernetes可以使用多种容器runtime，此处使用当前最常见的docker。
+安装docker 在各种机器上安装docker的方式不同，我曾翻译过一篇ubuntu安装docker的文章，还有一些没来的及翻译的，可以参考官方文档。推荐的docker版本为v1.12，v1.11, v1.13 和 17.03 也行，其它的官方就没测试过了，不过我使用当前最新的v18.03也行。
+docker官方  使用Ubuntu安装docker-ce Mac和Windows桌面安装docker-ce  下载Mac版本的docker-ce，执行即安装 下载Windows版本的docker-ce，执行即可安装   CentOS安装docker-ce Fedora安装docker-ce 二进制安装方式  kubernetes推荐   Ubuntu/Debian/HypriotOS 从Ubuntu的库安装
+apt-get update apt-get install -y docker.io 使用docker库安装v17.03
+apt-get update apt-get install -y \  apt-transport-https \  ca-certificates \  curl \  software-properties-common curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add - add-apt-repository \  &amp;#34;deb https://download.docker.com/linux/$(. /etc/os-release; echo &amp;#34;$ID&amp;#34;)\ $(lsb_release -cs)\ stable&amp;#34; apt-get update &amp;amp;&amp;amp; apt-get install -y docker-ce=$(apt-cache madison docker-ce | grep 17.</description>
+    </item>
+    
+    <item>
+      <title>LXC介绍</title>
+      <link>https://mydream.ink/posts/cloud-native/container/lxc1/</link>
+      <pubDate>Sat, 11 Nov 2017 08:56:06 +0800</pubDate>
+      
+      <guid>https://mydream.ink/posts/cloud-native/container/lxc1/</guid>
+      <description>什么是LXC？ LXC是Linux内核中拥有容器功能的用户空间接口。 通过强大的API和简单的工具，它可以让Linux用户轻松创建并管理系统或应用程序容器。
+特征 当前的LXC使用以下的内核特性来封装进程
+ Kernel namespaces (ipc, uts, mount, pid, network and user) Apparmor and SELinux profiles Seccomp policies Chroots (using pivot_root) Kernel capabilities CGroups (control groups)  LXC容器通常被认为是chroot和一个完整的虚拟机。 LXC的目标是尽可能创造一个环境 到一个标准的Linux安装，但不需要单独的内核。
+组件 LXC目前由几个单独的组件组成：
+ liblxc库 API的几种语言绑定  python3 (in-tree, long term support in 1.0.x and 2.0.x) lua (in tree, long term support in 1.0.x and 2.0.x) Go ruby python2 Haskell   一套控制容器的标准工具 分发容器模板  </description>
+    </item>
+    
+    <item>
+      <title>LXC简介</title>
+      <link>https://mydream.ink/posts/cloud-native/container/lxc0/</link>
+      <pubDate>Sun, 05 Nov 2017 08:56:09 +0800</pubDate>
+      
+      <guid>https://mydream.ink/posts/cloud-native/container/lxc0/</guid>
+      <description>LXC LXC是著名的经过严格测试的底层Linux容器运行库。从2008年开始发展，现已在世界各地的关键生产环境中得到证明。其中一些核心贡献者是帮助在Linux内核中实现各种知名集装箱功能的人员。
+系统容器 LXC的主要重点是系统容器。也就是说，提供尽可能接近VM但没有运行单独内核并模拟所有硬件的开销的容器。 这是通过内核安全功能（如命名空间，强制访问控制和控制组合）实现的。
+非特权容器 非特权容器是没有任何权限运行的容器。这需要对内核中运行容器的用户名空间的支持。用户命名空间合并到主线内核之后，LXC是第一个支持非特权容器的运行库。 实质上，用户名空间隔离给定的UID和GID集合。这通过在主机上的一系列UID和GID之间建立到容器中UID和GID的不同（非特权）范围之间的映射来实现。内核将以这样一种方式转换此映射，即在容器内部，所有UID和GID按照您期望的从主机显示，而在主机上，这些UID和GID实际上是无特权的。例如，在容器内作为UID和GID 0运行的进程可能在主机上显示为UID和GID 100000。可以从相应的用户命名空间手册页中收集实现和工作细节。 由于非特权容器是一种安全增强功能，因此它们自然会受到内核强制执行的一些限制。为了提供一个功能齐全的非特权容器LXC与3个setuid代码交互：
+ lxc-user-nic（setuid帮助器创建一个veth对，并在主机上桥接它） newuidmap（从shawdow库中，设置一个uid映射） newgidmap（从shawdow库中，设置一个gid映射）  一切都是以您自己的用户身份运行，也可以作为用户拥有的uid运行。 一般来说，LXC的目标是利用内核中可用的每个安全功能。这意味着LXC的配置管理将使经验丰富的用户根据自己的需要对LXC进行复杂的调整。 有关LXC安全性的更详细的介绍可以在以下链接中找到：
+ https://linuxcontainers.org/lxc/security/  移除特权 LXC在没有正确的配置这些工具的情况下是可以运行的。只不过你这种容器的用途通常是非常有限的。这里突出两个最常见的问题：
+ 网络：没有依赖一个setuid帮助器为非特权用户设置适当的网络设备（参见LXC的lxc-user-nic二进制文件），唯一的选择是与主机共享网络命名空间。虽然原则上应该是安全的，但共享主机的网络命名空间仍然是减少隔离的一个步骤，并增加攻击向量。此外，当主机和容器共享相同的网络命名空间时，内核将拒绝任何sysfs挂接。这通常意味着容器内的init二进制文件将无法正确启动。 用户命名空间：如上所述，用户名空间是一个很大的安全性增强。但是，不依赖特权帮助者，主机上无权限的用户只能将自己的UID映射到容器中。然而，标准的POSIX系统需要65536个UID和GID来保证完整的功能。  配置 LXC通过一些简单的关键字配置，例如：
+ lxc.rootfs.path lxc.mount.entry  LXC通过使用单点命名空间配置关键字。这意味着复杂的配置关键字（如lxc.net.0）会展示各种子项，例如lxc.net.0.type，lxc.net.0.link，lxc.net.0.ipv6.address等一些更精细的配置。 LXC被用作LXD的默认运行库，LXD是容器管理程序，它暴露出设计良好且稳定的REST-api。
+内核需求 LXC在2.6.32以上的任何内核上运行。所有它需要的是一个功能C编译器。 LXC适用于提供必要内核功能的所有架构。这包括（但不限于）：
+ i686 x86_64 ppc,ppc64,ppc64le s390x armvl7,arm64  LXC至少还支持以下C标准库：
+ glibc musl bionic(Android&amp;rsquo;s libc)  向后兼容 LXC一直专注于强大的向后兼容性。事实上，API从1.0.0版起没有被破坏。主LXC目前处于版本2。</description>
+    </item>
+    
+    <item>
+      <title>Ubuntu安装 Docker 社区版</title>
+      <link>https://mydream.ink/posts/cloud-native/container/install-docker-on-ubuntu/</link>
+      <pubDate>Sun, 22 Oct 2017 08:54:08 +0800</pubDate>
+      
+      <guid>https://mydream.ink/posts/cloud-native/container/install-docker-on-ubuntu/</guid>
+      <description>准备 系统要求 要安装Docker CE，我们需要这些64位版本的Ubuntu：
+ Artful 17.10 (Docker CE 17.11 Edge and higher only) Zesty 17.04 Xenial 16.04 (LTS) Trusty 14.04 (LTS)  在Ubuntu x86_64、armhf、s390x（IBM Z）和ppc64le（IBM Power）架构上支持Docker CE。
+ ppc64le和s390x限制：IBM Z和Power体系结构的软件包仅在Ubuntu Xenial及更高版本上可用。
+ 卸载旧版本 老版本的Docker被称为docker或者docker-engine。如果安装了这些，请将其卸载：
+sudo apt-get remove docker docker-engine docker.io  如果apt-get报告没有安装这些软件包，则可以直接跳过这一步。
+/var/lib/docker/的内容（包括映像，容器，卷和网络）将被保留。 Docker CE包现在称为docker-ce。
+安装Docker CE 您可以根据您的需要以不同的方式安装Docker CE：
+ 大多数用户设置Docker的存储库并从中进行安装，以方便安装和升级任务。这是推荐的方法。 有些用户下载deb软件包手动安装，并完全手动管理升级。这很适合在诸如没有互联网访问的封闭系统上安装Docker。 在测试和开发环境中，有些用户选择使用自动便捷脚本来安装Docker。  使用软件仓库安装 首次在新的主机上安装Docker CE之前，需要设置Docker软件仓库。之后，您可以从该库安装和更新Docker。
+设置软件仓库   更新apt包索引：
+sudo apt-get update    安装软件包以允许apt通过HTTPS使用存储库：
+sudo apt-get install \ apt-transport-https \ ca-certificates \ curl \ software-properties-common    添加Docker的官方GPG密钥：</description>
+    </item>
+    
+  </channel>
+</rss>

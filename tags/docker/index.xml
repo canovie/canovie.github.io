@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>docker on 青云卷</title>
+    <link>https://mydream.ink/tags/docker/</link>
+    <description>Recent content in docker on 青云卷</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh-cn</language>
+    <lastBuildDate>Sat, 27 Jul 2019 21:56:03 +0800</lastBuildDate><atom:link href="https://mydream.ink/tags/docker/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Docker 背后的内核知识——cgroups 资源限制</title>
+      <link>https://mydream.ink/archive/docker-kernel-knowledge-cgroups-resource-isolation/</link>
+      <pubDate>Sat, 27 Jul 2019 21:56:03 +0800</pubDate>
+      
+      <guid>https://mydream.ink/archive/docker-kernel-knowledge-cgroups-resource-isolation/</guid>
+      <description>上一篇中，我们了解了 Docker 背后使用的资源隔离技术 namespace，通过系统调用构建一个相对隔离的 shell 环境，也可以称之为一个简单的“容器”。本文我们则要开始讲解另一个强大的内核工具——cgroups。他不仅可以限制被 namespace 隔离起来的资源，还可以为资源设置权重、计算使用量、操控进程启停等等。在介绍完基本概念后，我们将详细讲解 Docker 中使用到的 cgroups 内容。希望通过本文，让读者对 Docker 有更深入的了解。
+1. cgroups 是什么 cgroups（Control Groups）最初叫 Process Container，由 Google 工程师（Paul Menage 和 Rohit Seth）于 2006 年提出，后来因为 Container 有多重含义容易引起误解，就在 2007 年更名为 Control Groups，并被整合进 Linux 内核。顾名思义就是把进程放到一个组里面统一加以控制。官方的定义如下 { 引自：https://www.kernel.org/doc/Documentation/cgroups/cgroups.txt }：
+ cgroups 是 Linux 内核提供的一种机制，这种机制可以根据特定的行为，把一系列系统任务及其子任务整合（或分隔）到按资源划分等级的不同组内，从而为系统资源管理提供一个统一的框架。
+ 通俗的来说，cgroups 可以限制、记录、隔离进程组所使用的物理资源（包括：CPU、memory、IO 等），为容器实现虚拟化提供了基本保证，是构建 Docker 等一系列虚拟化管理工具的基石。
+对开发者来说，cgroups 有如下四个有趣的特点：
+ cgroups 的 API 以一个伪文件系统的方式实现，即用户可以通过文件操作实现 cgroups 的组织管理。 cgroups 的组织管理操作单元可以细粒度到线程级别，用户态代码也可以针对系统分配的资源创建和销毁 cgroups，从而实现资源再分配和管理。 所有资源管理的功能都以“subsystem（子系统）”的方式实现，接口统一。 子进程创建之初与其父进程处于同一个 cgroups 的控制组。  本质上来说，cgroups 是内核附加在程序上的一系列钩子（hooks），通过程序运行时对资源的调度触发相应的钩子以达到资源追踪和限制的目的。</description>
+    </item>
+    
+    <item>
+      <title>docker 容器网络方案：calico 网络模型</title>
+      <link>https://mydream.ink/archive/docker-calico-network/</link>
+      <pubDate>Thu, 18 Jul 2019 06:57:59 +0800</pubDate>
+      
+      <guid>https://mydream.ink/archive/docker-calico-network/</guid>
+      <description>calico 简介 calico 是容器网络的又一种解决方案，和其他虚拟网络最大的不同是，它没有采用 overlay 网络做报文的转发，提供了纯 3 层的网络模型。三层通信模型表示每个容器都通过 IP 直接通信，中间通过路由转发找到对方。在这个过程中，容器所在的节点类似于传统的路由器，提供了路由查找的功能。
+要想路由工作能够正常，每个虚拟路由器（容器所在的主机节点）必须有某种方法知道整个集群的路由信息，calico 采用的是 BGP 路由协议，全称是 Border Gateway Protocol。
+除了能用于 docker 这样的容器外，它还能集成到容器集群平台 kubernetes、共有云平台 AWS、GCE 等， 而且也能很容易地集成到 openstack 等 Iaas 平台。
+这篇文章就介绍 calico 是如何实现 docker 跨主机网络的。
+calico 集群安装和实验 这部分我会在自己的 virtualbox 环境中运行多节点 docker，并使用 calico 实现跨主机的容器网络通信功能。实验环境一共启动了三台 centos7 虚拟机：
+ node00: 172.17.8.100 node01: 172.17.8.101 node02: 172.17.8.102  这三台机器可以通过上面的 IP 地址进行通信，并且有不同的 hostname，推荐使用 vagrant 运行虚拟机集群。
+这部分我们会手动安装 calico 集群，以加深理解，在生产环境中推荐使用自动化安装。
+1. 安装 docker 既然要在 docker 集群中测试 calico 网络，当然要有一个能正常工作的 docker 环境。docker 的安装这里就不说了，请参考官网上的安装手册选择适合自己的方式。</description>
+    </item>
+    
+    <item>
+      <title>在 Mac 上使用 Docker 自带的 Kubernetes</title>
+      <link>https://mydream.ink/posts/cloud-native/kubernetes/use-kubernetes-from-docker-on-mac/</link>
+      <pubDate>Fri, 12 Jul 2019 20:23:13 +0800</pubDate>
+      
+      <guid>https://mydream.ink/posts/cloud-native/kubernetes/use-kubernetes-from-docker-on-mac/</guid>
+      <description>Mac 安装 Docker 的方法不再赘述，很简单，官方下载安装即可。
+安装完成后，kubectl的二进制文件就已经存在了。我们仅需要下载镜像，开启 kubernetes。
+下载镜像 查看一下你的 Docker 和 Kubernetes 版本：
+使用以下脚本，记得将镜像版本改成你所需要的🍁
+#!/bin/bash  set -e KUBE_VERSION=v1.10.11 KUBE_PAUSE_VERSION=3.1 ETCD_VERSION=3.1.12 DNS_VERSION=1.14.8 DOCKER_TOOL_VERSION=v0.4.12 GCR_URL=k8s.gcr.io ALIYUN_URL=registry.cn-hangzhou.aliyuncs.com/google_containers images=(kube-proxy-amd64:${KUBE_VERSION} kube-scheduler-amd64:${KUBE_VERSION} kube-controller-manager-amd64:${KUBE_VERSION} kube-apiserver-amd64:${KUBE_VERSION} pause-amd64:${KUBE_PAUSE_VERSION} etcd-amd64:${ETCD_VERSION} k8s-dns-sidecar-amd64:${DNS_VERSION} k8s-dns-kube-dns-amd64:${DNS_VERSION} k8s-dns-dnsmasq-nanny-amd64:${DNS_VERSION}) for image in ${images[@]} ; do docker pull ${ALIYUN_URL}/${image} docker tag ${ALIYUN_URL}/${image} ${GCR_URL}/${image} docker rmi ${ALIYUN_URL}/${image} done # 拉取 Docker 相关镜像 docker pull docker/kube-compose-api-server:${DOCKER_TOOL_VERSION} docker pull docker/kube-compose-controller:${DOCKER_TOOL_VERSION} 执行该脚本，将从阿里镜像库获得所需镜像。
+启动 Kubernetes 功能 打开 Docker 配置面板，请至少勾选 Enable Kubernetes 以开启 Kubernetes 服务。</description>
+    </item>
+    
+    <item>
+      <title>在 CentOS7 上安装新版 Docker CE（使用国内源）</title>
+      <link>https://mydream.ink/posts/cloud-native/container/install-docker-on-centos7/</link>
+      <pubDate>Fri, 12 Jul 2019 10:46:25 +0800</pubDate>
+      
+      <guid>https://mydream.ink/posts/cloud-native/container/install-docker-on-centos7/</guid>
+      <description>卸载老版本 $ sudo yum remove docker \  docker-client \  docker-client-latest \  docker-common \  docker-latest \  docker-latest-logrotate \  docker-logrotate \  docker-engine 如果曾经安装过，/var/lib/docker/中会有原来的镜像、容器、卷以及网络残留，如果不需要可将之一并删除。
+安装 Docker CE 安装 Docker 国内源   安装 yum 配置管理工具
+$ sudo yum install -y yum-utils \ device-mapper-persistent-data \ lvm2   安装清华大学的 Docker 安装源（本网站有效，该命令就有效）
+$ sudo yum-config-manager \ --add-repo \ https://mydream.ink/utils/container/docker-ce.repo 你可能会遇到如下问题：
+ adding repo from: https://mydream.ink/utils/container/docker-ce.repo grabbing file https://mydream.ink/utils/container/docker-ce.repo to /etc/yum.</description>
+    </item>
+    
+    <item>
+      <title>使用 kubeadm 安装 Kubernetes 1.10.0</title>
+      <link>https://mydream.ink/posts/cloud-native/kubernetes/kubeadm/</link>
+      <pubDate>Fri, 09 Mar 2018 00:00:00 +0000</pubDate>
+      
+      <guid>https://mydream.ink/posts/cloud-native/kubernetes/kubeadm/</guid>
+      <description>kubernetes可以使用多种容器runtime，此处使用当前最常见的docker。
+安装docker 在各种机器上安装docker的方式不同，我曾翻译过一篇ubuntu安装docker的文章，还有一些没来的及翻译的，可以参考官方文档。推荐的docker版本为v1.12，v1.11, v1.13 和 17.03 也行，其它的官方就没测试过了，不过我使用当前最新的v18.03也行。
+docker官方  使用Ubuntu安装docker-ce Mac和Windows桌面安装docker-ce  下载Mac版本的docker-ce，执行即安装 下载Windows版本的docker-ce，执行即可安装   CentOS安装docker-ce Fedora安装docker-ce 二进制安装方式  kubernetes推荐   Ubuntu/Debian/HypriotOS 从Ubuntu的库安装
+apt-get update apt-get install -y docker.io 使用docker库安装v17.03
+apt-get update apt-get install -y \  apt-transport-https \  ca-certificates \  curl \  software-properties-common curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add - add-apt-repository \  &amp;#34;deb https://download.docker.com/linux/$(. /etc/os-release; echo &amp;#34;$ID&amp;#34;)\ $(lsb_release -cs)\ stable&amp;#34; apt-get update &amp;amp;&amp;amp; apt-get install -y docker-ce=$(apt-cache madison docker-ce | grep 17.</description>
+    </item>
+    
+    <item>
+      <title>Ubuntu安装 Docker 社区版</title>
+      <link>https://mydream.ink/posts/cloud-native/container/install-docker-on-ubuntu/</link>
+      <pubDate>Sun, 22 Oct 2017 08:54:08 +0800</pubDate>
+      
+      <guid>https://mydream.ink/posts/cloud-native/container/install-docker-on-ubuntu/</guid>
+      <description>准备 系统要求 要安装Docker CE，我们需要这些64位版本的Ubuntu：
+ Artful 17.10 (Docker CE 17.11 Edge and higher only) Zesty 17.04 Xenial 16.04 (LTS) Trusty 14.04 (LTS)  在Ubuntu x86_64、armhf、s390x（IBM Z）和ppc64le（IBM Power）架构上支持Docker CE。
+ ppc64le和s390x限制：IBM Z和Power体系结构的软件包仅在Ubuntu Xenial及更高版本上可用。
+ 卸载旧版本 老版本的Docker被称为docker或者docker-engine。如果安装了这些，请将其卸载：
+sudo apt-get remove docker docker-engine docker.io  如果apt-get报告没有安装这些软件包，则可以直接跳过这一步。
+/var/lib/docker/的内容（包括映像，容器，卷和网络）将被保留。 Docker CE包现在称为docker-ce。
+安装Docker CE 您可以根据您的需要以不同的方式安装Docker CE：
+ 大多数用户设置Docker的存储库并从中进行安装，以方便安装和升级任务。这是推荐的方法。 有些用户下载deb软件包手动安装，并完全手动管理升级。这很适合在诸如没有互联网访问的封闭系统上安装Docker。 在测试和开发环境中，有些用户选择使用自动便捷脚本来安装Docker。  使用软件仓库安装 首次在新的主机上安装Docker CE之前，需要设置Docker软件仓库。之后，您可以从该库安装和更新Docker。
+设置软件仓库   更新apt包索引：
+sudo apt-get update    安装软件包以允许apt通过HTTPS使用存储库：
+sudo apt-get install \ apt-transport-https \ ca-certificates \ curl \ software-properties-common    添加Docker的官方GPG密钥：</description>
+    </item>
+    
+  </channel>
+</rss>

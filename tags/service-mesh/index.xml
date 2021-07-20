@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Service Mesh on 青云卷</title>
+    <link>https://mydream.ink/tags/service-mesh/</link>
+    <description>Recent content in Service Mesh on 青云卷</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh-cn</language>
+    <lastBuildDate>Sat, 13 Jul 2019 16:33:15 +0800</lastBuildDate><atom:link href="https://mydream.ink/tags/service-mesh/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Istio 流量管理实现机制深度解析</title>
+      <link>https://mydream.ink/archive/deep-analysis-of-istio-traffic-management-implementation-mechanism/</link>
+      <pubDate>Sat, 13 Jul 2019 16:33:15 +0800</pubDate>
+      
+      <guid>https://mydream.ink/archive/deep-analysis-of-istio-traffic-management-implementation-mechanism/</guid>
+      <description>前言 Istio 作为一个 service mesh 开源项目,其中最重要的功能就是对网格中微服务之间的流量进行管理,包括服务发现,请求路由和服务间的可靠通信。Istio 实现了 service mesh 的控制面，并整合 Envoy 开源项目作为数据面的 sidecar，一起对流量进行控制。
+Istio 体系中流量管理配置下发以及流量规则如何在数据面生效的机制相对比较复杂，通过官方文档容易管中窥豹，难以了解其实现原理。本文尝试结合系统架构、配置文件和代码对 Istio 流量管理的架构和实现机制进行分析，以达到从整体上理解 Pilot 和 Envoy 的流量管理机制的目的。
+Pilot 高层架构 Istio 控制面中负责流量管理的组件为 Pilot，Pilot 的高层架构如下图所示：
+
+Pilot Architecture（来自[Isio 官网文档](https://istio.io/docs/concepts/traffic-management/)[[1]](#ref01)) 根据上图,Pilot 主要实现了下述功能：
+统一的服务模型 Pilot 定义了网格中服务的标准模型，这个标准模型独立于各种底层平台。由于有了该标准模型，各个不同的平台可以通过适配器和 Pilot 对接，将自己特有的服务数据格式转换为标准格式，填充到 Pilot 的标准模型中。
+例如 Pilot 中的 Kubernetes 适配器通过 Kubernetes API 服务器得到 kubernetes 中 service 和 pod 的相关信息，然后翻译为标准模型提供给 Pilot 使用。通过适配器模式，Pilot 还可以从 Mesos, Cloud Foundry, Consul 等平台中获取服务信息，还可以开发适配器将其他提供服务发现的组件集成到 Pilot 中。
+标准数据面 API Pilo 使用了一套起源于 Envoy 项目的标准数据面 API[2]来将服务信息和流量规则下发到数据面的 sidecar 中。</description>
+    </item>
+    
+    <item>
+      <title>深入解读 Service Mesh 背后的技术细节</title>
+      <link>https://mydream.ink/archive/the-technicial-detail-of-service-mesh/</link>
+      <pubDate>Sat, 13 Jul 2019 13:36:51 +0800</pubDate>
+      
+      <guid>https://mydream.ink/archive/the-technicial-detail-of-service-mesh/</guid>
+      <description>深入解读 Service Mesh 背后的技术细节 本文由网易云发布。
+作者：刘超，网易云首席解决方案架构师
+在 Kubernetes 称为容器编排的标准之后，Service Mesh 开始火了起来，但是很多文章讲概念的多，讲技术细节的少，所以专门写一篇文章，来解析 Service Mesh 背后的技术细节。
+一、Service Mesh 是 Kubernetes 支撑微服务能力拼图的最后一块 在上一篇文章为什么 kubernetes 天然适合微服务中我们提到，Kubernetes 是一个奇葩所在，他的组件复杂，概念复杂，在没有实施微服务之前，你可能会觉得为什么 Kubernetes 要设计的这么复杂，但是一旦你要实施微服务，你会发现 Kubernetes 中的所有概念，都是有用的。
+在我们微服务设计的是个要点中，我们会发现 Kubernetes 都能够有相应的组件和概念，提供相应的支持。
+其中最后的一块拼图就是服务发现，与熔断限流降级。
+众所周知，Kubernetes 的服务发现是通过 Service 来实现的，服务之间的转发是通过 kube-proxy 下发 iptables 规则来实现的，这个只能实现最基本的服务发现和转发能力，不能满足高并发应用下的高级的服务特性，比较 SpringCloud 和 Dubbo 有一定的差距，于是 Service Mesh 诞生了，他期望讲熔断，限流，降级等特性，从应用层，下沉到基础设施层去实现，从而使得 Kubernetes 和容器全面接管微服务。
+二、以 Istio 为例讲述 Service Mesh 中的技术关键点 就如 SDN 一样，Service Mesh 将服务请求的转发分为控制面和数据面，因而分析他，也是从数据面先分析转发的能力，然后再分析控制面如何下发命令。今天这篇文章重点讲述两个组件 Envoy 和 Pilot
+一切从 Envoy 开始 我们首先来看，如果没有融入 Service Mesh，Envoy 本身能够做什么事情呢？
+Envoy 是一个高性能的 C++写的 proxy 转发器，那 Envoy 如何转发请求呢？需要定一些规则，然后按照这些规则进行转发。</description>
+    </item>
+    
+  </channel>
+</rss>

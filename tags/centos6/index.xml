@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>CentOS6 on 青云卷</title>
+    <link>https://mydream.ink/tags/centos6/</link>
+    <description>Recent content in CentOS6 on 青云卷</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh-cn</language>
+    <lastBuildDate>Sun, 07 Jul 2019 08:19:54 +0800</lastBuildDate><atom:link href="https://mydream.ink/tags/centos6/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>在CentOS6.5上布署OpenLDAP</title>
+      <link>https://mydream.ink/archive/deploy-openldap-on-centos-6.5/</link>
+      <pubDate>Sun, 07 Jul 2019 08:19:54 +0800</pubDate>
+      
+      <guid>https://mydream.ink/archive/deploy-openldap-on-centos-6.5/</guid>
+      <description>本文系统：Centos6.5_x64
+ip:192.168.28.139
+客户端：192.168.28.141
+推荐大家可以先了解下AD域的结构，一些概念性的东西，比如树、林、组织单位、资源等
+openldap 可以看作是nis的升级，把他想象成资料库的一种就好了
+一、ldap的部署、用户信息的存储   安装openldap
+ [root@master ~]# yum install openldap openldap-devel openldap-servers openldap-clients -y    配置文件模版
+ [root@master ~]# cp /usr/share/openldap-servers/slapd.conf.obsolete /etc/openldap/slapd.conf  修改配置文件
+ [root@master ~]# vim /etc/openldap/slapd.conf 26 pidfile /var/run/openldap/slapd.pid 27 argsfile /var/run/openldap/slapd.args 28 loglevel 1 115 suffix &amp;quot;dc=lansgg,dc=com&amp;quot; 117 rootdn &amp;quot;cn=admin,dc=lansgg,dc=com&amp;quot; 121 rootpw adminpw  这里管理员的密码使用了明文，也可以使用加密形式，方法如下：
+ [root@master ~]# slappasswd New password: Re-enter new password: {SSHA}7EJGErpaeX3Zd6rxfxVzNVwSm2UC1e/T  将密文串替换成adminpw即可；
+你也可以指定加密方式：</description>
+    </item>
+    
+  </channel>
+</rss>

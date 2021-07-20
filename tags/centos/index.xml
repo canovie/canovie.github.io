@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>CentOS on 青云卷</title>
+    <link>https://mydream.ink/tags/centos/</link>
+    <description>Recent content in CentOS on 青云卷</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh-cn</language>
+    <lastBuildDate>Fri, 12 Jul 2019 10:46:25 +0800</lastBuildDate><atom:link href="https://mydream.ink/tags/centos/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>在 CentOS7 上安装新版 Docker CE（使用国内源）</title>
+      <link>https://mydream.ink/posts/cloud-native/container/install-docker-on-centos7/</link>
+      <pubDate>Fri, 12 Jul 2019 10:46:25 +0800</pubDate>
+      
+      <guid>https://mydream.ink/posts/cloud-native/container/install-docker-on-centos7/</guid>
+      <description>卸载老版本 $ sudo yum remove docker \  docker-client \  docker-client-latest \  docker-common \  docker-latest \  docker-latest-logrotate \  docker-logrotate \  docker-engine 如果曾经安装过，/var/lib/docker/中会有原来的镜像、容器、卷以及网络残留，如果不需要可将之一并删除。
+安装 Docker CE 安装 Docker 国内源   安装 yum 配置管理工具
+$ sudo yum install -y yum-utils \ device-mapper-persistent-data \ lvm2   安装清华大学的 Docker 安装源（本网站有效，该命令就有效）
+$ sudo yum-config-manager \ --add-repo \ https://mydream.ink/utils/container/docker-ce.repo 你可能会遇到如下问题：
+ adding repo from: https://mydream.ink/utils/container/docker-ce.repo grabbing file https://mydream.ink/utils/container/docker-ce.repo to /etc/yum.</description>
+    </item>
+    
+    <item>
+      <title>CentOS7安装PPTP</title>
+      <link>https://mydream.ink/archive/install-pptp-on-centos7/</link>
+      <pubDate>Sun, 07 Jul 2019 10:52:34 +0800</pubDate>
+      
+      <guid>https://mydream.ink/archive/install-pptp-on-centos7/</guid>
+      <description>CentOS7安装PPTP VPN（开启firewall防火墙）
+  准备一个CentOS7服务器
+  检查是否支持PPTP
+modprobe ppp-compress-18 &amp;amp;&amp;amp; echo ok #返回OK zgrep MPPE /proc/config.gz #返回CONFIG_PPP_MPPE=y 或 =m cat /dev/net/tun #返回cat: /dev/net/tun: File descriptor in bad state 以上三条命令满足一条即为支持PPTP
+  安装PPP
+ yum install -y ppp    安装PPTPD
+  添加EPEL源：
+ wget http://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm    安装EPEL源：
+ rpm -ivh epel-release-latest-7.noarch.rpm    检查是否已添加到源列表中：
+ yum repolist    更新源列表：
+ yum -y update    安装PPTPD：</description>
+    </item>
+    
+    <item>
+      <title>在CentOS6.5上布署OpenLDAP</title>
+      <link>https://mydream.ink/archive/deploy-openldap-on-centos-6.5/</link>
+      <pubDate>Sun, 07 Jul 2019 08:19:54 +0800</pubDate>
+      
+      <guid>https://mydream.ink/archive/deploy-openldap-on-centos-6.5/</guid>
+      <description>本文系统：Centos6.5_x64
+ip:192.168.28.139
+客户端：192.168.28.141
+推荐大家可以先了解下AD域的结构，一些概念性的东西，比如树、林、组织单位、资源等
+openldap 可以看作是nis的升级，把他想象成资料库的一种就好了
+一、ldap的部署、用户信息的存储   安装openldap
+ [root@master ~]# yum install openldap openldap-devel openldap-servers openldap-clients -y    配置文件模版
+ [root@master ~]# cp /usr/share/openldap-servers/slapd.conf.obsolete /etc/openldap/slapd.conf  修改配置文件
+ [root@master ~]# vim /etc/openldap/slapd.conf 26 pidfile /var/run/openldap/slapd.pid 27 argsfile /var/run/openldap/slapd.args 28 loglevel 1 115 suffix &amp;quot;dc=lansgg,dc=com&amp;quot; 117 rootdn &amp;quot;cn=admin,dc=lansgg,dc=com&amp;quot; 121 rootpw adminpw  这里管理员的密码使用了明文，也可以使用加密形式，方法如下：
+ [root@master ~]# slappasswd New password: Re-enter new password: {SSHA}7EJGErpaeX3Zd6rxfxVzNVwSm2UC1e/T  将密文串替换成adminpw即可；
+你也可以指定加密方式：</description>
+    </item>
+    
+  </channel>
+</rss>

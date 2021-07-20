@@ -1,0 +1,1436 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Istio 流量管理实现机制深度解析</title>
+    <meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta http-equiv="X-UA-Compatible" content="ie=edge" />
+
+
+<link rel="stylesheet" href="/assets/css/bootstrap.min.css" />
+<link rel="stylesheet" href="/assets/css/style.css" />
+<link rel="stylesheet" href="/assets/css/navbar.css" />
+
+
+<link href="https://fonts.googleapis.com/css2?family=Muli:wght@300;400;500;600" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" />
+
+
+<link rel="icon" type="image/png" href="/assets/images/favicon.png" />
+
+
+    
+<link
+  rel="stylesheet"
+  href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/styles/atom-one-dark.min.css"
+/>
+<link rel="stylesheet" href="/assets/css/single.css" />
+
+
+    
+    
+      
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'UA-142765126-1', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+
+    
+  </head>
+
+  <body>
+    <div class="container-fluid bg-dimmed wrapper">
+      
+      
+    <nav class="navbar navbar-expand-lg top-navbar final-navbar shadow">
+    <div class="container">
+      <a class="navbar-brand" href="/posts">
+        <img src="/assets/images/logo.png">青云卷</a>
+      <button class="navbar-toggler navbar-light" type="button" >
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <div class="collapse navbar-collapse" id="top-nav-items">
+        <ul class="navbar-nav ml-auto">
+        </ul>
+      </div>
+    </div>
+</nav>
+
+
+
+      
+      
+<div class="container p-0 read-area">
+  
+  <div class="hero-area col-sm-12" style='background-image: url(https://mydream.ink/assets/images/default-hero.jpg);'>
+  </div>
+
+  
+  <div class="page-content">
+    <div class="author-profile ml-auto align-self-lg-center">
+      <img class="rounded-circle" src='/assets/images/default-avatar.png'/>
+      <h5 class="author-name">John Doe</h5>
+      <p>July 13, 2019</p>
+    </div>
+
+    <div class="title">
+      <h1>Istio 流量管理实现机制深度解析</h1>
+    </div>
+
+    <div class="post-content" id="post-content">
+      <h1 id="前言">前言</h1>
+<p>Istio 作为一个 service mesh 开源项目,其中最重要的功能就是对网格中微服务之间的流量进行管理,包括服务发现,请求路由和服务间的可靠通信。Istio 实现了 service mesh 的控制面，并整合 Envoy 开源项目作为数据面的 sidecar，一起对流量进行控制。</p>
+<p>Istio 体系中流量管理配置下发以及流量规则如何在数据面生效的机制相对比较复杂，通过官方文档容易管中窥豹，难以了解其实现原理。本文尝试结合系统架构、配置文件和代码对 Istio 流量管理的架构和实现机制进行分析，以达到从整体上理解 Pilot 和 Envoy 的流量管理机制的目的。</p>
+<h1 id="pilot-高层架构">Pilot 高层架构</h1>
+<p>Istio 控制面中负责流量管理的组件为 Pilot，Pilot 的高层架构如下图所示：</p>
+<p><img src="https://images.weserv.nl/?url=https://zhaohuabing.com/img/2018-09-25-istio-traffic-management-impl-intro/pilot-architecture.png" alt=""><br></br></p>
+<center>Pilot Architecture（来自[Isio 官网文档](https://istio.io/docs/concepts/traffic-management/)<sup>[[1]](#ref01)</sup>)</center>
+<p>根据上图,Pilot 主要实现了下述功能：</p>
+<h2 id="统一的服务模型">统一的服务模型</h2>
+<p>Pilot 定义了网格中服务的标准模型，这个标准模型独立于各种底层平台。由于有了该标准模型，各个不同的平台可以通过适配器和 Pilot 对接，将自己特有的服务数据格式转换为标准格式，填充到 Pilot 的标准模型中。</p>
+<p>例如 Pilot 中的 Kubernetes 适配器通过 Kubernetes API 服务器得到 kubernetes 中 service 和 pod 的相关信息，然后翻译为标准模型提供给 Pilot 使用。通过适配器模式，Pilot 还可以从 Mesos, Cloud Foundry, Consul 等平台中获取服务信息，还可以开发适配器将其他提供服务发现的组件集成到 Pilot 中。</p>
+<h2 id="标准数据面-api">标准数据面 API</h2>
+<p>Pilo 使用了一套起源于 Envoy 项目的<a href="https://github.com/envoyproxy/data-plane-api/blob/master/API_OVERVIEW.md">标准数据面 API</a><sup><a href="#ref02">[2]</a></sup>来将服务信息和流量规则下发到数据面的 sidecar 中。</p>
+<p>通过采用该标准 API，Istio 将控制面和数据面进行了解耦，为多种数据面 sidecar 实现提供了可能性。事实上基于该标准 API 已经实现了多种 Sidecar 代理和 Istio 的集成，除 Istio 目前集成的 Envoy 外，还可以和 Linkerd, Nginmesh 等第三方通信代理进行集成，也可以基于该 API 自己编写 Sidecar 实现。</p>
+<p>控制面和数据面解耦是 Istio 后来居上，风头超过 Service mesh 鼻祖 Linkerd 的一招妙棋。Istio 站在了控制面的高度上，而 Linkerd 则成为了可选的一种 sidecar 实现，可谓降维打击的一个典型成功案例！</p>
+<p>数据面标准 API 也有利于生态圈的建立，开源，商业的各种 sidecar 以后可能百花齐放，用户也可以根据自己的业务场景选择不同的 sidecar 和控制面集成，如高吞吐量的，低延迟的，高安全性的等等。有实力的大厂商可以根据该 API 定制自己的 sidecar，例如蚂蚁金服开源的 Golang 版本的 Sidecar MOSN(Modular Observable Smart Netstub)（SOFAMesh 中 Golang 版本的 Sidecar)；小厂商则可以考虑采用成熟的开源项目或者提供服务的商业 sidecar 实现。</p>
+<p>备注：Istio 和 Envoy 项目联合制定了 Envoy V2 API,并采用该 API 作为 Istio 控制面和数据面流量管理的标准接口。</p>
+<h2 id="业务-dsl-语言">业务 DSL 语言</h2>
+<p>Pilot 还定义了一套 DSL（Domain Specific Language）语言，DSL 语言提供了面向业务的高层抽象，可以被运维人员理解和使用。运维人员使用该 DSL 定义流量规则并下发到 Pilot，这些规则被 Pilot 翻译成数据面的配置，再通过标准 API 分发到 Envoy 实例，可以在运行期对微服务的流量进行控制和调整。</p>
+<p>Pilot 的规则 DSL 是采用 K8S API Server 中的<a href="https://kubernetes.io/docs/concepts/extend-kubernetes/api-extension/custom-resources/">Custom Resource (CRD)</a><sup><a href="#ref03">[3]</a></sup>实现的，因此和其他资源类型如 Service Pod Deployment 的创建和使用方法类似，都可以用 Kubectl 进行创建。</p>
+<p>通过运用不同的流量规则，可以对网格中微服务进行精细化的流量控制，如按版本分流，断路器，故障注入，灰度发布等。</p>
+<h1 id="istio-流量管理相关组件">Istio 流量管理相关组件</h1>
+<p>我们可以通过下图了解 Istio 流量管理涉及到的相关组件。虽然该图来自 Istio Github old pilot repo, 但图中描述的组件及流程和目前 Pilot 的最新代码的架构基本是一致的。</p>
+<p><img src="https://images.weserv.nl/?url=https://zhaohuabing.com/img/2018-09-25-istio-traffic-management-impl-intro/traffic-managment-components.png" alt=""><br></br></p>
+<center>Pilot Design Overview (来自[Istio old_pilot_repo](https://github.com/istio/old_pilot_repo/blob/master/doc/design.md)<sup>[[4]](#ref04)</sup>)</center>
+<p>图例说明：图中红色的线表示控制流，黑色的线表示数据流。蓝色部分为和 Pilot 相关的组件。</p>
+<p>从上图可以看到，Istio 中和流量管理相关的有以下组件：</p>
+<h2 id="控制面组件">控制面组件</h2>
+<h3 id="discovery-services">Discovery Services</h3>
+<p>对应的 docker 为 gcr.io/istio-release/pilot,进程为 pilot-discovery，该组件的功能包括：</p>
+<ul>
+<li>从 Service provider（如 kubernetes 或者 consul）中获取服务信息</li>
+<li>从 K8S API Server 中获取流量规则(K8S CRD Resource)</li>
+<li>将服务信息和流量规则转化为数据面可以理解的格式，通过标准的数据面 API 下发到网格中的各个 sidecar 中。</li>
+</ul>
+<h3 id="k8s-api-server">K8S API Server</h3>
+<p>提供 Pilot 相关的 CRD Resource 的增、删、改、查。和 Pilot 相关的 CRD 有以下几种:</p>
+<ul>
+<li><strong>Virtualservice</strong>：用于定义路由规则，如根据来源或 Header 制定规则，或在不同服务版本之间分拆流量。</li>
+<li><strong>DestinationRule</strong>：定义目的服务的配置策略以及可路由子集。策略包括断路器、负载均衡以及 TLS 等。</li>
+<li><strong>ServiceEntry</strong>：用 <a href="https://istio.io/docs/reference/config/istio.networking.v1alpha3/#ServiceEntry">ServiceEntry</a> 可以向 Istio 中加入附加的服务条目，以使网格内可以向 istio 服务网格之外的服务发出请求。</li>
+<li><strong>Gateway</strong>：为网格配置网关，以允许一个服务可以被网格外部访问。</li>
+<li><strong>EnvoyFilter</strong>：可以为 Envoy 配置过滤器。由于 Envoy 已经支持 Lua 过滤器，因此可以通过 EnvoyFilter 启用 Lua 过滤器，动态改变 Envoy 的过滤链行为。我之前一直在考虑如何才能动态扩展 Envoy 的能力，EnvoyFilter 提供了很灵活的扩展性。</li>
+</ul>
+<h2 id="数据面组件">数据面组件</h2>
+<p>在数据面有两个进程 Pilot-agent 和 envoy，这两个进程被放在一个 docker 容器 gcr.io/istio-release/proxyv2 中。</p>
+<h3 id="pilot-agent">Pilot-agent</h3>
+<p>该进程根据 K8S API Server 中的配置信息生成 Envoy 的配置文件，并负责启动 Envoy 进程。注意 Envoy 的大部分配置信息都是通过 xDS 接口从 Pilot 中动态获取的，因此 Agent 生成的只是用于初始化 Envoy 的少量静态配置。在后面的章节中，本文将对 Agent 生成的 Envoy 配置文件进行进一步分析。</p>
+<h3 id="envoy">Envoy</h3>
+<p>Envoy 由 Pilot-agent 进程启动，启动后，Envoy 读取 Pilot-agent 为它生成的配置文件，然后根据该文件的配置获取到 Pilot 的地址，通过数据面标准 API 的 xDS 接口从 pilot 获取动态配置信息，包括路由（route），监听器（listener），服务集群（cluster）和服务端点（endpoint）。Envoy 初始化完成后，就根据这些配置信息对微服务间的通信进行寻址和路由。</p>
+<h2 id="命令行工具">命令行工具</h2>
+<p>kubectl 和 Istioctl，由于 Istio 的配置是基于 K8S 的 CRD，因此可以直接采用 kubectl 对这些资源进行操作。Istioctl 则针对 Istio 对 CRD 的操作进行了一些封装。Istioctl 支持的功能参见该<a href="https://istio.io/docs/reference/commands/istioctl">表格</a>。</p>
+<h1 id="数据面标准-api">数据面标准 API</h1>
+<p>前面讲到，Pilot 采用了一套标准的 API 来向数据面 Sidecar 提供服务发现，负载均衡池和路由表等流量管理的配置信息。该标准 API 的文档参见<a href="https://www.envoyproxy.io/docs/envoy/latest/configuration/overview/v2_overview">Envoy v2 API</a><sup><a href="#ref05">[5]</a></sup>。<a href="https://github.com/envoyproxy/data-plane-api/tree/master/envoy/api/v2">Data Plane API Protocol Buffer Definition</a><sup><a href="#ref06">[6]</a></sup>)给出了 v2 grpc 接口相关的数据结构和接口定义。</p>
+<p>（备注：Istio 早期采用了 Envoy v1 API，目前的版本中则使用 V2 API，V1 已被废弃）。</p>
+<h2 id="基本概念和术语">基本概念和术语</h2>
+<p>首先我们需要了解数据面 API 中涉及到的一些基本概念：</p>
+<ul>
+<li><strong>Host</strong>：能够进行网络通信的实体（如移动设备、服务器上的应用程序）。在此文档中，主机是逻辑网络应用程序。一块物理硬件上可能运行有多个主机，只要它们是可以独立寻址的。在 EDS 接口中，也使用“Endpoint”来表示一个应用实例，对应一个 IP+Port 的组合。</li>
+<li><strong>Downstream</strong>：下游主机连接到 Envoy，发送请求并接收响应。</li>
+<li><strong>Upstream</strong>：上游主机接收来自 Envoy 的连接和请求，并返回响应。</li>
+<li><strong>Listener</strong>：监听器是命名网地址（例如，端口、unix domain socket 等)，可以被下游客户端连接。Envoy 暴露一个或者多个监听器给下游主机连接。在 Envoy 中,Listener 可以绑定到端口上直接对外服务，也可以不绑定到端口上，而是接收其他 listener 转发的请求。</li>
+<li><strong>Cluster</strong>：集群是指 Envoy 连接到的逻辑上相同的一组上游主机。Envoy 通过服务发现来发现集群的成员。可以选择通过主动健康检查来确定集群成员的健康状态。Envoy 通过负载均衡策略决定将请求路由到哪个集群成员。</li>
+</ul>
+<h2 id="xds-服务接口">XDS 服务接口</h2>
+<p>Istio 数据面 API 定义了 xDS 服务接口，Pilot 通过该接口向数据面 sidecar 下发动态配置信息，以对 Mesh 中的数据流量进行控制。xDS 中的 DS 表示 discovery service，即发现服务，表示 xDS 接口使用动态发现的方式提供数据面所需的配置数据。而 x 则是一个代词，表示有多种 discover service。这些发现服务及对应的数据结构如下：</p>
+<ul>
+<li>LDS (Listener Discovery Service) <a href="https://github.com/envoyproxy/data-plane-api/blob/master/envoy/api/v2/lds.proto">envoy.api.v2.Listener</a></li>
+<li>CDS (Cluster Discovery Service) <a href="https://github.com/envoyproxy/data-plane-api/blob/master/envoy/api/v2/rds.proto">envoy.api.v2.RouteConfiguration</a></li>
+<li>EDS (Endpoint Discovery Service) <a href="https://github.com/envoyproxy/data-plane-api/blob/master/envoy/api/v2/cds.proto">envoy.api.v2.Cluster</a></li>
+<li>RDS (Route Discovery Service) <a href="https://github.com/envoyproxy/data-plane-api/blob/master/envoy/api/v2/eds.proto">envoy.api.v2.ClusterLoadAssignment</a></li>
+</ul>
+<h2 id="xds-服务接口的最终一致性考虑">XDS 服务接口的最终一致性考虑</h2>
+<p>xDS 的几个接口是相互独立的，接口下发的配置数据是最终一致的。但在配置更新过程中，可能暂时出现各个接口的数据不匹配的情况，从而导致部分流量在更新过程中丢失。</p>
+<p>设想这种场景：在 CDS/EDS 只知道 cluster X 的情况下,RDS 的一条路由配置将指向 Cluster X 的流量调整到了 Cluster Y。在 CDS/EDS 向 Mesh 中 Envoy 提供 Cluster Y 的更新前，这部分导向 Cluster Y 的流量将会因为 Envoy 不知道 Cluster Y 的信息而被丢弃。</p>
+<p>对于某些应用来说，短暂的部分流量丢失是可以接受的，例如客户端重试可以解决该问题，并不影响业务逻辑。对于另一些场景来说，这种情况可能无法容忍。可以通过调整 xDS 接口的更新逻辑来避免该问题，对上面的情况，可以先通过 CDS/EDS 更新 Y Cluster，然后再通过 RDS 将 X 的流量路由到 Y。</p>
+<p>一般来说，为了避免 Envoy 配置数据更新过程中出现流量丢失的情况，xDS 接口应采用下面的顺序：</p>
+<ol>
+<li>CDS 首先更新 Cluster 数据（如果有变化）</li>
+<li>EDS 更新相应 Cluster 的 Endpoint 信息（如果有变化）</li>
+<li>LDS 更新 CDS/EDS 相应的 Listener。</li>
+<li>RDS 最后更新新增 Listener 相关的 Route 配置。</li>
+<li>删除不再使用的 CDS cluster 和 EDS endpoints。</li>
+</ol>
+<h2 id="ads-聚合发现服务">ADS 聚合发现服务</h2>
+<p>保证控制面下发数据一致性，避免流量在配置更新过程中丢失的另一个方式是使用 ADS(Aggregated Discovery Services)，即聚合的发现服务。ADS 通过一个 gRPC 流来发布所有的配置更新，以保证各个 xDS 接口的调用顺序，避免由于 xDS 接口更新顺序导致的配置数据不一致问题。</p>
+<p>关于 XDS 接口的详细介绍可参考<a href="https://github.com/envoyproxy/data-plane-api/blob/master/XDS_PROTOCOL.md">xDS REST and gRPC protocol</a><sup><a href="#ref07">[7]</a></sup></p>
+<h1 id="bookinfo-示例程序分析">Bookinfo 示例程序分析</h1>
+<p>下面我们以 Bookinfo 为例对 Istio 中的流量管理实现机制，以及控制面和数据面的交互进行进一步分析。</p>
+<h2 id="bookinfo-程序结构">Bookinfo 程序结构</h2>
+<p>下图显示了 Bookinfo 示例程序中各个组件的 IP 地址，端口和调用关系，以用于后续的分析。</p>
+<p><img src="https://images.weserv.nl/?url=https://zhaohuabing.com/img/2018-09-25-istio-traffic-management-impl-intro/bookinfo.png" alt=""></p>
+<h2 id="xds-接口调试方法">xDS 接口调试方法</h2>
+<p>首先我们看看如何对 xDS 接口的相关数据进行查看和分析。Envoy v2 接口采用了 gRPC，由于 gRPC 是基于二进制的 RPC 协议，无法像 V1 的 REST 接口一样通过 curl 和浏览器进行进行分析。但我们还是可以通过 Pilot 和 Envoy 的调试接口查看 xDS 接口的相关数据。</p>
+<h3 id="pilot-调试方法">Pilot 调试方法</h3>
+<p>Pilot 在 9093 端口提供了下述<a href="https://github.com/istio/istio/tree/master/pilot/pkg/proxy/envoy/v2">调试接口</a><sup><a href="#ref08">[8]</a></sup>下述方法查看 xDS 接口相关数据。</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-perl" data-lang="perl">PILOT<span style="color:#f92672">=</span>istio<span style="color:#f92672">-</span>pilot<span style="color:#f92672">.</span>istio<span style="color:#f92672">-</span>system:<span style="color:#ae81ff">9093</span>
+
+<span style="color:#75715e"># What is sent to envoy</span>
+<span style="color:#75715e"># Listeners and routes</span>
+curl $PILOT<span style="color:#e6db74">/debug/</span>adsz
+
+<span style="color:#75715e"># Endpoints</span>
+curl $PILOT<span style="color:#e6db74">/debug/</span>edsz
+
+<span style="color:#75715e"># Clusters</span>
+curl $PILOT<span style="color:#e6db74">/debug/c</span>dsz
+</code></pre></div><h3 id="envoy-调试方法">Envoy 调试方法</h3>
+<p>Envoy 提供了管理接口，缺省为 localhost 的 15000 端口，可以获取 listener，cluster 以及完整的配置数据导出功能。</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql">kubectl <span style="color:#66d9ef">exec</span> productpage<span style="color:#f92672">-</span>v1<span style="color:#f92672">-</span><span style="color:#ae81ff">54</span>b8b9f55<span style="color:#f92672">-</span>bx2dq <span style="color:#f92672">-</span><span style="color:#66d9ef">c</span> istio<span style="color:#f92672">-</span>proxy curl http:<span style="color:#f92672">//</span><span style="color:#ae81ff">127</span>.<span style="color:#ae81ff">0</span>.<span style="color:#ae81ff">0</span>.<span style="color:#ae81ff">1</span>:<span style="color:#ae81ff">15000</span><span style="color:#f92672">/</span>help
+  <span style="color:#f92672">/</span>: <span style="color:#66d9ef">Admin</span> home page
+  <span style="color:#f92672">/</span>certs: print certs <span style="color:#66d9ef">on</span> machine
+  <span style="color:#f92672">/</span>clusters: upstream <span style="color:#66d9ef">cluster</span> status
+  <span style="color:#f92672">/</span>config_dump: dump <span style="color:#66d9ef">current</span> Envoy configs (experimental)
+  <span style="color:#f92672">/</span>cpuprofiler: enable<span style="color:#f92672">/</span>disable the CPU profiler
+  <span style="color:#f92672">/</span>healthcheck<span style="color:#f92672">/</span>fail: cause the server <span style="color:#66d9ef">to</span> fail health checks
+  <span style="color:#f92672">/</span>healthcheck<span style="color:#f92672">/</span>ok: cause the server <span style="color:#66d9ef">to</span> pass health checks
+  <span style="color:#f92672">/</span>help: print <span style="color:#66d9ef">out</span> list <span style="color:#66d9ef">of</span> <span style="color:#66d9ef">admin</span> commands
+  <span style="color:#f92672">/</span>hot_restart_version: print the hot <span style="color:#66d9ef">restart</span> compatibility <span style="color:#66d9ef">version</span>
+  <span style="color:#f92672">/</span>listeners: print listener addresses
+  <span style="color:#f92672">/</span>logging: query<span style="color:#f92672">/</span>change logging levels
+  <span style="color:#f92672">/</span>quitquitquit: exit the server
+  <span style="color:#f92672">/</span>reset_counters: <span style="color:#66d9ef">reset</span> <span style="color:#66d9ef">all</span> counters <span style="color:#66d9ef">to</span> zero
+  <span style="color:#f92672">/</span>runtime: print runtime <span style="color:#66d9ef">values</span>
+  <span style="color:#f92672">/</span>runtime_modify: <span style="color:#66d9ef">modify</span> runtime <span style="color:#66d9ef">values</span>
+  <span style="color:#f92672">/</span>server_info: print server <span style="color:#66d9ef">version</span><span style="color:#f92672">/</span>status information
+  <span style="color:#f92672">/</span>stats: print server stats
+  <span style="color:#f92672">/</span>stats<span style="color:#f92672">/</span>prometheus: print server stats <span style="color:#66d9ef">in</span> prometheus format
+</code></pre></div><p>进入 productpage pod 中的 istio-proxy(Envoy) container，可以看到有下面的监听端口</p>
+<ul>
+<li>9080: productpage 进程对外提供的服务端口</li>
+<li>15001: Envoy 的入口监听器，iptable 会将 pod 的流量导入该端口中由 Envoy 进行处理</li>
+<li>15000: Envoy 管理端口，该端口绑定在本地环回地址上，只能在 Pod 内访问。</li>
+</ul>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-nginx" data-lang="nginx"><span style="color:#66d9ef">kubectl</span> <span style="color:#e6db74">exec</span> <span style="color:#e6db74">t</span> <span style="color:#e6db74">productpage-v1-54b8b9f55-bx2dq</span> <span style="color:#e6db74">-c</span> <span style="color:#e6db74">istio-proxy</span> <span style="color:#e6db74">--</span>  <span style="color:#e6db74">netstat</span> <span style="color:#e6db74">-ln</span>
+ 
+<span style="color:#e6db74">Proto</span> <span style="color:#e6db74">Recv-Q</span> <span style="color:#e6db74">Send-Q</span> <span style="color:#e6db74">Local</span> <span style="color:#e6db74">Address</span>           <span style="color:#e6db74">Foreign</span> <span style="color:#e6db74">Address</span>         <span style="color:#e6db74">State</span>       <span style="color:#e6db74">PID/Program</span> <span style="color:#e6db74">name</span>
+<span style="color:#e6db74">tcp</span>        <span style="color:#ae81ff">0</span>      <span style="color:#ae81ff">0</span> 0.0.0.0:<span style="color:#ae81ff">9080</span>            <span style="color:#ae81ff">0</span><span style="color:#e6db74">.0.0.0:*</span>               <span style="color:#e6db74">LISTEN</span>      <span style="color:#e6db74">-</span>               
+<span style="color:#e6db74">tcp</span>        <span style="color:#ae81ff">0</span>      <span style="color:#ae81ff">0</span> 127.0.0.1:<span style="color:#ae81ff">15000</span>         <span style="color:#ae81ff">0</span><span style="color:#e6db74">.0.0.0:*</span>               <span style="color:#e6db74">LISTEN</span>      <span style="color:#ae81ff">13</span><span style="color:#e6db74">/envoy</span>        
+<span style="color:#e6db74">tcp</span>        <span style="color:#ae81ff">0</span>      <span style="color:#ae81ff">0</span> 0.0.0.0:<span style="color:#ae81ff">15001</span>           <span style="color:#ae81ff">0</span><span style="color:#e6db74">.0.0.0:*</span>               <span style="color:#e6db74">LISTEN</span>      <span style="color:#ae81ff">13</span><span style="color:#e6db74">/envoy</span>
+</code></pre></div><h2 id="envoy-启动过程分析">Envoy 启动过程分析</h2>
+<p>Istio 通过 K8s 的<a href="https://zhaohuabing.com/2018/05/23/istio-auto-injection-with-webhook">Admission webhook</a><sup><a href="#ref09">[9]</a></sup>机制实现了 sidecar 的自动注入，Mesh 中的每个微服务会被加入 Envoy 相关的容器。下面是 Productpage 微服务的 Pod 内容，可见除 productpage 之外，Istio 还在该 Pod 中注入了两个容器 gcr.io/istio-release/proxy_init 和 gcr.io/istio-release/proxyv2。</p>
+<p>备注：下面 Pod description 中只保留了需要关注的内容，删除了其它不重要的部分。为方便查看，本文中后续的其它配置文件以及命令行输出也会进行类似处理。</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql">ubuntu<span style="color:#f92672">@</span>envoy<span style="color:#f92672">-</span>test:<span style="color:#f92672">~</span><span style="color:#960050;background-color:#1e0010">$</span> kubectl <span style="color:#66d9ef">describe</span> pod productpage<span style="color:#f92672">-</span>v1<span style="color:#f92672">-</span><span style="color:#ae81ff">54</span>b8b9f55<span style="color:#f92672">-</span>bx2dq
+
+Name:               productpage<span style="color:#f92672">-</span>v1<span style="color:#f92672">-</span><span style="color:#ae81ff">54</span>b8b9f55<span style="color:#f92672">-</span>bx2dq
+Namespace:          <span style="color:#66d9ef">default</span>
+Init Containers:
+  istio<span style="color:#f92672">-</span>init:
+    Image:         gcr.io<span style="color:#f92672">/</span>istio<span style="color:#f92672">-</span>release<span style="color:#f92672">/</span>proxy_init:<span style="color:#ae81ff">1</span>.<span style="color:#ae81ff">0</span>.<span style="color:#ae81ff">0</span>
+      Args:
+      <span style="color:#f92672">-</span>p
+      <span style="color:#ae81ff">15001</span>
+      <span style="color:#f92672">-</span>u
+      <span style="color:#ae81ff">1337</span>
+      <span style="color:#f92672">-</span>m
+      REDIRECT
+      <span style="color:#f92672">-</span>i
+      <span style="color:#f92672">*</span>
+      <span style="color:#f92672">-</span>x
+
+      <span style="color:#f92672">-</span>b
+      <span style="color:#ae81ff">9080</span>,
+      <span style="color:#f92672">-</span>d
+
+Containers:
+  productpage:
+    Image:          istio<span style="color:#f92672">/</span>examples<span style="color:#f92672">-</span>bookinfo<span style="color:#f92672">-</span>productpage<span style="color:#f92672">-</span>v1:<span style="color:#ae81ff">1</span>.<span style="color:#ae81ff">8</span>.<span style="color:#ae81ff">0</span>
+    Port:           <span style="color:#ae81ff">9080</span><span style="color:#f92672">/</span>TCP
+    
+  istio<span style="color:#f92672">-</span>proxy:
+    Image:         gcr.io<span style="color:#f92672">/</span>istio<span style="color:#f92672">-</span>release<span style="color:#f92672">/</span>proxyv2:<span style="color:#ae81ff">1</span>.<span style="color:#ae81ff">0</span>.<span style="color:#ae81ff">0</span>
+    Args:
+      proxy
+      sidecar
+      <span style="color:#75715e">--configPath
+</span><span style="color:#75715e"></span>      <span style="color:#f92672">/</span>etc<span style="color:#f92672">/</span>istio<span style="color:#f92672">/</span>proxy
+      <span style="color:#75715e">--binaryPath
+</span><span style="color:#75715e"></span>      <span style="color:#f92672">/</span>usr<span style="color:#f92672">/</span><span style="color:#66d9ef">local</span><span style="color:#f92672">/</span>bin<span style="color:#f92672">/</span>envoy
+      <span style="color:#75715e">--serviceCluster
+</span><span style="color:#75715e"></span>      productpage
+      <span style="color:#75715e">--drainDuration
+</span><span style="color:#75715e"></span>      <span style="color:#ae81ff">45</span>s
+      <span style="color:#75715e">--parentShutdownDuration
+</span><span style="color:#75715e"></span>      <span style="color:#ae81ff">1</span>m0s
+      <span style="color:#75715e">--discoveryAddress
+</span><span style="color:#75715e"></span>      istio<span style="color:#f92672">-</span>pilot.istio<span style="color:#f92672">-</span><span style="color:#66d9ef">system</span>:<span style="color:#ae81ff">15007</span>
+      <span style="color:#75715e">--discoveryRefreshDelay
+</span><span style="color:#75715e"></span>      <span style="color:#ae81ff">1</span>s
+      <span style="color:#75715e">--zipkinAddress
+</span><span style="color:#75715e"></span>      zipkin.istio<span style="color:#f92672">-</span><span style="color:#66d9ef">system</span>:<span style="color:#ae81ff">9411</span>
+      <span style="color:#75715e">--connectTimeout
+</span><span style="color:#75715e"></span>      <span style="color:#ae81ff">10</span>s
+      <span style="color:#75715e">--statsdUdpAddress
+</span><span style="color:#75715e"></span>      istio<span style="color:#f92672">-</span>statsd<span style="color:#f92672">-</span>prom<span style="color:#f92672">-</span>bridge.istio<span style="color:#f92672">-</span><span style="color:#66d9ef">system</span>:<span style="color:#ae81ff">9125</span>
+      <span style="color:#75715e">--proxyAdminPort
+</span><span style="color:#75715e"></span>      <span style="color:#ae81ff">15000</span>
+      <span style="color:#75715e">--controlPlaneAuthPolicy
+</span><span style="color:#75715e"></span>      <span style="color:#66d9ef">NONE</span>
+</code></pre></div><h3 id="proxy_init">Proxy_init</h3>
+<p>Productpage 的 Pod 中有一个 InitContainer proxy_init，InitContrainer 是 K8S 提供的机制，用于在 Pod 中执行一些初始化任务.在 Initialcontainer 执行完毕并退出后，才会启动 Pod 中的其它 container。</p>
+<p>我们看一下 proxy_init 容器中的内容：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">ubuntu@envoy<span style="color:#f92672">-</span>test<span style="color:#e6db74">:~</span><span style="color:#960050;background-color:#1e0010">$</span> sudo docker inspect gcr<span style="color:#f92672">.</span>io<span style="color:#f92672">/</span>istio<span style="color:#f92672">-</span>release<span style="color:#f92672">/</span><span style="color:#e6db74">proxy_init</span>:<span style="color:#ae81ff">1</span><span style="color:#f92672">.</span><span style="color:#ae81ff">0</span><span style="color:#f92672">.</span><span style="color:#ae81ff">0</span>
+<span style="color:#f92672">[</span>
+    {
+        <span style="color:#e6db74">&#34;RepoTags&#34;</span>: <span style="color:#f92672">[</span>
+            <span style="color:#e6db74">&#34;gcr.io/istio-release/proxy_init:1.0.0&#34;</span>
+        <span style="color:#f92672">]</span>,
+
+        <span style="color:#e6db74">&#34;ContainerConfig&#34;</span>: {
+            <span style="color:#e6db74">&#34;Env&#34;</span>: <span style="color:#f92672">[</span>
+                <span style="color:#e6db74">&#34;PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin&#34;</span>
+            <span style="color:#f92672">]</span>,
+            <span style="color:#e6db74">&#34;Cmd&#34;</span>: <span style="color:#f92672">[</span>
+                <span style="color:#e6db74">&#34;/bin/sh&#34;</span>,
+                <span style="color:#e6db74">&#34;-c&#34;</span>,
+                <span style="color:#e6db74">&#34;#(nop) &#34;</span>,
+                <span style="color:#e6db74">&#34;ENTRYPOINT [</span><span style="color:#ae81ff">\&#34;</span><span style="color:#e6db74">/usr/local/bin/istio-iptables.sh</span><span style="color:#ae81ff">\&#34;</span><span style="color:#e6db74">]&#34;</span>
+            <span style="color:#f92672">]</span>,
+            <span style="color:#e6db74">&#34;Entrypoint&#34;</span>: <span style="color:#f92672">[</span>
+                <span style="color:#e6db74">&#34;/usr/local/bin/istio-iptables.sh&#34;</span>
+            <span style="color:#f92672">]</span>,
+        },
+    }
+<span style="color:#f92672">]</span>
+</code></pre></div><p>从上面的命令行输出可以看到，Proxy_init 中执行的命令是 istio-iptables.sh，该脚本源码较长，就不列出来了，有兴趣可以在 Istio 源码仓库的<a href="https://github.com/istio/istio/blob/master/tools/deb/istio-iptables.sh">tools/deb/istio-iptables.sh</a>查看。</p>
+<p>该脚本的作用是通过配置 iptable 来劫持 Pod 中的流量。结合前面 Pod 中该容器的命令行参数-p 15001，可以得知 Pod 中的数据流量被 iptable 拦截，并发向 Envoy 的 15001 端口。 -u 1337 参数用于排除用户 ID 为 1337，即 Envoy 自身的流量，以避免 Iptable 把 Envoy 发出的数据又重定向到 Envoy，形成死循环。</p>
+<h3 id="proxyv2">Proxyv2</h3>
+<p>前面提到，该容器中有两个进程 Pilot-agent 和 envoy。我们进入容器中看看这两个进程的相关信息。</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-perl" data-lang="perl">ubuntu@envoy<span style="color:#f92672">-</span>test:<span style="color:#f92672">~</span>$ kubectl exec   productpage<span style="color:#f92672">-</span>v1<span style="color:#f92672">-</span><span style="color:#ae81ff">54</span>b8b9f55<span style="color:#f92672">-</span>bx2dq <span style="color:#f92672">-</span>c istio<span style="color:#f92672">-</span>proxy <span style="color:#f92672">--</span> ps <span style="color:#f92672">-</span>ef
+
+UID        PID  PPID  C STIME TTY          TIME CMD
+istio<span style="color:#f92672">-</span>p<span style="color:#f92672">+</span>     <span style="color:#ae81ff">1</span>     <span style="color:#ae81ff">0</span>  <span style="color:#ae81ff">0</span> Sep06 ?        <span style="color:#ae81ff">00</span>:<span style="color:#ae81ff">00</span>:<span style="color:#ae81ff">00</span> <span style="color:#e6db74">/usr/</span>local<span style="color:#e6db74">/bin/</span>pilot<span style="color:#f92672">-</span>agent proxy sidecar <span style="color:#f92672">--</span>configPath <span style="color:#e6db74">/etc/is</span>tio<span style="color:#e6db74">/proxy --binaryPath /</span>usr<span style="color:#e6db74">/local/</span>bin<span style="color:#f92672">/</span>envoy <span style="color:#f92672">--</span>serviceCluster productpage <span style="color:#f92672">--</span>drainDuration <span style="color:#ae81ff">45</span>s <span style="color:#f92672">--</span>parentShutdownDuration <span style="color:#ae81ff">1</span>m0s <span style="color:#f92672">--</span>discoveryAddress istio<span style="color:#f92672">-</span>pilot<span style="color:#f92672">.</span>istio<span style="color:#f92672">-</span>system:<span style="color:#ae81ff">15007</span> <span style="color:#f92672">--</span>discoveryRefreshDelay <span style="color:#ae81ff">1</span>s <span style="color:#f92672">--</span>zipkinAddress zipkin<span style="color:#f92672">.</span>istio<span style="color:#f92672">-</span>system:<span style="color:#ae81ff">9411</span> <span style="color:#f92672">--</span>connectTimeout <span style="color:#ae81ff">10</span>s <span style="color:#f92672">--</span>statsdUdpAddress istio<span style="color:#f92672">-</span>statsd<span style="color:#f92672">-</span>prom<span style="color:#f92672">-</span>bridge<span style="color:#f92672">.</span>istio<span style="color:#f92672">-</span>system:<span style="color:#ae81ff">9125</span> <span style="color:#f92672">--</span>proxyAdminPort <span style="color:#ae81ff">15000</span> <span style="color:#f92672">--</span>controlPlaneAuthPolicy NONE
+istio<span style="color:#f92672">-</span>p<span style="color:#f92672">+</span>    <span style="color:#ae81ff">13</span>     <span style="color:#ae81ff">1</span>  <span style="color:#ae81ff">0</span> Sep06 ?        <span style="color:#ae81ff">00</span>:<span style="color:#ae81ff">47</span>:<span style="color:#ae81ff">37</span> <span style="color:#e6db74">/usr/</span>local<span style="color:#e6db74">/bin/</span>envoy <span style="color:#f92672">-</span>c <span style="color:#e6db74">/etc/is</span>tio<span style="color:#e6db74">/proxy/</span>envoy<span style="color:#f92672">-</span>rev0<span style="color:#f92672">.</span>json <span style="color:#f92672">--</span>restart<span style="color:#f92672">-</span>epoch <span style="color:#ae81ff">0</span> <span style="color:#f92672">--</span>drain<span style="color:#f92672">-</span>time<span style="color:#f92672">-</span>s <span style="color:#ae81ff">45</span> <span style="color:#f92672">--</span>parent<span style="color:#f92672">-</span>shutdown<span style="color:#f92672">-</span>time<span style="color:#f92672">-</span>s <span style="color:#ae81ff">60</span> <span style="color:#f92672">--</span>service<span style="color:#f92672">-</span>cluster productpage <span style="color:#f92672">--</span>service<span style="color:#f92672">-</span>node sidecar<span style="color:#f92672">~</span><span style="color:#ae81ff">192.168.206.23</span><span style="color:#f92672">~</span>productpage<span style="color:#f92672">-</span>v1<span style="color:#f92672">-</span><span style="color:#ae81ff">54</span>b8b9f55<span style="color:#f92672">-</span>bx2dq<span style="color:#f92672">.</span>default<span style="color:#f92672">~</span>default<span style="color:#f92672">.</span>svc<span style="color:#f92672">.</span>cluster<span style="color:#f92672">.</span>local <span style="color:#f92672">--</span>max<span style="color:#f92672">-</span>obj<span style="color:#f92672">-</span>name<span style="color:#f92672">-</span>len <span style="color:#ae81ff">189</span> <span style="color:#f92672">-</span>l warn <span style="color:#f92672">--</span>v2<span style="color:#f92672">-</span>config<span style="color:#f92672">-</span>only
+</code></pre></div><p>Envoy 的大部分配置都是 dynamic resource，包括网格中服务相关的 service cluster, listener, route 规则等。这些 dynamic resource 是通过 xDS 接口从 Istio 控制面中动态获取的。但 Envoy 如何知道 xDS server 的地址呢？这是在 Envoy 初始化配置文件中以 static resource 的方式配置的。</p>
+<h4 id="envoy-初始配置文件">Envoy 初始配置文件</h4>
+<p>Pilot-agent 进程根据启动参数和 K8S API Server 中的配置信息生成 Envoy 的初始配置文件，并负责启动 Envoy 进程。从 ps 命令输出可以看到 Pilot-agent 在启动 Envoy 进程时传入了 pilot 地址和 zipkin 地址，并为 Envoy 生成了一个初始化配置文件 envoy-rev0.json</p>
+<p>Pilot agent 生成初始化配置文件的代码： <a href="https://github.com/istio/istio/blob/release-1.0/pkg/bootstrap/bootstrap_config.go">https://github.com/istio/istio/blob/release-1.0/pkg/bootstrap/bootstrap_config.go</a> 137 行</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#75715e">// WriteBootstrap generates an envoy config based on config and epoch, and returns the filename.
+</span><span style="color:#75715e">// TODO: in v2 some of the LDS ports (port, http_port) should be configured in the bootstrap.
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">func</span> <span style="color:#a6e22e">WriteBootstrap</span>(<span style="color:#a6e22e">config</span> <span style="color:#f92672">*</span><span style="color:#a6e22e">meshconfig</span>.<span style="color:#a6e22e">ProxyConfig</span>, <span style="color:#a6e22e">node</span> <span style="color:#66d9ef">string</span>, <span style="color:#a6e22e">epoch</span> <span style="color:#66d9ef">int</span>, <span style="color:#a6e22e">pilotSAN</span> []<span style="color:#66d9ef">string</span>, <span style="color:#a6e22e">opts</span> <span style="color:#66d9ef">map</span>[<span style="color:#66d9ef">string</span>]<span style="color:#66d9ef">interface</span>{}) (<span style="color:#66d9ef">string</span>, <span style="color:#66d9ef">error</span>) {
+	<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">opts</span> <span style="color:#f92672">==</span> <span style="color:#66d9ef">nil</span> {
+		<span style="color:#a6e22e">opts</span> = <span style="color:#66d9ef">map</span>[<span style="color:#66d9ef">string</span>]<span style="color:#66d9ef">interface</span>{}{}
+	}
+	<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">err</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">os</span>.<span style="color:#a6e22e">MkdirAll</span>(<span style="color:#a6e22e">config</span>.<span style="color:#a6e22e">ConfigPath</span>, <span style="color:#ae81ff">0700</span>); <span style="color:#a6e22e">err</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> {
+		<span style="color:#66d9ef">return</span> <span style="color:#e6db74">&#34;&#34;</span>, <span style="color:#a6e22e">err</span>
+	}
+	<span style="color:#75715e">// attempt to write file
+</span><span style="color:#75715e"></span>	<span style="color:#a6e22e">fname</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">configFile</span>(<span style="color:#a6e22e">config</span>.<span style="color:#a6e22e">ConfigPath</span>, <span style="color:#a6e22e">epoch</span>)
+
+	<span style="color:#a6e22e">cfg</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">config</span>.<span style="color:#a6e22e">CustomConfigFile</span>
+	<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">cfg</span> <span style="color:#f92672">==</span> <span style="color:#e6db74">&#34;&#34;</span> {
+		<span style="color:#a6e22e">cfg</span> = <span style="color:#a6e22e">config</span>.<span style="color:#a6e22e">ProxyBootstrapTemplatePath</span>
+	}
+	<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">cfg</span> <span style="color:#f92672">==</span> <span style="color:#e6db74">&#34;&#34;</span> {
+		<span style="color:#a6e22e">cfg</span> = <span style="color:#a6e22e">DefaultCfgDir</span>
+	}
+	<span style="color:#f92672">......</span>
+
+	<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">config</span>.<span style="color:#a6e22e">StatsdUdpAddress</span> <span style="color:#f92672">!=</span> <span style="color:#e6db74">&#34;&#34;</span> {
+		<span style="color:#a6e22e">h</span>, <span style="color:#a6e22e">p</span>, <span style="color:#a6e22e">err</span> = <span style="color:#a6e22e">GetHostPort</span>(<span style="color:#e6db74">&#34;statsd UDP&#34;</span>, <span style="color:#a6e22e">config</span>.<span style="color:#a6e22e">StatsdUdpAddress</span>)
+		<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">err</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> {
+			<span style="color:#66d9ef">return</span> <span style="color:#e6db74">&#34;&#34;</span>, <span style="color:#a6e22e">err</span>
+		}
+		<span style="color:#a6e22e">StoreHostPort</span>(<span style="color:#a6e22e">h</span>, <span style="color:#a6e22e">p</span>, <span style="color:#e6db74">&#34;statsd&#34;</span>, <span style="color:#a6e22e">opts</span>)
+	}
+
+	<span style="color:#a6e22e">fout</span>, <span style="color:#a6e22e">err</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">os</span>.<span style="color:#a6e22e">Create</span>(<span style="color:#a6e22e">fname</span>)
+	<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">err</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> {
+		<span style="color:#66d9ef">return</span> <span style="color:#e6db74">&#34;&#34;</span>, <span style="color:#a6e22e">err</span>
+	}
+
+	<span style="color:#75715e">// Execute needs some sort of io.Writer
+</span><span style="color:#75715e"></span>	<span style="color:#a6e22e">err</span> = <span style="color:#a6e22e">t</span>.<span style="color:#a6e22e">Execute</span>(<span style="color:#a6e22e">fout</span>, <span style="color:#a6e22e">opts</span>)
+	<span style="color:#66d9ef">return</span> <span style="color:#a6e22e">fname</span>, <span style="color:#a6e22e">err</span>
+}
+</code></pre></div><p>可以使用下面的命令将 productpage pod 中该文件导出来查看其中的内容：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">kubectl exec productpage-v1-54b8b9f55-bx2dq -c istio-proxy -- cat /etc/istio/proxy/envoy-rev0.json &gt; envoy-rev0.json
+</code></pre></div><p>配置文件的结构如图所示：</p>
+<p><img src="https://images.weserv.nl/?url=https://zhaohuabing.com/img/2018-09-25-istio-traffic-management-impl-intro/envoy-rev0.png" alt=""></p>
+<p>其中各个配置节点的内容如下：</p>
+<h5 id="node">Node</h5>
+<p>包含了 Envoy 所在节点相关信息。</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json"><span style="color:#e6db74">&#34;node&#34;</span><span style="color:#960050;background-color:#1e0010">:</span> {
+    <span style="color:#f92672">&#34;id&#34;</span>: <span style="color:#e6db74">&#34;sidecar~192.168.206.23~productpage-v1-54b8b9f55-bx2dq.default~default.svc.cluster.local&#34;</span>,
+    <span style="color:#960050;background-color:#1e0010">//用于标识</span> <span style="color:#960050;background-color:#1e0010">envoy</span> <span style="color:#960050;background-color:#1e0010">所代理的</span> <span style="color:#960050;background-color:#1e0010">node（在</span> <span style="color:#960050;background-color:#1e0010">k8s</span> <span style="color:#960050;background-color:#1e0010">中对应为</span> <span style="color:#960050;background-color:#1e0010">Pod）上的</span> <span style="color:#960050;background-color:#1e0010">service</span> <span style="color:#960050;background-color:#1e0010">cluster，来自于</span> <span style="color:#960050;background-color:#1e0010">Envoy</span> <span style="color:#960050;background-color:#1e0010">进程启动时的</span> <span style="color:#960050;background-color:#1e0010">service-cluster</span> <span style="color:#960050;background-color:#1e0010">参数</span>
+    <span style="color:#f92672">&#34;cluster&#34;</span>: <span style="color:#e6db74">&#34;productpage&#34;</span>,  
+    <span style="color:#f92672">&#34;metadata&#34;</span>: {
+          <span style="color:#f92672">&#34;INTERCEPTION_MODE&#34;</span>: <span style="color:#e6db74">&#34;REDIRECT&#34;</span>,
+          <span style="color:#f92672">&#34;ISTIO_PROXY_SHA&#34;</span>: <span style="color:#e6db74">&#34;istio-proxy:6166ae7ebac7f630206b2fe4e6767516bf198313&#34;</span>,
+          <span style="color:#f92672">&#34;ISTIO_PROXY_VERSION&#34;</span>: <span style="color:#e6db74">&#34;1.0.0&#34;</span>,
+          <span style="color:#f92672">&#34;ISTIO_VERSION&#34;</span>: <span style="color:#e6db74">&#34;1.0.0&#34;</span>,
+          <span style="color:#f92672">&#34;POD_NAME&#34;</span>: <span style="color:#e6db74">&#34;productpage-v1-54b8b9f55-bx2dq&#34;</span>,
+          <span style="color:#f92672">&#34;istio&#34;</span>: <span style="color:#e6db74">&#34;sidecar&#34;</span>
+    }
+  }
+</code></pre></div><h5 id="admin">Admin</h5>
+<p>配置 Envoy 的日志路径以及管理端口。</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json"><span style="color:#e6db74">&#34;admin&#34;</span><span style="color:#960050;background-color:#1e0010">:</span> {
+    <span style="color:#f92672">&#34;access_log_path&#34;</span>: <span style="color:#e6db74">&#34;/dev/stdout&#34;</span>,
+    <span style="color:#f92672">&#34;address&#34;</span>: {
+      <span style="color:#f92672">&#34;socket_address&#34;</span>: {
+        <span style="color:#f92672">&#34;address&#34;</span>: <span style="color:#e6db74">&#34;127.0.0.1&#34;</span>,
+        <span style="color:#f92672">&#34;port_value&#34;</span>: <span style="color:#ae81ff">15000</span>
+      }
+    }
+  }
+</code></pre></div><h5 id="dynamic_resources">Dynamic_resources</h5>
+<p>配置动态资源,这里配置了 ADS 服务器。</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json"><span style="color:#e6db74">&#34;dynamic_resources&#34;</span><span style="color:#960050;background-color:#1e0010">:</span> {
+    <span style="color:#f92672">&#34;lds_config&#34;</span>: {
+        <span style="color:#f92672">&#34;ads&#34;</span>: {}
+    },
+    <span style="color:#f92672">&#34;cds_config&#34;</span>: {
+        <span style="color:#f92672">&#34;ads&#34;</span>: {}
+    },
+    <span style="color:#f92672">&#34;ads_config&#34;</span>: {
+      <span style="color:#f92672">&#34;api_type&#34;</span>: <span style="color:#e6db74">&#34;GRPC&#34;</span>,
+      <span style="color:#f92672">&#34;refresh_delay&#34;</span>: {<span style="color:#f92672">&#34;seconds&#34;</span>: <span style="color:#ae81ff">1</span>, <span style="color:#f92672">&#34;nanos&#34;</span>: <span style="color:#ae81ff">0</span>},
+      <span style="color:#f92672">&#34;grpc_services&#34;</span>: [
+        {
+          <span style="color:#f92672">&#34;envoy_grpc&#34;</span>: {
+            <span style="color:#f92672">&#34;cluster_name&#34;</span>: <span style="color:#e6db74">&#34;xds-grpc&#34;</span>
+          }
+        }
+      ]
+    }
+  }<span style="color:#960050;background-color:#1e0010">```</span>
+</code></pre></div><h5 id="static_resources">Static_resources</h5>
+<p>配置静态资源，包括了 xds-grpc 和 zipkin 两个 cluster。其中 xds-grpc cluster 对应前面 dynamic_resources 中 ADS 配置，指明了 Envoy 用于获取动态资源的服务器地址。</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json"><span style="color:#e6db74">&#34;static_resources&#34;</span><span style="color:#960050;background-color:#1e0010">:</span> {
+    <span style="color:#f92672">&#34;clusters&#34;</span>: [
+    {
+    <span style="color:#f92672">&#34;name&#34;</span>: <span style="color:#e6db74">&#34;xds-grpc&#34;</span>,
+    <span style="color:#f92672">&#34;type&#34;</span>: <span style="color:#e6db74">&#34;STRICT_DNS&#34;</span>,
+    <span style="color:#f92672">&#34;connect_timeout&#34;</span>: {<span style="color:#f92672">&#34;seconds&#34;</span>: <span style="color:#ae81ff">10</span>, <span style="color:#f92672">&#34;nanos&#34;</span>: <span style="color:#ae81ff">0</span>},
+    <span style="color:#f92672">&#34;lb_policy&#34;</span>: <span style="color:#e6db74">&#34;ROUND_ROBIN&#34;</span>,
+
+    <span style="color:#f92672">&#34;hosts&#34;</span>: [
+    {
+    <span style="color:#f92672">&#34;socket_address&#34;</span>: {<span style="color:#f92672">&#34;address&#34;</span>: <span style="color:#e6db74">&#34;istio-pilot.istio-system&#34;</span>, <span style="color:#f92672">&#34;port_value&#34;</span>: <span style="color:#ae81ff">15010</span>}
+    }
+    ],
+    <span style="color:#f92672">&#34;circuit_breakers&#34;</span>: {
+        <span style="color:#f92672">&#34;thresholds&#34;</span>: [
+      {
+        <span style="color:#f92672">&#34;priority&#34;</span>: <span style="color:#e6db74">&#34;default&#34;</span>,
+        <span style="color:#f92672">&#34;max_connections&#34;</span>: <span style="color:#e6db74">&#34;100000&#34;</span>,
+        <span style="color:#f92672">&#34;max_pending_requests&#34;</span>: <span style="color:#e6db74">&#34;100000&#34;</span>,
+        <span style="color:#f92672">&#34;max_requests&#34;</span>: <span style="color:#e6db74">&#34;100000&#34;</span>
+      },
+      {
+        <span style="color:#f92672">&#34;priority&#34;</span>: <span style="color:#e6db74">&#34;high&#34;</span>,
+        <span style="color:#f92672">&#34;max_connections&#34;</span>: <span style="color:#e6db74">&#34;100000&#34;</span>,
+        <span style="color:#f92672">&#34;max_pending_requests&#34;</span>: <span style="color:#e6db74">&#34;100000&#34;</span>,
+        <span style="color:#f92672">&#34;max_requests&#34;</span>: <span style="color:#e6db74">&#34;100000&#34;</span>
+      }]
+    },
+    <span style="color:#f92672">&#34;upstream_connection_options&#34;</span>: {
+      <span style="color:#f92672">&#34;tcp_keepalive&#34;</span>: {
+        <span style="color:#f92672">&#34;keepalive_time&#34;</span>: <span style="color:#ae81ff">300</span>
+      }
+    },
+    <span style="color:#f92672">&#34;http2_protocol_options&#34;</span>: { }
+    } ,
+      {
+        <span style="color:#f92672">&#34;name&#34;</span>: <span style="color:#e6db74">&#34;zipkin&#34;</span>,
+        <span style="color:#f92672">&#34;type&#34;</span>: <span style="color:#e6db74">&#34;STRICT_DNS&#34;</span>,
+        <span style="color:#f92672">&#34;connect_timeout&#34;</span>: {
+          <span style="color:#f92672">&#34;seconds&#34;</span>: <span style="color:#ae81ff">1</span>
+        },
+        <span style="color:#f92672">&#34;lb_policy&#34;</span>: <span style="color:#e6db74">&#34;ROUND_ROBIN&#34;</span>,
+        <span style="color:#f92672">&#34;hosts&#34;</span>: [
+          {
+            <span style="color:#f92672">&#34;socket_address&#34;</span>: {<span style="color:#f92672">&#34;address&#34;</span>: <span style="color:#e6db74">&#34;zipkin.istio-system&#34;</span>, <span style="color:#f92672">&#34;port_value&#34;</span>: <span style="color:#ae81ff">9411</span>}
+          }
+        ]
+      }
+      
+    ]
+  }
+</code></pre></div><h5 id="tracing">Tracing</h5>
+<p>配置分布式链路跟踪。</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json"><span style="color:#e6db74">&#34;tracing&#34;</span><span style="color:#960050;background-color:#1e0010">:</span> {
+    <span style="color:#f92672">&#34;http&#34;</span>: {
+      <span style="color:#f92672">&#34;name&#34;</span>: <span style="color:#e6db74">&#34;envoy.zipkin&#34;</span>,
+      <span style="color:#f92672">&#34;config&#34;</span>: {
+        <span style="color:#f92672">&#34;collector_cluster&#34;</span>: <span style="color:#e6db74">&#34;zipkin&#34;</span>
+      }
+    }
+  }
+</code></pre></div><h5 id="stats_sinks">Stats_sinks</h5>
+<p>这里配置的是和 Envoy 直连的 metrics 收集 sink,和 Mixer telemetry 没有关系。Envoy 自带 stats 格式的 metrics 上报。</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json"><span style="color:#e6db74">&#34;stats_sinks&#34;</span><span style="color:#960050;background-color:#1e0010">:</span> [
+    {
+      <span style="color:#f92672">&#34;name&#34;</span>: <span style="color:#e6db74">&#34;envoy.statsd&#34;</span>,
+      <span style="color:#f92672">&#34;config&#34;</span>: {
+        <span style="color:#f92672">&#34;address&#34;</span>: {
+          <span style="color:#f92672">&#34;socket_address&#34;</span>: {<span style="color:#f92672">&#34;address&#34;</span>: <span style="color:#e6db74">&#34;10.103.219.158&#34;</span>, <span style="color:#f92672">&#34;port_value&#34;</span>: <span style="color:#ae81ff">9125</span>}
+        }
+      }
+    }
+  ]
+</code></pre></div><p>在 Gist <a href="https://gist.github.com/zhaohuabing/14191bdcf72e37bf700129561c3b41ae">https://gist.github.com/zhaohuabing/14191bdcf72e37bf700129561c3b41ae</a> 中可以查看该配置文件的完整内容。</p>
+<h2 id="envoy-配置分析">Envoy 配置分析</h2>
+<h3 id="通过管理接口获取完整配置">通过管理接口获取完整配置</h3>
+<p>从 Envoy 初始化配置文件中，我们可以大致看到 Istio 通过 Envoy 来实现服务发现和流量管理的基本原理。即控制面将 xDS server 信息通过 static resource 的方式配置到 Envoy 的初始化配置文件中，Envoy 启动后通过 xDS server 获取到 dynamic resource，包括网格中的 service 信息及路由规则。</p>
+<p>Envoy 配置初始化流程：</p>
+<p><img src="https://images.weserv.nl/?url=https://zhaohuabing.com/img/2018-09-25-istio-traffic-management-impl-intro/envoy-config-init.png" alt=""></p>
+<ol>
+<li>Pilot-agent 根据启动参数和 K8S API Server 中的配置信息生成 Envoy 的初始配置文件 envoy-rev0.json，该文件告诉 Envoy 从 xDS server 中获取动态配置信息，并配置了 xDS server 的地址信息，即控制面的 Pilot。</li>
+<li>Pilot-agent 使用 envoy-rev0.json 启动 Envoy 进程。</li>
+<li>Envoy 根据初始配置获得 Pilot 地址，采用 xDS 接口从 Pilot 获取到 Listener，Cluster，Route 等 d 动态配置信息。</li>
+<li>Envoy 根据获取到的动态配置启动 Listener，并根据 Listener 的配置，结合 Route 和 Cluster 对拦截到的流量进行处理。</li>
+</ol>
+<p>可以看到，Envoy 中实际生效的配置是由初始化配置文件中的静态配置和从 Pilot 获取的动态配置一起组成的。因此只对 envoy-rev0 .json 进行分析并不能看到 Mesh 中流量管理的全貌。那么有没有办法可以看到 Envoy 中实际生效的完整配置呢？答案是可以的，我们可以通过 Envoy 的管理接口来获取 Envoy 的完整配置。</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">kubectl exec -it productpage-v1-54b8b9f55-bx2dq -c istio-proxy curl http://127.0.0.1:15000/config_dump &gt; config_dump
+</code></pre></div><p>该文件内容长达近 7000 行，本文中就不贴出来了，在 Gist <a href="https://gist.github.com/zhaohuabing/034ef87786d290a4e89cd6f5ad6fcc97">https://gist.github.com/zhaohuabing/034ef87786d290a4e89cd6f5ad6fcc97</a> 中可以查看到全文。</p>
+<h3 id="envoy-配置文件结构">Envoy 配置文件结构</h3>
+<p><img src="https://images.weserv.nl/?url=https://zhaohuabing.com/img/2018-09-25-istio-traffic-management-impl-intro/envoy-config.png" alt=""></p>
+<p>文件中的配置节点包括：</p>
+<h4 id="bootstrap">Bootstrap</h4>
+<p>从名字可以大致猜出这是 Envoy 的初始化配置，打开该节点，可以看到文件中的内容和前一章节中介绍的 envoy-rev0.json 是一致的，这里不再赘述。</p>
+<p><img src="https://images.weserv.nl/?url=https://zhaohuabing.com/img/2018-09-25-istio-traffic-management-impl-intro/envoy-config-bootstrap.png" alt=""></p>
+<h4 id="clusters">Clusters</h4>
+<p>在 Envoy 中，Cluster 是一个服务集群，Cluster 中包含一个到多个 endpoint，每个 endpoint 都可以提供服务，Envoy 根据负载均衡算法将请求发送到这些 endpoint 中。</p>
+<p>在 Productpage 的 clusters 配置中包含 static_clusters 和 dynamic_active_clusters 两部分，其中 static_clusters 是来自于 envoy-rev0.json 的 xDS server 和 zipkin server 信息。dynamic_active_clusters 是通过 xDS 接口从 Istio 控制面获取的动态服务信息。</p>
+<p><img src="https://images.weserv.nl/?url=https://zhaohuabing.com/img/2018-09-25-istio-traffic-management-impl-intro/envoy-config-clusters.png" alt=""></p>
+<p>Dynamic Cluster 中有以下几类 Cluster：</p>
+<h5 id="outbound-cluster">Outbound Cluster</h5>
+<p>这部分的 Cluster 占了绝大多数，该类 Cluster 对应于 Envoy 所在节点的外部服务。以 details 为例，对于 Productpage 来说,details 是一个外部服务，因此其 Cluster 名称中包含 outbound 字样。</p>
+<p>从 details 服务对应的 cluster 配置中可以看到，其类型为 EDS，即表示该 Cluster 的 endpoint 来自于动态发现，动态发现中 eds_config 则指向了 ads，最终指向 static Resource 中配置的 xds-grpc cluster,即 Pilot 的地址。</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{
+ <span style="color:#f92672">&#34;version_info&#34;</span>: <span style="color:#e6db74">&#34;2018-09-06T09:34:19Z&#34;</span>,
+ <span style="color:#f92672">&#34;cluster&#34;</span>: {
+  <span style="color:#f92672">&#34;name&#34;</span>: <span style="color:#e6db74">&#34;outbound|9080||details.default.svc.cluster.local&#34;</span>,
+  <span style="color:#f92672">&#34;type&#34;</span>: <span style="color:#e6db74">&#34;EDS&#34;</span>,
+  <span style="color:#f92672">&#34;eds_cluster_config&#34;</span>: {
+   <span style="color:#f92672">&#34;eds_config&#34;</span>: {
+    <span style="color:#f92672">&#34;ads&#34;</span>: {}
+   },
+   <span style="color:#f92672">&#34;service_name&#34;</span>: <span style="color:#e6db74">&#34;outbound|9080||details.default.svc.cluster.local&#34;</span>
+  },
+  <span style="color:#f92672">&#34;connect_timeout&#34;</span>: <span style="color:#e6db74">&#34;1s&#34;</span>,
+  <span style="color:#f92672">&#34;circuit_breakers&#34;</span>: {
+   <span style="color:#f92672">&#34;thresholds&#34;</span>: [
+    {}
+   ]
+  }
+ },
+ <span style="color:#f92672">&#34;last_updated&#34;</span>: <span style="color:#e6db74">&#34;2018-09-06T09:34:20.404Z&#34;</span>
+}
+</code></pre></div><p>可以通过 Pilot 的调试接口获取该 Cluster 的 endpoint：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl http://10.96.8.103:9093/debug/edsz &gt; pilot_eds_dump
+</code></pre></div><p>导出的文件长达 1300 多行，本文只贴出 details 服务相关的 endpoint 配置，完整文件参见:<a href="https://gist.github.com/zhaohuabing/a161d2f64746acd18097b74e6a5af551">https://gist.github.com/zhaohuabing/a161d2f64746acd18097b74e6a5af551</a></p>
+<p>从下面的文件内容可以看到，details cluster 配置了 1 个 endpoint 地址，是 details 的 pod ip。</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{
+  <span style="color:#f92672">&#34;clusterName&#34;</span>: <span style="color:#e6db74">&#34;outbound|9080||details.default.svc.cluster.local&#34;</span>,
+  <span style="color:#f92672">&#34;endpoints&#34;</span>: [
+    {
+      <span style="color:#f92672">&#34;locality&#34;</span>: {
+
+      },
+      <span style="color:#f92672">&#34;lbEndpoints&#34;</span>: [
+        {
+          <span style="color:#f92672">&#34;endpoint&#34;</span>: {
+            <span style="color:#f92672">&#34;address&#34;</span>: {
+              <span style="color:#f92672">&#34;socketAddress&#34;</span>: {
+                <span style="color:#f92672">&#34;address&#34;</span>: <span style="color:#e6db74">&#34;192.168.206.21&#34;</span>,
+                <span style="color:#f92672">&#34;portValue&#34;</span>: <span style="color:#ae81ff">9080</span>
+              }
+            }
+          },
+          <span style="color:#f92672">&#34;metadata&#34;</span>: {
+            <span style="color:#f92672">&#34;filterMetadata&#34;</span>: {
+              <span style="color:#f92672">&#34;istio&#34;</span>: {
+                  <span style="color:#f92672">&#34;uid&#34;</span>: <span style="color:#e6db74">&#34;kubernetes://details-v1-6764bbc7f7-qwzdg.default&#34;</span>
+                }
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
+</code></pre></div><h5 id="inbound-cluster">Inbound Cluster</h5>
+<p>该类 Cluster 对应于 Envoy 所在节点上的服务。如果该服务接收到请求，当然就是一个入站请求。对于 Productpage Pod 上的 Envoy，其对应的 Inbound Cluster 只有一个，即 productpage。该 cluster 对应的 host 为 127.0.0.1,即环回地址上 productpage 的监听端口。由于 iptable 规则中排除了 127.0.0.1,入站请求通过该 Inbound cluster 处理后将跳过 Envoy，直接发送给 Productpage 进程处理。</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{
+   <span style="color:#f92672">&#34;version_info&#34;</span>: <span style="color:#e6db74">&#34;2018-09-14T01:44:05Z&#34;</span>,
+   <span style="color:#f92672">&#34;cluster&#34;</span>: {
+    <span style="color:#f92672">&#34;name&#34;</span>: <span style="color:#e6db74">&#34;inbound|9080||productpage.default.svc.cluster.local&#34;</span>,
+    <span style="color:#f92672">&#34;connect_timeout&#34;</span>: <span style="color:#e6db74">&#34;1s&#34;</span>,
+    <span style="color:#f92672">&#34;hosts&#34;</span>: [
+     {
+      <span style="color:#f92672">&#34;socket_address&#34;</span>: {
+       <span style="color:#f92672">&#34;address&#34;</span>: <span style="color:#e6db74">&#34;127.0.0.1&#34;</span>,
+       <span style="color:#f92672">&#34;port_value&#34;</span>: <span style="color:#ae81ff">9080</span>
+      }
+     }
+    ],
+    <span style="color:#f92672">&#34;circuit_breakers&#34;</span>: {
+     <span style="color:#f92672">&#34;thresholds&#34;</span>: [
+      {}
+     ]
+    }
+   },
+   <span style="color:#f92672">&#34;last_updated&#34;</span>: <span style="color:#e6db74">&#34;2018-09-14T01:44:05.291Z&#34;</span>
+}
+</code></pre></div><h5 id="blackholecluster">BlackHoleCluster</h5>
+<p>这是一个特殊的 Cluster，并没有配置后端处理请求的 Host。如其名字所暗示的一样，请求进入后将被直接丢弃掉。如果一个请求没有找到其对的目的服务，则被发到 cluste。</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{
+   <span style="color:#f92672">&#34;version_info&#34;</span>: <span style="color:#e6db74">&#34;2018-09-06T09:34:19Z&#34;</span>,
+   <span style="color:#f92672">&#34;cluster&#34;</span>: {
+    <span style="color:#f92672">&#34;name&#34;</span>: <span style="color:#e6db74">&#34;BlackHoleCluster&#34;</span>,
+    <span style="color:#f92672">&#34;connect_timeout&#34;</span>: <span style="color:#e6db74">&#34;5s&#34;</span>
+   },
+   <span style="color:#f92672">&#34;last_updated&#34;</span>: <span style="color:#e6db74">&#34;2018-09-06T09:34:20.408Z&#34;</span>
+}
+</code></pre></div><h4 id="listeners">Listeners</h4>
+<p>Envoy 采用 listener 来接收并处理 downstream 发过来的请求，listener 的处理逻辑是插件式的，可以通过配置不同的 filter 来插入不同的处理逻辑。Istio 就在 Envoy 中加入了用于 policy check 和 metric report 的 Mixer filter。</p>
+<p>Listener 可以绑定到 IP Socket 或者 Unix Domain Socket 上，也可以不绑定到一个具体的端口上，而是接收从其他 listener 转发来的数据。Istio 就是利用了 Envoy listener 的这一特点实现了将来发向不同服务的请求转交给不同的 listener 处理。</p>
+<h5 id="virtual-listener">Virtual Listener</h5>
+<p>Envoy 创建了一个在 15001 端口监听的入口监听器。Iptable 将请求截取后发向 15001 端口，该监听器接收后并不进行业务处理，而是根据请求目的地分发给其他监听器处理。该监听器取名为”virtual”（虚拟）监听器也是这个原因。</p>
+<p>Envoy 是如何做到按服务分发的呢？ 可以看到该 Listener 的配置项 use_original_dest 设置为 true,该配置要求监听器将接收到的请求转交给和请求原目的地址关联的 listener 进行处理。</p>
+<p>从其 filter 配置可以看到，如果找不到和请求目的地配置的 listener 进行转交，则请求将被发送到<a href="#blackholecluster">BlackHoleCluster</a>,由于 BlackHoleCluster 并没有配置 host，因此找不到对应目的地对应监听器的请求实际上会被丢弃。</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{
+     <span style="color:#f92672">&#34;version_info&#34;</span>: <span style="color:#e6db74">&#34;2018-09-06T09:34:19Z&#34;</span>,
+     <span style="color:#f92672">&#34;listener&#34;</span>: {
+      <span style="color:#f92672">&#34;name&#34;</span>: <span style="color:#e6db74">&#34;virtual&#34;</span>,
+      <span style="color:#f92672">&#34;address&#34;</span>: {
+       <span style="color:#f92672">&#34;socket_address&#34;</span>: {
+        <span style="color:#f92672">&#34;address&#34;</span>: <span style="color:#e6db74">&#34;0.0.0.0&#34;</span>,
+        <span style="color:#f92672">&#34;port_value&#34;</span>: <span style="color:#ae81ff">15001</span>
+       }
+      },
+      <span style="color:#f92672">&#34;filter_chains&#34;</span>: [
+       {
+        <span style="color:#f92672">&#34;filters&#34;</span>: [
+         {
+          <span style="color:#f92672">&#34;name&#34;</span>: <span style="color:#e6db74">&#34;envoy.tcp_proxy&#34;</span>,
+          <span style="color:#f92672">&#34;config&#34;</span>: {
+           <span style="color:#f92672">&#34;stat_prefix&#34;</span>: <span style="color:#e6db74">&#34;BlackHoleCluster&#34;</span>,
+           <span style="color:#f92672">&#34;cluster&#34;</span>: <span style="color:#e6db74">&#34;BlackHoleCluster&#34;</span>
+          }
+         }
+        ]
+       }
+      ],
+      <span style="color:#f92672">&#34;use_original_dst&#34;</span>: <span style="color:#66d9ef">true</span>
+     },
+     <span style="color:#f92672">&#34;last_updated&#34;</span>: <span style="color:#e6db74">&#34;2018-09-06T09:34:26.262Z&#34;</span>
+    }
+</code></pre></div><h5 id="inbound-listener">Inbound Listener</h5>
+<p>在 Productpage Pod 上的 Envoy 创建了 Listener 192.168.206.23_9080，当外部调用 Productpage 服务的请求到达 Pod 上 15001 的”Virtual” Listener 时，Virtual Listener 根据请求目的地匹配到该 Listener,请求将被转发过来。</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{
+     <span style="color:#f92672">&#34;version_info&#34;</span>: <span style="color:#e6db74">&#34;2018-09-14T01:44:05Z&#34;</span>,
+     <span style="color:#f92672">&#34;listener&#34;</span>: {
+      <span style="color:#f92672">&#34;name&#34;</span>: <span style="color:#e6db74">&#34;192.168.206.23_9080&#34;</span>,
+      <span style="color:#f92672">&#34;address&#34;</span>: {
+       <span style="color:#f92672">&#34;socket_address&#34;</span>: {
+        <span style="color:#f92672">&#34;address&#34;</span>: <span style="color:#e6db74">&#34;192.168.206.23&#34;</span>,
+        <span style="color:#f92672">&#34;port_value&#34;</span>: <span style="color:#ae81ff">9080</span>
+       }
+      },
+      <span style="color:#f92672">&#34;filter_chains&#34;</span>: [
+       {
+        <span style="color:#f92672">&#34;filters&#34;</span>: [
+         {
+          <span style="color:#f92672">&#34;name&#34;</span>: <span style="color:#e6db74">&#34;mixer&#34;</span>,
+          <span style="color:#f92672">&#34;config&#34;</span>: {
+           <span style="color:#f92672">&#34;transport&#34;</span>: {
+            <span style="color:#f92672">&#34;check_cluster&#34;</span>: <span style="color:#e6db74">&#34;outbound|9091||istio-policy.istio-system.svc.cluster.local&#34;</span>,
+            <span style="color:#f92672">&#34;network_fail_policy&#34;</span>: {
+             <span style="color:#f92672">&#34;policy&#34;</span>: <span style="color:#e6db74">&#34;FAIL_CLOSE&#34;</span>
+            },
+            <span style="color:#f92672">&#34;report_cluster&#34;</span>: <span style="color:#e6db74">&#34;outbound|9091||istio-telemetry.istio-system.svc.cluster.local&#34;</span>,
+            <span style="color:#f92672">&#34;attributes_for_mixer_proxy&#34;</span>: {
+             <span style="color:#f92672">&#34;attributes&#34;</span>: {
+              <span style="color:#f92672">&#34;source.uid&#34;</span>: {
+               <span style="color:#f92672">&#34;string_value&#34;</span>: <span style="color:#e6db74">&#34;kubernetes://productpage-v1-54b8b9f55-bx2dq.default&#34;</span>
+              }
+             }
+            }
+           },
+           <span style="color:#f92672">&#34;mixer_attributes&#34;</span>: {
+            <span style="color:#f92672">&#34;attributes&#34;</span>: {
+             <span style="color:#f92672">&#34;destination.port&#34;</span>: {
+              <span style="color:#f92672">&#34;int64_value&#34;</span>: <span style="color:#e6db74">&#34;9080&#34;</span>
+             },
+             <span style="color:#f92672">&#34;context.reporter.uid&#34;</span>: {
+              <span style="color:#f92672">&#34;string_value&#34;</span>: <span style="color:#e6db74">&#34;kubernetes://productpage-v1-54b8b9f55-bx2dq.default&#34;</span>
+             },
+             <span style="color:#f92672">&#34;destination.namespace&#34;</span>: {
+              <span style="color:#f92672">&#34;string_value&#34;</span>: <span style="color:#e6db74">&#34;default&#34;</span>
+             },
+             <span style="color:#f92672">&#34;destination.ip&#34;</span>: {
+              <span style="color:#f92672">&#34;bytes_value&#34;</span>: <span style="color:#e6db74">&#34;AAAAAAAAAAAAAP//wKjOFw==&#34;</span>
+             },
+             <span style="color:#f92672">&#34;destination.uid&#34;</span>: {
+              <span style="color:#f92672">&#34;string_value&#34;</span>: <span style="color:#e6db74">&#34;kubernetes://productpage-v1-54b8b9f55-bx2dq.default&#34;</span>
+             },
+             <span style="color:#f92672">&#34;context.reporter.kind&#34;</span>: {
+              <span style="color:#f92672">&#34;string_value&#34;</span>: <span style="color:#e6db74">&#34;inbound&#34;</span>
+             }
+            }
+           }
+          }
+         },
+         {
+          <span style="color:#f92672">&#34;name&#34;</span>: <span style="color:#e6db74">&#34;envoy.tcp_proxy&#34;</span>,
+          <span style="color:#f92672">&#34;config&#34;</span>: {
+           <span style="color:#f92672">&#34;stat_prefix&#34;</span>: <span style="color:#e6db74">&#34;inbound|9080||productpage.default.svc.cluster.local&#34;</span>,
+           <span style="color:#f92672">&#34;cluster&#34;</span>: <span style="color:#e6db74">&#34;inbound|9080||productpage.default.svc.cluster.local&#34;</span>
+          }
+         }
+        ]
+       }
+      ],
+      <span style="color:#f92672">&#34;deprecated_v1&#34;</span>: {
+       <span style="color:#f92672">&#34;bind_to_port&#34;</span>: <span style="color:#66d9ef">false</span>
+      }
+     },
+     <span style="color:#f92672">&#34;last_updated&#34;</span>: <span style="color:#e6db74">&#34;2018-09-14T01:44:05.754Z&#34;</span>
+    }
+</code></pre></div><p>从上面的配置”bind_to_port”: false 可以得知该 listener 创建后并不会被绑定到 tcp 端口上直接接收网络上的数据，因此其所有请求都转发自 15001 端口。</p>
+<p>该 listener 配置的 envoy.tcp_proxy filter 对应的 cluster 为<a href="#inbound-cluster">“inbound|9080||productpage.default.svc.cluster.local”</a>,该 cluster 配置的 host 为 127.0.0.1:9080，因此 Envoy 会将该请求发向 127.0.0.1:9080。由于 iptable 设置中 127.0.0.1 不会被拦截,该请求将发送到 Productpage 进程的 9080 端口进行业务处理。</p>
+<p>除此以外，Listenter 中还包含 Mixer filter 的配置信息，配置了策略检查(Mixer check)和 Metrics 上报(Mixer report)服务器地址，以及 Mixer 上报的一些 attribute 取值。</p>
+<h5 id="outbound-listener">Outbound Listener</h5>
+<p>Envoy 为网格中的外部服务按端口创建多个 Listener，以用于处理出向请求。</p>
+<p>Productpage Pod 中的 Envoy 创建了多个 Outbound Listener</p>
+<ul>
+<li>0.0.0.0_9080 :处理对 details,reviews 和 rating 服务的出向请求</li>
+<li>0.0.0.0_9411 :处理对 zipkin 的出向请求</li>
+<li>0.0.0.0_15031 :处理对 ingressgateway 的出向请求</li>
+<li>0.0.0.0_3000 :处理对 grafana 的出向请求</li>
+<li>0.0.0.0_9093 :处理对 citadel、galley、pilot、(Mixer)policy、(Mixer)telemetry 的出向请求</li>
+<li>0.0.0.0_15004 :处理对(Mixer)policy、(Mixer)telemetry 的出向请求</li>
+<li>……</li>
+</ul>
+<p>除了 9080 这个 Listener 用于处理应用的业务之外，其他 listener 都是 Istio 用于处理自身组件之间通信使用的，有的控制面组件如 Pilot，Mixer 对应多个 listener，是因为该组件有多个端口提供服务。</p>
+<p>我们这里主要分析一下 9080 这个业务端口的 Listenrer。和 Outbound Listener 一样，该 Listener 同样配置了”bind_to_port”: false 属性，因此该 listener 也没有被绑定到 tcp 端口上，其接收到的所有请求都转发自 15001 端口的 Virtual listener。</p>
+<p>监听器 name 为 0.0.0.0_9080,推测其含义应为匹配发向任意 IP 的 9080 的请求，从[bookinfo 程序结构](#bookinfo 程序结构)可以看到该程序中的 productpage,revirews,ratings,details 四个 service 都是 9080 端口，那么 Envoy 如何区别处理这四个 service 呢？</p>
+<p>首先需要区分入向（发送给 productpage）请求和出向（发送给其他几个服务）请求：</p>
+<ul>
+<li>发给 productpage 的入向请求，virtual listener 根据其目的 IP 和 Port 首先匹配到<a href="#inbound-listener">192.168.206.23_9080</a>这个 listener 上，不会进入 0.0.0.0_9080 listener 处理。</li>
+<li>从 productpage 外发给 reviews、details 和 ratings 的出向请求，virtual listener 无法找到和其目的 IP 完全匹配的 listener，因此根据通配原则转交给 0.0.0.0_9080 处理。</li>
+</ul>
+<blockquote>
+<blockquote>
+</blockquote>
+</blockquote>
+<blockquote>
+<p>备注：<br></br>1. 该转发逻辑为根据 Envoy 配置进行的推测，并未分析 Envoy 代码进行验证。欢迎了解 Envoy 代码和实现机制的朋友指正。<br></br>2.根据业务逻辑，实际上 productpage 并不会调用 ratings 服务，但 Istio 并不知道各个业务之间会如何调用，因此将所有的服务信息都下发到了 Envoy 中。这样做对效率和性能理论上有一定影响，存在一定的优化空间。</p>
+</blockquote>
+<p>由于对应到 reviews、details 和 Ratings 三个服务，当 0.0.0.0_9080 接收到出向请求后，并不能直接发送到一个 downstream cluster 中，而是需要根据请求目的地进行不同的路由。</p>
+<p>在该 listener 的配置中，我们可以看到并没有像 inbound listener 那样通过 envoy.tcp_proxy 直接指定一个 downstream 的 cluster，而是通过 rds 配置了一个<a href="#routes">路由规则 9080</a>，在路由规则中再根据不同的请求目的地对请求进行处理。</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{
+     <span style="color:#f92672">&#34;version_info&#34;</span>: <span style="color:#e6db74">&#34;2018-09-06T09:34:19Z&#34;</span>,
+     <span style="color:#f92672">&#34;listener&#34;</span>: {
+      <span style="color:#f92672">&#34;name&#34;</span>: <span style="color:#e6db74">&#34;0.0.0.0_9080&#34;</span>,
+      <span style="color:#f92672">&#34;address&#34;</span>: {
+       <span style="color:#f92672">&#34;socket_address&#34;</span>: {
+        <span style="color:#f92672">&#34;address&#34;</span>: <span style="color:#e6db74">&#34;0.0.0.0&#34;</span>,
+        <span style="color:#f92672">&#34;port_value&#34;</span>: <span style="color:#ae81ff">9080</span>
+       }
+      },
+      <span style="color:#f92672">&#34;filter_chains&#34;</span>: [
+       {
+        <span style="color:#f92672">&#34;filters&#34;</span>: [
+         {
+          <span style="color:#f92672">&#34;name&#34;</span>: <span style="color:#e6db74">&#34;envoy.http_connection_manager&#34;</span>,
+          <span style="color:#f92672">&#34;config&#34;</span>: {
+           <span style="color:#f92672">&#34;access_log&#34;</span>: [
+            {
+             <span style="color:#f92672">&#34;name&#34;</span>: <span style="color:#e6db74">&#34;envoy.file_access_log&#34;</span>,
+             <span style="color:#f92672">&#34;config&#34;</span>: {
+              <span style="color:#f92672">&#34;path&#34;</span>: <span style="color:#e6db74">&#34;/dev/stdout&#34;</span>
+             }
+            }
+           ],
+           <span style="color:#f92672">&#34;http_filters&#34;</span>: [
+            {
+             <span style="color:#f92672">&#34;name&#34;</span>: <span style="color:#e6db74">&#34;mixer&#34;</span>,
+             <span style="color:#f92672">&#34;config&#34;</span>: {
+			  
+			  <span style="color:#960050;background-color:#1e0010">......</span>
+
+             }
+            },
+            {
+             <span style="color:#f92672">&#34;name&#34;</span>: <span style="color:#e6db74">&#34;envoy.cors&#34;</span>
+            },
+            {
+             <span style="color:#f92672">&#34;name&#34;</span>: <span style="color:#e6db74">&#34;envoy.fault&#34;</span>
+            },
+            {
+             <span style="color:#f92672">&#34;name&#34;</span>: <span style="color:#e6db74">&#34;envoy.router&#34;</span>
+            }
+           ],
+           <span style="color:#f92672">&#34;tracing&#34;</span>: {
+            <span style="color:#f92672">&#34;operation_name&#34;</span>: <span style="color:#e6db74">&#34;EGRESS&#34;</span>,
+            <span style="color:#f92672">&#34;client_sampling&#34;</span>: {
+             <span style="color:#f92672">&#34;value&#34;</span>: <span style="color:#ae81ff">100</span>
+            },
+            <span style="color:#f92672">&#34;overall_sampling&#34;</span>: {
+             <span style="color:#f92672">&#34;value&#34;</span>: <span style="color:#ae81ff">100</span>
+            },
+            <span style="color:#f92672">&#34;random_sampling&#34;</span>: {
+             <span style="color:#f92672">&#34;value&#34;</span>: <span style="color:#ae81ff">100</span>
+            }
+           },
+           <span style="color:#f92672">&#34;use_remote_address&#34;</span>: <span style="color:#66d9ef">false</span>,
+           <span style="color:#f92672">&#34;stat_prefix&#34;</span>: <span style="color:#e6db74">&#34;0.0.0.0_9080&#34;</span>,
+           <span style="color:#f92672">&#34;rds&#34;</span>: {
+            <span style="color:#f92672">&#34;route_config_name&#34;</span>: <span style="color:#e6db74">&#34;9080&#34;</span>,
+            <span style="color:#f92672">&#34;config_source&#34;</span>: {
+             <span style="color:#f92672">&#34;ads&#34;</span>: {}
+            }
+           },
+           <span style="color:#f92672">&#34;stream_idle_timeout&#34;</span>: <span style="color:#e6db74">&#34;0.000s&#34;</span>,
+           <span style="color:#f92672">&#34;generate_request_id&#34;</span>: <span style="color:#66d9ef">true</span>,
+           <span style="color:#f92672">&#34;upgrade_configs&#34;</span>: [
+            {
+             <span style="color:#f92672">&#34;upgrade_type&#34;</span>: <span style="color:#e6db74">&#34;websocket&#34;</span>
+            }
+           ]
+          }
+         }
+        ]
+       }
+      ],
+      <span style="color:#f92672">&#34;deprecated_v1&#34;</span>: {
+       <span style="color:#f92672">&#34;bind_to_port&#34;</span>: <span style="color:#66d9ef">false</span>
+      }
+     },
+     <span style="color:#f92672">&#34;last_updated&#34;</span>: <span style="color:#e6db74">&#34;2018-09-06T09:34:26.172Z&#34;</span>
+    }<span style="color:#960050;background-color:#1e0010">,</span>
+</code></pre></div><h4 id="routes">Routes</h4>
+<p>配置 Envoy 的路由规则。Istio 下发的缺省路由规则中对每个端口设置了一个路由规则，根据 host 来对请求进行路由分发。</p>
+<p>下面是 9080 的路由配置，从文件中可以看到对应了 3 个 virtual host，分别是 details、ratings 和 reviews，这三个 virtual host 分别对应到不同的<a href="#outbound-cluster">outbound cluster</a>。</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{
+     <span style="color:#f92672">&#34;version_info&#34;</span>: <span style="color:#e6db74">&#34;2018-09-14T01:38:20Z&#34;</span>,
+     <span style="color:#f92672">&#34;route_config&#34;</span>: {
+      <span style="color:#f92672">&#34;name&#34;</span>: <span style="color:#e6db74">&#34;9080&#34;</span>,
+      <span style="color:#f92672">&#34;virtual_hosts&#34;</span>: [
+       {
+        <span style="color:#f92672">&#34;name&#34;</span>: <span style="color:#e6db74">&#34;details.default.svc.cluster.local:9080&#34;</span>,
+        <span style="color:#f92672">&#34;domains&#34;</span>: [
+         <span style="color:#e6db74">&#34;details.default.svc.cluster.local&#34;</span>,
+         <span style="color:#e6db74">&#34;details.default.svc.cluster.local:9080&#34;</span>,
+         <span style="color:#e6db74">&#34;details&#34;</span>,
+         <span style="color:#e6db74">&#34;details:9080&#34;</span>,
+         <span style="color:#e6db74">&#34;details.default.svc.cluster&#34;</span>,
+         <span style="color:#e6db74">&#34;details.default.svc.cluster:9080&#34;</span>,
+         <span style="color:#e6db74">&#34;details.default.svc&#34;</span>,
+         <span style="color:#e6db74">&#34;details.default.svc:9080&#34;</span>,
+         <span style="color:#e6db74">&#34;details.default&#34;</span>,
+         <span style="color:#e6db74">&#34;details.default:9080&#34;</span>,
+         <span style="color:#e6db74">&#34;10.101.163.201&#34;</span>,
+         <span style="color:#e6db74">&#34;10.101.163.201:9080&#34;</span>
+        ],
+        <span style="color:#f92672">&#34;routes&#34;</span>: [
+         {
+          <span style="color:#f92672">&#34;match&#34;</span>: {
+           <span style="color:#f92672">&#34;prefix&#34;</span>: <span style="color:#e6db74">&#34;/&#34;</span>
+          },
+          <span style="color:#f92672">&#34;route&#34;</span>: {
+           <span style="color:#f92672">&#34;cluster&#34;</span>: <span style="color:#e6db74">&#34;outbound|9080||details.default.svc.cluster.local&#34;</span>,
+           <span style="color:#f92672">&#34;timeout&#34;</span>: <span style="color:#e6db74">&#34;0s&#34;</span>,
+           <span style="color:#f92672">&#34;max_grpc_timeout&#34;</span>: <span style="color:#e6db74">&#34;0s&#34;</span>
+          },
+          <span style="color:#f92672">&#34;decorator&#34;</span>: {
+           <span style="color:#f92672">&#34;operation&#34;</span>: <span style="color:#e6db74">&#34;details.default.svc.cluster.local:9080/*&#34;</span>
+          },
+          <span style="color:#f92672">&#34;per_filter_config&#34;</span>: {
+           <span style="color:#f92672">&#34;mixer&#34;</span>: {
+            <span style="color:#960050;background-color:#1e0010">......</span>
+
+           }
+          }
+         }
+        ]
+       },
+       {
+        <span style="color:#f92672">&#34;name&#34;</span>: <span style="color:#e6db74">&#34;ratings.default.svc.cluster.local:9080&#34;</span>,
+        <span style="color:#f92672">&#34;domains&#34;</span>: [
+         <span style="color:#e6db74">&#34;ratings.default.svc.cluster.local&#34;</span>,
+         <span style="color:#e6db74">&#34;ratings.default.svc.cluster.local:9080&#34;</span>,
+         <span style="color:#e6db74">&#34;ratings&#34;</span>,
+         <span style="color:#e6db74">&#34;ratings:9080&#34;</span>,
+         <span style="color:#e6db74">&#34;ratings.default.svc.cluster&#34;</span>,
+         <span style="color:#e6db74">&#34;ratings.default.svc.cluster:9080&#34;</span>,
+         <span style="color:#e6db74">&#34;ratings.default.svc&#34;</span>,
+         <span style="color:#e6db74">&#34;ratings.default.svc:9080&#34;</span>,
+         <span style="color:#e6db74">&#34;ratings.default&#34;</span>,
+         <span style="color:#e6db74">&#34;ratings.default:9080&#34;</span>,
+         <span style="color:#e6db74">&#34;10.99.16.205&#34;</span>,
+         <span style="color:#e6db74">&#34;10.99.16.205:9080&#34;</span>
+        ],
+        <span style="color:#f92672">&#34;routes&#34;</span>: [
+         {
+          <span style="color:#f92672">&#34;match&#34;</span>: {
+           <span style="color:#f92672">&#34;prefix&#34;</span>: <span style="color:#e6db74">&#34;/&#34;</span>
+          },
+          <span style="color:#f92672">&#34;route&#34;</span>: {
+           <span style="color:#f92672">&#34;cluster&#34;</span>: <span style="color:#e6db74">&#34;outbound|9080||ratings.default.svc.cluster.local&#34;</span>,
+           <span style="color:#f92672">&#34;timeout&#34;</span>: <span style="color:#e6db74">&#34;0s&#34;</span>,
+           <span style="color:#f92672">&#34;max_grpc_timeout&#34;</span>: <span style="color:#e6db74">&#34;0s&#34;</span>
+          },
+          <span style="color:#f92672">&#34;decorator&#34;</span>: {
+           <span style="color:#f92672">&#34;operation&#34;</span>: <span style="color:#e6db74">&#34;ratings.default.svc.cluster.local:9080/*&#34;</span>
+          },
+          <span style="color:#f92672">&#34;per_filter_config&#34;</span>: {
+           <span style="color:#f92672">&#34;mixer&#34;</span>: {
+           <span style="color:#960050;background-color:#1e0010">......</span>
+
+            },
+            <span style="color:#f92672">&#34;disable_check_calls&#34;</span>: <span style="color:#66d9ef">true</span>
+           }
+          }
+         <span style="color:#960050;background-color:#1e0010">}</span>
+        ]
+       },
+       {
+        <span style="color:#f92672">&#34;name&#34;</span>: <span style="color:#e6db74">&#34;reviews.default.svc.cluster.local:9080&#34;</span>,
+        <span style="color:#f92672">&#34;domains&#34;</span>: [
+         <span style="color:#e6db74">&#34;reviews.default.svc.cluster.local&#34;</span>,
+         <span style="color:#e6db74">&#34;reviews.default.svc.cluster.local:9080&#34;</span>,
+         <span style="color:#e6db74">&#34;reviews&#34;</span>,
+         <span style="color:#e6db74">&#34;reviews:9080&#34;</span>,
+         <span style="color:#e6db74">&#34;reviews.default.svc.cluster&#34;</span>,
+         <span style="color:#e6db74">&#34;reviews.default.svc.cluster:9080&#34;</span>,
+         <span style="color:#e6db74">&#34;reviews.default.svc&#34;</span>,
+         <span style="color:#e6db74">&#34;reviews.default.svc:9080&#34;</span>,
+         <span style="color:#e6db74">&#34;reviews.default&#34;</span>,
+         <span style="color:#e6db74">&#34;reviews.default:9080&#34;</span>,
+         <span style="color:#e6db74">&#34;10.108.25.157&#34;</span>,
+         <span style="color:#e6db74">&#34;10.108.25.157:9080&#34;</span>
+        ],
+        <span style="color:#f92672">&#34;routes&#34;</span>: [
+         {
+          <span style="color:#f92672">&#34;match&#34;</span>: {
+           <span style="color:#f92672">&#34;prefix&#34;</span>: <span style="color:#e6db74">&#34;/&#34;</span>
+          },
+          <span style="color:#f92672">&#34;route&#34;</span>: {
+           <span style="color:#f92672">&#34;cluster&#34;</span>: <span style="color:#e6db74">&#34;outbound|9080||reviews.default.svc.cluster.local&#34;</span>,
+           <span style="color:#f92672">&#34;timeout&#34;</span>: <span style="color:#e6db74">&#34;0s&#34;</span>,
+           <span style="color:#f92672">&#34;max_grpc_timeout&#34;</span>: <span style="color:#e6db74">&#34;0s&#34;</span>
+          },
+          <span style="color:#f92672">&#34;decorator&#34;</span>: {
+           <span style="color:#f92672">&#34;operation&#34;</span>: <span style="color:#e6db74">&#34;reviews.default.svc.cluster.local:9080/*&#34;</span>
+          },
+          <span style="color:#f92672">&#34;per_filter_config&#34;</span>: {
+           <span style="color:#f92672">&#34;mixer&#34;</span>: {
+            <span style="color:#960050;background-color:#1e0010">......</span>
+
+            },
+            <span style="color:#f92672">&#34;disable_check_calls&#34;</span>: <span style="color:#66d9ef">true</span>
+           }
+          }
+         <span style="color:#960050;background-color:#1e0010">}</span>
+        ]
+       }
+      ],
+      <span style="color:#f92672">&#34;validate_clusters&#34;</span>: <span style="color:#66d9ef">false</span>
+     },
+     <span style="color:#f92672">&#34;last_updated&#34;</span>: <span style="color:#e6db74">&#34;2018-09-27T07:17:50.242Z&#34;</span>
+    }
+</code></pre></div><h2 id="bookinfo-端到端调用分析">Bookinfo 端到端调用分析</h2>
+<p>通过前面章节对 Envoy 配置文件的分析，我们了解到 Istio 控制面如何将服务和路由信息通过 xDS 接口下发到数据面中；并介绍了 Envoy 上生成的各种配置数据的结构，包括 listener,cluster,route 和 endpoint。</p>
+<p>下面我们来分析一个端到端的调用请求，通过调用请求的流程把这些配置串连起来，以从全局上理解 Istio 控制面的流量控制是如何在数据面的 Envoy 上实现的。</p>
+<p>下图描述了一个 Productpage 服务调用 Details 服务的请求流程：</p>
+<p><img src="https://images.weserv.nl/?url=https://zhaohuabing.com/img/2018-09-25-istio-traffic-management-impl-intro/envoy-traffic-route.png" alt=""></p>
+<ol>
+<li>Productpage 发起对 Details 的调用：<code>[&lt;span&gt;http&lt;/span&gt;&lt;span&gt;://&lt;/span&gt;&lt;span&gt;details&lt;/span&gt;&lt;span&gt;:&lt;/span&gt;&lt;span&gt;9080&lt;/span&gt;&lt;span&gt;/&lt;/span&gt;&lt;span&gt;details&lt;/span&gt;&lt;span&gt;/&lt;/span&gt;&lt;span&gt;0&lt;/span&gt;](http://details:9080/details/0)</code> 。</li>
+<li>请求被 Pod 的 iptable 规则拦截，转发到 15001 端口。</li>
+<li>Envoy 的 Virtual Listener 在 15001 端口上监听，收到了该请求。</li>
+<li>请求被 Virtual Listener 根据原目标 IP（通配）和端口（9080）转发到 0.0.0.0_9080 这个 listener。</li>
+</ol>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{
+ <span style="color:#f92672">&#34;version_info&#34;</span>: <span style="color:#e6db74">&#34;2018-09-06T09:34:19Z&#34;</span>,
+ <span style="color:#f92672">&#34;listener&#34;</span>: {
+  <span style="color:#f92672">&#34;name&#34;</span>: <span style="color:#e6db74">&#34;virtual&#34;</span>,
+  <span style="color:#f92672">&#34;address&#34;</span>: {
+   <span style="color:#f92672">&#34;socket_address&#34;</span>: {
+    <span style="color:#f92672">&#34;address&#34;</span>: <span style="color:#e6db74">&#34;0.0.0.0&#34;</span>,
+    <span style="color:#f92672">&#34;port_value&#34;</span>: <span style="color:#ae81ff">15001</span>
+   }
+  }
+  <span style="color:#960050;background-color:#1e0010">......</span>
+
+  <span style="color:#e6db74">&#34;use_original_dst&#34;</span>: <span style="color:#66d9ef">true</span> <span style="color:#960050;background-color:#1e0010">//请求转发给和原始目的</span> <span style="color:#960050;background-color:#1e0010">IP</span>:<span style="color:#960050;background-color:#1e0010">Port</span> <span style="color:#960050;background-color:#1e0010">匹配的</span> <span style="color:#960050;background-color:#1e0010">listener</span>
+ },
+</code></pre></div><ol start="5">
+<li>根据 0.0.0.0_9080 listener 的 http_connection_manager filter 配置,该请求采用“9080” route 进行分发。</li>
+</ol>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{
+ <span style="color:#f92672">&#34;version_info&#34;</span>: <span style="color:#e6db74">&#34;2018-09-06T09:34:19Z&#34;</span>,
+ <span style="color:#f92672">&#34;listener&#34;</span>: {
+  <span style="color:#f92672">&#34;name&#34;</span>: <span style="color:#e6db74">&#34;0.0.0.0_9080&#34;</span>,
+  <span style="color:#f92672">&#34;address&#34;</span>: {
+   <span style="color:#f92672">&#34;socket_address&#34;</span>: {
+    <span style="color:#f92672">&#34;address&#34;</span>: <span style="color:#e6db74">&#34;0.0.0.0&#34;</span>,
+    <span style="color:#f92672">&#34;port_value&#34;</span>: <span style="color:#ae81ff">9080</span>
+   }
+  },
+  <span style="color:#f92672">&#34;filter_chains&#34;</span>: [
+   {
+    <span style="color:#f92672">&#34;filters&#34;</span>: [
+     {
+      <span style="color:#f92672">&#34;name&#34;</span>: <span style="color:#e6db74">&#34;envoy.http_connection_manager&#34;</span>,
+      <span style="color:#f92672">&#34;config&#34;</span>: {
+      <span style="color:#960050;background-color:#1e0010">......</span>
+
+       <span style="color:#f92672">&#34;rds&#34;</span>: {
+        <span style="color:#f92672">&#34;route_config_name&#34;</span>: <span style="color:#e6db74">&#34;9080&#34;</span>,
+        <span style="color:#f92672">&#34;config_source&#34;</span>: {
+         <span style="color:#f92672">&#34;ads&#34;</span>: {}
+        }
+       },
+
+     }
+    <span style="color:#960050;background-color:#1e0010">]</span>
+   }
+  ],
+  <span style="color:#f92672">&#34;deprecated_v1&#34;</span>: {
+   <span style="color:#f92672">&#34;bind_to_port&#34;</span>: <span style="color:#66d9ef">false</span>
+  }
+ },
+ <span style="color:#e6db74">&#34;last_updated&#34;</span><span style="color:#960050;background-color:#1e0010">:</span> <span style="color:#e6db74">&#34;2018-09-06T09:34:26.172Z&#34;</span>
+<span style="color:#960050;background-color:#1e0010">}</span>,
+
+{
+ },
+</code></pre></div><ol start="6">
+<li>“9080”这个 route 的配置中，host name 为 details:9080 的请求对应的 cluster 为 outbound|9080||details.default.svc.cluster.local</li>
+</ol>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{
+ <span style="color:#f92672">&#34;version_info&#34;</span>: <span style="color:#e6db74">&#34;2018-09-14T01:38:20Z&#34;</span>,
+ <span style="color:#f92672">&#34;route_config&#34;</span>: {
+  <span style="color:#f92672">&#34;name&#34;</span>: <span style="color:#e6db74">&#34;9080&#34;</span>,
+  <span style="color:#f92672">&#34;virtual_hosts&#34;</span>: [
+   {
+    <span style="color:#f92672">&#34;name&#34;</span>: <span style="color:#e6db74">&#34;details.default.svc.cluster.local:9080&#34;</span>,
+    <span style="color:#f92672">&#34;domains&#34;</span>: [
+     <span style="color:#e6db74">&#34;details.default.svc.cluster.local&#34;</span>,
+     <span style="color:#e6db74">&#34;details.default.svc.cluster.local:9080&#34;</span>,
+     <span style="color:#e6db74">&#34;details&#34;</span>,
+     <span style="color:#e6db74">&#34;details:9080&#34;</span>,
+     <span style="color:#e6db74">&#34;details.default.svc.cluster&#34;</span>,
+     <span style="color:#e6db74">&#34;details.default.svc.cluster:9080&#34;</span>,
+     <span style="color:#e6db74">&#34;details.default.svc&#34;</span>,
+     <span style="color:#e6db74">&#34;details.default.svc:9080&#34;</span>,
+     <span style="color:#e6db74">&#34;details.default&#34;</span>,
+     <span style="color:#e6db74">&#34;details.default:9080&#34;</span>,
+     <span style="color:#e6db74">&#34;10.101.163.201&#34;</span>,
+     <span style="color:#e6db74">&#34;10.101.163.201:9080&#34;</span>
+    ],
+    <span style="color:#f92672">&#34;routes&#34;</span>: [
+     {
+      <span style="color:#f92672">&#34;match&#34;</span>: {
+       <span style="color:#f92672">&#34;prefix&#34;</span>: <span style="color:#e6db74">&#34;/&#34;</span>
+      },
+      <span style="color:#f92672">&#34;route&#34;</span>: {
+       <span style="color:#f92672">&#34;cluster&#34;</span>: <span style="color:#e6db74">&#34;outbound|9080||details.default.svc.cluster.local&#34;</span>,
+       <span style="color:#f92672">&#34;timeout&#34;</span>: <span style="color:#e6db74">&#34;0s&#34;</span>,
+       <span style="color:#f92672">&#34;max_grpc_timeout&#34;</span>: <span style="color:#e6db74">&#34;0s&#34;</span>
+      },
+        <span style="color:#960050;background-color:#1e0010">......</span>
+
+       }
+      <span style="color:#960050;background-color:#1e0010">}</span>
+     <span style="color:#960050;background-color:#1e0010">}</span>
+    ]
+   },
+	   <span style="color:#960050;background-color:#1e0010">......</span>
+
+{
+ },
+</code></pre></div><ol start="7">
+<li>outbound|9080||details.default.svc.cluster.local cluster 为动态资源，通过 eds 查询得到其 endpoint 为 192.168.206.21:9080。</li>
+</ol>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{
+<span style="color:#f92672">&#34;clusterName&#34;</span>: <span style="color:#e6db74">&#34;outbound|9080||details.default.svc.cluster.local&#34;</span>,
+<span style="color:#f92672">&#34;endpoints&#34;</span>: [
+{
+  <span style="color:#f92672">&#34;locality&#34;</span>: {
+
+  },
+  <span style="color:#f92672">&#34;lbEndpoints&#34;</span>: [
+    {
+      <span style="color:#f92672">&#34;endpoint&#34;</span>: {
+        <span style="color:#f92672">&#34;address&#34;</span>: {
+          <span style="color:#f92672">&#34;socketAddress&#34;</span>: {
+            <span style="color:#f92672">&#34;address&#34;</span>: <span style="color:#e6db74">&#34;192.168.206.21&#34;</span>,
+            <span style="color:#f92672">&#34;portValue&#34;</span>: <span style="color:#ae81ff">9080</span>
+          }
+        }
+      },
+     <span style="color:#960050;background-color:#1e0010">......</span>  
+    }
+  ]
+}
+]
+}
+</code></pre></div><ol start="8">
+<li>
+<p>请求被转发到 192.168.206.21，即 Details 服务所在的 Pod，被 iptable 规则拦截，转发到 15001 端口。</p>
+</li>
+<li>
+<p>Envoy 的 Virtual Listener 在 15001 端口上监听，收到了该请求。</p>
+</li>
+<li>
+<p>请求被 Virtual Listener 根据请求原目标地址 IP（192.168.206.21）和端口（9080）转发到 192.168.206.21_9080 这个 listener。</p>
+</li>
+<li>
+<p>根据 92.168.206.21_9080 listener 的 http_connection_manager filter 配置,该请求对应的 cluster 为 inbound|9080||details.default.svc.cluster.local 。</p>
+</li>
+</ol>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{
+ <span style="color:#f92672">&#34;version_info&#34;</span>: <span style="color:#e6db74">&#34;2018-09-06T09:34:16Z&#34;</span>,
+ <span style="color:#f92672">&#34;listener&#34;</span>: {
+  <span style="color:#f92672">&#34;name&#34;</span>: <span style="color:#e6db74">&#34;192.168.206.21_9080&#34;</span>,
+  <span style="color:#f92672">&#34;address&#34;</span>: {
+   <span style="color:#f92672">&#34;socket_address&#34;</span>: {
+    <span style="color:#f92672">&#34;address&#34;</span>: <span style="color:#e6db74">&#34;192.168.206.21&#34;</span>,
+    <span style="color:#f92672">&#34;port_value&#34;</span>: <span style="color:#ae81ff">9080</span>
+   }
+  },
+  <span style="color:#f92672">&#34;filter_chains&#34;</span>: [
+   {
+    <span style="color:#f92672">&#34;filters&#34;</span>: [
+     {
+      <span style="color:#f92672">&#34;name&#34;</span>: <span style="color:#e6db74">&#34;envoy.http_connection_manager&#34;</span>,
+      <span style="color:#960050;background-color:#1e0010">......</span>
+          
+      <span style="color:#f92672">&#34;route_config&#34;</span>: {
+        <span style="color:#f92672">&#34;name&#34;</span>: <span style="color:#e6db74">&#34;inbound|9080||details.default.svc.cluster.local&#34;</span>,
+        <span style="color:#f92672">&#34;validate_clusters&#34;</span>: <span style="color:#66d9ef">false</span>,
+        <span style="color:#f92672">&#34;virtual_hosts&#34;</span>: [
+         {
+          <span style="color:#f92672">&#34;name&#34;</span>: <span style="color:#e6db74">&#34;inbound|http|9080&#34;</span>,
+          <span style="color:#f92672">&#34;routes&#34;</span>: [
+            <span style="color:#960050;background-color:#1e0010">......</span>
+                
+            <span style="color:#e6db74">&#34;route&#34;</span><span style="color:#960050;background-color:#1e0010">:</span> {
+             <span style="color:#f92672">&#34;max_grpc_timeout&#34;</span>: <span style="color:#e6db74">&#34;0.000s&#34;</span>,
+             <span style="color:#f92672">&#34;cluster&#34;</span>: <span style="color:#e6db74">&#34;inbound|9080||details.default.svc.cluster.local&#34;</span>,
+             <span style="color:#f92672">&#34;timeout&#34;</span>: <span style="color:#e6db74">&#34;0.000s&#34;</span>
+            },
+            <span style="color:#960050;background-color:#1e0010">......</span>
+                
+            <span style="color:#e6db74">&#34;match&#34;</span><span style="color:#960050;background-color:#1e0010">:</span> {
+             <span style="color:#f92672">&#34;prefix&#34;</span>: <span style="color:#e6db74">&#34;/&#34;</span>
+            }
+           <span style="color:#960050;background-color:#1e0010">}</span>
+          ],
+          <span style="color:#f92672">&#34;domains&#34;</span>: [
+           <span style="color:#e6db74">&#34;*&#34;</span>
+          ]
+         }
+        ]
+       },
+        <span style="color:#960050;background-color:#1e0010">......</span>
+            
+       <span style="color:#960050;background-color:#1e0010">]</span>
+      }
+     <span style="color:#960050;background-color:#1e0010">}</span>
+    ]
+   }
+  ],
+  <span style="color:#f92672">&#34;deprecated_v1&#34;</span>: {
+   <span style="color:#f92672">&#34;bind_to_port&#34;</span>: <span style="color:#66d9ef">false</span>
+  }
+ },
+ <span style="color:#f92672">&#34;last_updated&#34;</span>: <span style="color:#e6db74">&#34;2018-09-06T09:34:22.184Z&#34;</span>
+}
+</code></pre></div><ol start="12">
+<li>
+<p>inbound|9080||details.default.svc.cluster.local cluster 配置的 host 为 127.0.0.1：9080。</p>
+</li>
+<li>
+<p>请求被转发到 127.0.0.1：9080，即 Details 服务进行处理。</p>
+</li>
+</ol>
+<p>上述调用流程涉及的完整 Envoy 配置文件参见：</p>
+<ul>
+<li>Proudctpage：<a href="https://gist.github.com/zhaohuabing/034ef87786d290a4e89cd6f5ad6fcc97">https://gist.github.com/zhaohuabing/034ef87786d290a4e89cd6f5ad6fcc97</a></li>
+<li>Details：<a href="https://gist.github.com/zhaohuabing/544d4d45447b65d10150e528a190f8ee">https://gist.github.com/zhaohuabing/544d4d45447b65d10150e528a190f8ee</a></li>
+</ul>
+<h1 id="小结">小结</h1>
+<p>本文介绍了 Istio 流量管理相关组件，Istio 控制面和数据面之间的标准接口，以及 Istio 下发到 Envoy 的完整配置数据的结构和内容。然后通过 Bookinfo 示例程序的一个端到端调用分析了 Envoy 是如何实现服务网格中服务发现和路由转发的，希望能帮助大家透过概念更进一步深入理解 Istio 流量管理的实现机制。</p>
+<h1 id="参考资料">参考资料</h1>
+<ol>
+<li>
+<p><span id='ref01'></span><a href="https://istio.io/docs/concepts/traffic-management/#pilot-and-envoy">Istio Traffic Managment Concept</a></p>
+</li>
+<li>
+<p><span id='ref02'></span><a href="https://github.com/envoyproxy/data-plane-api/blob/master/API_OVERVIEW.md">Data Plane API</a></p>
+</li>
+<li>
+<p><span id='ref03'></span><a href="https://kubernetes.io/docs/concepts/extend-kubernetes/api-extension/custom-resources">kubernetes Custom Resource</a></p>
+</li>
+<li>
+<p><span id='ref04'></span><a href="https://github.com/istio/old_pilot_repo/blob/master/doc/design.md">Istio Pilot Design Overview</a></p>
+</li>
+<li>
+<p><span id='ref05'></span><a href="https://www.envoyproxy.io/docs/envoy/latest/configuration/overview/v2_overview">Envoy V2 API Overview</a></p>
+</li>
+<li>
+<p><span id='ref06'></span><a href="https://github.com/envoyproxy/data-plane-api/tree/master/envoy/api/v2">Data Plane API Protocol Buffer Definition</a></p>
+</li>
+<li>
+<p><span id='ref07'></span><a href="https://github.com/envoyproxy/data-plane-api/blob/master/XDS_PROTOCOL.md">xDS REST and gRPC protocol</a></p>
+<p><a href="https://github.com/istio/istio/tree/master/pilot/pkg/proxy/envoy/v2">https://github.com/istio/istio/tree/master/pilot/pkg/proxy/envoy/v2</a></p>
+</li>
+<li>
+<p><span id='ref08'></span><a href="https://github.com/istio/istio/tree/master/pilot/pkg/proxy/envoy/v2">Pilot Debug interface</a></p>
+</li>
+<li>
+<p><span id='ref09'></span><a href="https://zhaohuabing.com/2018/05/23/istio-auto-injection-with-webhook/">Istio Sidecar 自动注入原理</a></p>
+</li>
+</ol>
+
+    </div>
+
+    
+    
+      <div class="btn-improve-page">
+          <a href="https://github.com/alphajc/mysite/edit/master/content/archive/Deep%20analysis%20of%20Istio%20traffic%20management%20implementation%20mechanism.md">
+            <i class="fas fa-code-branch"></i>
+            Improve This Page
+          </a>
+      </div>
+    
+
+    
+  <hr />
+    <div class="row next-prev-navigator">
+
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+</div>
+
+  <hr />
+  
+  
+      <div id="disqus_thread"></div>
+<script type="text/javascript">
+  (function () {
+    
+    
+    if (window.location.hostname == "localhost") return;
+
+    var dsq = document.createElement("script");
+    dsq.type = "text/javascript";
+    dsq.async = true;
+    var disqus_shortname = "mydream-ink";
+    dsq.src = "//" + disqus_shortname + ".disqus.com/embed.js";
+    (
+      document.getElementsByTagName("head")[0] ||
+      document.getElementsByTagName("body")[0]
+    ).appendChild(dsq);
+  })();
+</script>
+<noscript
+  >请开启 JavaScript 功能
+  <a href="https://disqus.com/?ref_noscript"
+    >comments powered by Disqus.</a
+  ></noscript
+>
+<a href="https://disqus.com/" class="dsq-brlink"
+  >通过 <span class="logo-disqus">Disqus</span> 评论</a
+>
+
+  
+</div>
+
+    </div>
+
+    <footer class="container-fluid text-center align-content-center footer pb-2">
+  <div class="container pt-5">
+    <div class="row text-left">
+      <div class="col-md-4 col-sm-12">
+        <h5>导航</h5>
+        
+        <ul>
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#about">关于</a>
+            </li>
+            
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#skills">技能</a>
+            </li>
+            
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#experiences">经历</a>
+            </li>
+            
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#projects">项目</a>
+            </li>
+            
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#recent-posts">最近文章</a>
+            </li>
+            
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#achievements">成就</a>
+            </li>
+            
+        </ul>
+        
+
+      </div>
+      <div class="col-md-4 col-sm-12">
+        <h5>联系我</h5>
+        <ul>
+          
+          <li><span>电话: </span> <span>&#43;8619980414909</span></li>
+          
+          <li><span>邮箱: </span> <span>jerry@mydream.ink</span></li>
+          
+        </ul>
+      </div>
+      <div class="col-md-4 col-sm-12">
+        
+        <p>接收最新的邮件通知</p>
+        <form>
+          <div class="form-group">
+            <input
+              type="email"
+              class="form-control"
+              id="exampleInputEmail1"
+              aria-describedby="emailHelp"
+              placeholder="输入邮箱"
+            />
+            <small id="emailHelp" class="form-text text-muted"
+              >你的邮件地址不会被共享给他人</small
+            >
+          </div>
+          <button type="submit" class="btn btn-info">提交</button>
+        </form>
+      </div>
+    </div>
+  </div>
+  <hr />
+  <div class="container">
+    <div class="row text-left">
+      <div class="col-md-4">
+        <a id="theme" href="/" target="#">
+          <img src="/assets/images/logo-inverted.png">青云卷</a>
+      </div>
+      <div class="col-md-4"><a href="https://beian.miit.gov.cn">蜀ICP备 2021017630号-1</a>© 2021 Copyright.</div>
+    </div>
+  </div>
+</footer>
+
+    <script src="/assets/js/jquery-3.4.1.min.js"></script>
+<script src="/assets/js/bootstrap.min.js"></script>
+
+<script src="/assets/js/navbar.js"></script>
+<script src="/assets/js/jquery.filterizr.min.js"></script>
+
+
+    
+    
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/highlight.min.js"></script>
+<script src="/assets/js/single.js"></script>
+<script>
+  hljs.initHighlightingOnLoad();
+</script>
+
+
+  </body>
+</html>

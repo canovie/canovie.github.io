@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Node使用RabbitMQ：发布与订阅</title>
+    <meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta http-equiv="X-UA-Compatible" content="ie=edge" />
+
+
+<link rel="stylesheet" href="/assets/css/bootstrap.min.css" />
+<link rel="stylesheet" href="/assets/css/style.css" />
+<link rel="stylesheet" href="/assets/css/navbar.css" />
+
+
+<link href="https://fonts.googleapis.com/css2?family=Muli:wght@300;400;500;600" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" />
+
+
+<link rel="icon" type="image/png" href="/assets/images/favicon.png" />
+
+
+    
+<link
+  rel="stylesheet"
+  href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/styles/atom-one-dark.min.css"
+/>
+<link rel="stylesheet" href="/assets/css/single.css" />
+
+
+    
+    
+      
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'UA-142765126-1', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+
+    
+  </head>
+
+  <body>
+    <div class="container-fluid bg-dimmed wrapper">
+      
+      
+    <nav class="navbar navbar-expand-lg top-navbar final-navbar shadow">
+    <div class="container">
+      <a class="navbar-brand" href="/posts">
+        <img src="/assets/images/logo.png">青云卷</a>
+      <button class="navbar-toggler navbar-light" type="button" >
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <div class="collapse navbar-collapse" id="top-nav-items">
+        <ul class="navbar-nav ml-auto">
+        </ul>
+      </div>
+    </div>
+</nav>
+
+
+
+      
+      
+<div class="container p-0 read-area">
+  
+  <div class="hero-area col-sm-12" style='background-image: url(https://mydream.ink/assets/images/posts/middleware/rabbitmq_node.jpg);'>
+  </div>
+
+  
+  <div class="page-content">
+    <div class="author-profile ml-auto align-self-lg-center">
+      <img class="rounded-circle" src='/assets/images/portrait.jpg'/>
+      <h5 class="author-name">Jerry Chan</h5>
+      <p>February 13, 2018</p>
+    </div>
+
+    <div class="title">
+      <h1>Node使用RabbitMQ：发布与订阅</h1>
+    </div>
+
+    <div class="post-content" id="post-content">
+      <h1 id="前提条件">前提条件</h1>
+<p>本教程假定RabbitMQ已安装并在标准端口（5672）上的本地主机上运行。如果您使用不同的主机，端口或凭据，连接设置将需要调整。</p>
+<h1 id="使用amqpnode客户端">（使用amqp.node客户端）</h1>
+<p>在前面的教程中，我们创建了一个工作队列，假设每个任务只被传递给一个Worker。在这一部分，我们将做一些完全不同的事情——我们会向多个消费者传递信息。这种模式被称为“发布与订阅”。 为了说明这个模式，我们将建立一个简单的日志系统。它将包含两个程序 - 第一个将发送日志消息，第二个将接收并打印它们。 在我们的日志系统中，接收程序的每个运行副本都会收到消息。这样我们就可以运行一个接收器并将日志定向到磁盘，同时将能够运行另一个接收器并输出到屏幕上以便查看日志。 本质上，发布的日志消息将被广播给所有的接收者。</p>
+<h2 id="交换器exchange">交换器（exchange）</h2>
+<p>在本教程的前面部分，我们发送和接收来自队列的消息。现在是时候在Rabbit中引入完整的消息模型了。 让我们快速回顾一下前面的教程中介绍的内容：</p>
+<ul>
+<li>生产者（<em>producer</em>）是发送消息的用户应用程序。</li>
+<li>队列（<em>queue</em>）是存储消息的缓冲区。</li>
+<li>消费者（<em>consumer</em>）是接收消息的用户应用程序。</li>
+</ul>
+<p>RabbitMQ中消息传递模型的核心思想是生产者永远不会将任何消息直接发送到队列中。实际上，生产者通常甚至不知道邮件是否会被传送到任何队列中。 生产者只能将消息发送给交换器。交换器非常简单，它一面接受来自生产者的消息，一面将接收到的消息推送给队列。交换器必须知道如何处理接收到的消息：是否应该附加到特定的队列？是否应该附加到许多队列？还是应该丢弃。这些规则是由交换类型定义的。</p>
+<p><img src="/assets/images/posts/middleware/exchanges.png" alt=""></p>
+<p>有几种可用的交换类型：<code>direct</code>，<code>topic</code>，<code>headers</code>和<code>fanout</code>。我们将关注最后一个 ——<code>fanout</code>。让我们创建一个这种类型的交换器，并将其称为<code>logs</code>：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-js" data-lang="js"><span style="color:#a6e22e">ch</span>.<span style="color:#a6e22e">assertExchange</span>(<span style="color:#e6db74">&#39;logs&#39;</span>, <span style="color:#e6db74">&#39;fanout&#39;</span>, {<span style="color:#a6e22e">durable</span><span style="color:#f92672">:</span> <span style="color:#66d9ef">false</span>})
+</code></pre></div><p><code>fanout</code>交换非常简单。正如你可能从名字中猜到的那样，它只是将所有收到的消息广播到它所知道的所有队列中。这正是我们日志系统所需要的。</p>
+<blockquote>
+<p><strong>列出交换器</strong> 要列出服务器上的交换，您可以运行有用的<code>rabbitmqctl</code>：</p>
+<pre><code>sudo rabbitmqctl list_exchanges
+</code></pre>
+<p>在这个列表中将会有一些<code>amq.*</code>交换和默认（未命名）交换。这些是默认创建的，但目前不太可能需要使用它们。 <strong>默认交换器</strong> 在本教程的以前部分，我们对交换器一无所知，但仍能够将消息发送到队列。这是可能的，因为我们正在使用一个默认的交换，这是由空字符串（&quot;&quot;）标识。 回顾一下我们之前如何发布消息：</p>
+</blockquote>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-js" data-lang="js"><span style="color:#a6e22e">ch</span>.<span style="color:#a6e22e">sendToQueue</span>(<span style="color:#e6db74">&#39;hello&#39;</span>, <span style="color:#66d9ef">new</span> <span style="color:#a6e22e">Buffer</span>(<span style="color:#e6db74">&#39;Hello World!&#39;</span>));
+</code></pre></div><blockquote>
+<p>这里我们使用默认的或无名的交换：消息被路由到队列中，如果它存在的话，该消息被指定为第一个参数。</p>
+</blockquote>
+<p>现在，我们可以发布到我们的命名交换：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-js" data-lang="js"><span style="color:#a6e22e">ch</span>.<span style="color:#a6e22e">publish</span>(<span style="color:#e6db74">&#39;logs&#39;</span>, <span style="color:#e6db74">&#39;&#39;</span>, <span style="color:#66d9ef">new</span> <span style="color:#a6e22e">Buffer</span>(<span style="color:#e6db74">&#39;Hello World!&#39;</span>));
+</code></pre></div><p>作为第二个参数的空字符串意味着我们不想将消息发送到任何特定的队列。我们只想将其发布到我们的<code>logs</code>交换器。</p>
+<h2 id="临时队列">临时队列</h2>
+<p>正如你以前可能记得我们使用的是具有指定名称的队列（请记住<code>hello</code>和<code>task_queue</code>？）。给队列命名是很重要的——我们需要给Workers指定相同的队列。当你想在生产者和消费者之间共享队列时，一定要给队列命名。 但是我们的日志系统并不是这样。我们想要监听所有日志消息，而不仅仅是其中的一部分。我们也只对目前流动的消息感兴趣，而不是旧消息。要解决这个问题，我们需要两件事。 首先，每当我们连接到Rabbit，我们需要一个新的、空的队列。要做到这一点，我们可以创建一个随机名称的队列，或者最好是让服务器为我们选择一个随机队列名称。 其次，一旦我们断开消费者，队列应该被自动删除。 在<a href="http://www.squaremobius.net/amqp.node/">amqp.node</a>客户端中，当我们将队列名称作为空字符串提供时，我们使用生成的名称创建一个非持久队列：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-js" data-lang="js"><span style="color:#a6e22e">ch</span>.<span style="color:#a6e22e">assertQueue</span>(<span style="color:#e6db74">&#39;&#39;</span>, {<span style="color:#a6e22e">exclusive</span><span style="color:#f92672">:</span> <span style="color:#66d9ef">true</span>});
+</code></pre></div><p>当方法返回时，队列实例包含由RabbitMQ生成的随机队列名称。例如，它可能看起来像<code>amq.gen-JzTY20BRgKO-HjmUJj0wLg</code>。 当声明它的连接关闭时，队列将被删除，因为它被声明为独占（exclusive）。</p>
+<h2 id="绑定">绑定</h2>
+<p><img src="/assets/images/posts/middleware/bindings.png" alt=""></p>
+<p>我们已经创建了一个扇出交换器和一个队列。现在我们需要告诉交换器把消息发送到我们的队列。交换器和队列之间的关系被称为绑定。</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-js" data-lang="js"><span style="color:#a6e22e">ch</span>.<span style="color:#a6e22e">bindQueue</span>(<span style="color:#a6e22e">queue_name</span>, <span style="color:#e6db74">&#39;logs&#39;</span>, <span style="color:#e6db74">&#39;&#39;</span>);
+</code></pre></div><p>此后，<code>logs</code>交换器将把消息附加到我们的队列中。</p>
+<blockquote>
+<p><strong>列出绑定</strong> 你可以通过以下方式列出所有的绑定：</p>
+<pre><code>rabbitmqctl list_bindings
+</code></pre>
+</blockquote>
+<h2 id="全部代码">全部代码</h2>
+<p><img src="/assets/images/posts/middleware/python-three-overall.png" alt=""></p>
+<p>发出日志消息的生产者程序与前面的教程没有什么不同。最重要的变化是，我们现在要发布消息到我们的<code>logs</code>交换器，而不是无名的。发送时我们需要提供一个路由键，但是对于扇出交换器，它的值将被忽略。这里是<code>emit_log.js</code>脚本的代码：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-js" data-lang="js"><span style="color:#75715e">#!/usr/bin/env node
+</span><span style="color:#75715e"></span>
+<span style="color:#66d9ef">var</span> <span style="color:#a6e22e">amqp</span> <span style="color:#f92672">=</span> <span style="color:#a6e22e">require</span>(<span style="color:#e6db74">&#39;amqplib/callback_api&#39;</span>);
+
+<span style="color:#a6e22e">amqp</span>.<span style="color:#a6e22e">connect</span>(<span style="color:#e6db74">&#39;amqp://localhost&#39;</span>, <span style="color:#66d9ef">function</span>(<span style="color:#a6e22e">err</span>, <span style="color:#a6e22e">conn</span>) {
+  <span style="color:#a6e22e">conn</span>.<span style="color:#a6e22e">createChannel</span>(<span style="color:#66d9ef">function</span>(<span style="color:#a6e22e">err</span>, <span style="color:#a6e22e">ch</span>) {
+    <span style="color:#66d9ef">var</span> <span style="color:#a6e22e">ex</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;logs&#39;</span>;
+    <span style="color:#66d9ef">var</span> <span style="color:#a6e22e">msg</span> <span style="color:#f92672">=</span> <span style="color:#a6e22e">process</span>.<span style="color:#a6e22e">argv</span>.<span style="color:#a6e22e">slice</span>(<span style="color:#ae81ff">2</span>).<span style="color:#a6e22e">join</span>(<span style="color:#e6db74">&#39; &#39;</span>) <span style="color:#f92672">||</span> <span style="color:#e6db74">&#39;Hello World!&#39;</span>;
+
+    <span style="color:#a6e22e">ch</span>.<span style="color:#a6e22e">assertExchange</span>(<span style="color:#a6e22e">ex</span>, <span style="color:#e6db74">&#39;fanout&#39;</span>, {<span style="color:#a6e22e">durable</span><span style="color:#f92672">:</span> <span style="color:#66d9ef">false</span>});
+    <span style="color:#a6e22e">ch</span>.<span style="color:#a6e22e">publish</span>(<span style="color:#a6e22e">ex</span>, <span style="color:#e6db74">&#39;&#39;</span>, <span style="color:#66d9ef">new</span> <span style="color:#a6e22e">Buffer</span>(<span style="color:#a6e22e">msg</span>));
+    <span style="color:#a6e22e">console</span>.<span style="color:#a6e22e">log</span>(<span style="color:#e6db74">&#34; [x] Sent %s&#34;</span>, <span style="color:#a6e22e">msg</span>);
+  });
+
+  <span style="color:#a6e22e">setTimeout</span>(<span style="color:#66d9ef">function</span>() { <span style="color:#a6e22e">conn</span>.<span style="color:#a6e22e">close</span>(); <span style="color:#a6e22e">process</span>.<span style="color:#a6e22e">exit</span>(<span style="color:#ae81ff">0</span>) }, <span style="color:#ae81ff">500</span>);
+});
+</code></pre></div><p>如你所见，建立连接后，我们声明交换器。这一步是必要的，因为不允许发布到一个不存在的交换器。 如果没有队列绑定到交换机上，消息将会丢失，但对我们来说没关系；如果没有消费者正准备接收，我们可以放心地丢弃消息。 <code>receive_logs.js</code>的代码：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-js" data-lang="js"><span style="color:#75715e">#!/usr/bin/env node
+</span><span style="color:#75715e"></span>
+<span style="color:#66d9ef">var</span> <span style="color:#a6e22e">amqp</span> <span style="color:#f92672">=</span> <span style="color:#a6e22e">require</span>(<span style="color:#e6db74">&#39;amqplib/callback_api&#39;</span>);
+
+<span style="color:#a6e22e">amqp</span>.<span style="color:#a6e22e">connect</span>(<span style="color:#e6db74">&#39;amqp://localhost&#39;</span>, <span style="color:#66d9ef">function</span>(<span style="color:#a6e22e">err</span>, <span style="color:#a6e22e">conn</span>) {
+  <span style="color:#a6e22e">conn</span>.<span style="color:#a6e22e">createChannel</span>(<span style="color:#66d9ef">function</span>(<span style="color:#a6e22e">err</span>, <span style="color:#a6e22e">ch</span>) {
+    <span style="color:#66d9ef">var</span> <span style="color:#a6e22e">ex</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;logs&#39;</span>;
+
+    <span style="color:#a6e22e">ch</span>.<span style="color:#a6e22e">assertExchange</span>(<span style="color:#a6e22e">ex</span>, <span style="color:#e6db74">&#39;fanout&#39;</span>, {<span style="color:#a6e22e">durable</span><span style="color:#f92672">:</span> <span style="color:#66d9ef">false</span>});
+
+    <span style="color:#a6e22e">ch</span>.<span style="color:#a6e22e">assertQueue</span>(<span style="color:#e6db74">&#39;&#39;</span>, {<span style="color:#a6e22e">exclusive</span><span style="color:#f92672">:</span> <span style="color:#66d9ef">true</span>}, <span style="color:#66d9ef">function</span>(<span style="color:#a6e22e">err</span>, <span style="color:#a6e22e">q</span>) {
+      <span style="color:#a6e22e">console</span>.<span style="color:#a6e22e">log</span>(<span style="color:#e6db74">&#34; [*] Waiting for messages in %s. To exit press CTRL+C&#34;</span>, <span style="color:#a6e22e">q</span>.<span style="color:#a6e22e">queue</span>);
+      <span style="color:#a6e22e">ch</span>.<span style="color:#a6e22e">bindQueue</span>(<span style="color:#a6e22e">q</span>.<span style="color:#a6e22e">queue</span>, <span style="color:#a6e22e">ex</span>, <span style="color:#e6db74">&#39;&#39;</span>);
+
+      <span style="color:#a6e22e">ch</span>.<span style="color:#a6e22e">consume</span>(<span style="color:#a6e22e">q</span>.<span style="color:#a6e22e">queue</span>, <span style="color:#66d9ef">function</span>(<span style="color:#a6e22e">msg</span>) {
+        <span style="color:#a6e22e">console</span>.<span style="color:#a6e22e">log</span>(<span style="color:#e6db74">&#34; [x] %s&#34;</span>, <span style="color:#a6e22e">msg</span>.<span style="color:#a6e22e">content</span>.<span style="color:#a6e22e">toString</span>());
+      }, {<span style="color:#a6e22e">noAck</span><span style="color:#f92672">:</span> <span style="color:#66d9ef">true</span>});
+    });
+  });
+});
+</code></pre></div><p>如果您想将日志保存到文件中，只需打开一个控制台并输入：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">./receive_logs.js &gt; logs_from_rabbit.log
+</code></pre></div><p>如果你想看到屏幕上的日志，开启一个新的终端，并运行：</p>
+<pre><code>./receive_logs.js
+</code></pre>
+<p>发送日志，需要输入：</p>
+<pre><code>./emit_log.js
+</code></pre>
+<p>使用<code>rabbitmqctl list_bindings</code>，你可以验证代码实际上是否创建了绑定和队列。若有两个<code>receive_logs.js</code>程序运行，你应该看到如下结果：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">sudo rabbitmqctl list_bindings
+<span style="color:#75715e"># =&gt; Listing bindings ...</span>
+<span style="color:#75715e"># =&gt; logs    exchange        amq.gen-JzTY20BRgKO-HjmUJj0wLg  queue           []</span>
+<span style="color:#75715e"># =&gt; logs    exchange        amq.gen-vso0PVvyiRIL2WoV3i48Yg  queue           []</span>
+<span style="color:#75715e"># =&gt; ...done.</span>
+</code></pre></div><p>结果的解释很简单：<code>logs</code>交换器中的数据发送到两个带有服务器分配名称的队列中。这正是我们想要的。 关于如何监听消息子集，我们可以继续阅读教程4。</p>
+
+    </div>
+
+    
+    
+      <div class="btn-improve-page">
+          <a href="https://github.com/alphajc/mysite/edit/master/content/posts/middleware/rabbitmq/RabbitMQ%20Pub&amp;Sub%20with%20Node.md">
+            <i class="fas fa-code-branch"></i>
+            Improve This Page
+          </a>
+      </div>
+    
+
+    
+  <hr />
+    <div class="row next-prev-navigator">
+
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    
+      
+      <div class="col-md-6 previous-article">
+        <a href="/posts/middleware/rabbitmq/rabbitmq-route-with-node/" class="btn btn-outline-info">
+          <span><i class="fas fa-chevron-circle-left"></i> 上一篇</span>
+          <br />
+          <span>Node使用RabbitMQ：路由</span>
+        </a>
+      </div>
+      
+    
+    
+      
+        
+        
+          
+              
+          
+        
+        <div class="col-md-6 next-article">
+          <a href="/posts/middleware/rabbitmq/rabbitmq-queue-with-node/" class="btn btn-outline-info">
+            <span>下一篇 <i class="fas fa-chevron-circle-right"></i></span>
+            <br />
+            <span>Node使用RabbitMQ：工作队列</span>
+          </a>
+        </div>
+      
+    
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+</div>
+
+  <hr />
+  
+  
+      <div id="disqus_thread"></div>
+<script type="text/javascript">
+  (function () {
+    
+    
+    if (window.location.hostname == "localhost") return;
+
+    var dsq = document.createElement("script");
+    dsq.type = "text/javascript";
+    dsq.async = true;
+    var disqus_shortname = "mydream-ink";
+    dsq.src = "//" + disqus_shortname + ".disqus.com/embed.js";
+    (
+      document.getElementsByTagName("head")[0] ||
+      document.getElementsByTagName("body")[0]
+    ).appendChild(dsq);
+  })();
+</script>
+<noscript
+  >请开启 JavaScript 功能
+  <a href="https://disqus.com/?ref_noscript"
+    >comments powered by Disqus.</a
+  ></noscript
+>
+<a href="https://disqus.com/" class="dsq-brlink"
+  >通过 <span class="logo-disqus">Disqus</span> 评论</a
+>
+
+  
+</div>
+
+    </div>
+
+    <footer class="container-fluid text-center align-content-center footer pb-2">
+  <div class="container pt-5">
+    <div class="row text-left">
+      <div class="col-md-4 col-sm-12">
+        <h5>导航</h5>
+        
+        <ul>
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#about">关于</a>
+            </li>
+            
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#skills">技能</a>
+            </li>
+            
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#experiences">经历</a>
+            </li>
+            
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#projects">项目</a>
+            </li>
+            
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#recent-posts">最近文章</a>
+            </li>
+            
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#achievements">成就</a>
+            </li>
+            
+        </ul>
+        
+
+      </div>
+      <div class="col-md-4 col-sm-12">
+        <h5>联系我</h5>
+        <ul>
+          
+          <li><span>电话: </span> <span>&#43;8619980414909</span></li>
+          
+          <li><span>邮箱: </span> <span>jerry@mydream.ink</span></li>
+          
+        </ul>
+      </div>
+      <div class="col-md-4 col-sm-12">
+        
+        <p>接收最新的邮件通知</p>
+        <form>
+          <div class="form-group">
+            <input
+              type="email"
+              class="form-control"
+              id="exampleInputEmail1"
+              aria-describedby="emailHelp"
+              placeholder="输入邮箱"
+            />
+            <small id="emailHelp" class="form-text text-muted"
+              >你的邮件地址不会被共享给他人</small
+            >
+          </div>
+          <button type="submit" class="btn btn-info">提交</button>
+        </form>
+      </div>
+    </div>
+  </div>
+  <hr />
+  <div class="container">
+    <div class="row text-left">
+      <div class="col-md-4">
+        <a id="theme" href="/" target="#">
+          <img src="/assets/images/logo-inverted.png">青云卷</a>
+      </div>
+      <div class="col-md-4"><a href="https://beian.miit.gov.cn">蜀ICP备 2021017630号-1</a>© 2021 Copyright.</div>
+    </div>
+  </div>
+</footer>
+
+    <script src="/assets/js/jquery-3.4.1.min.js"></script>
+<script src="/assets/js/bootstrap.min.js"></script>
+
+<script src="/assets/js/navbar.js"></script>
+<script src="/assets/js/jquery.filterizr.min.js"></script>
+
+
+    
+    
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/highlight.min.js"></script>
+<script src="/assets/js/single.js"></script>
+<script>
+  hljs.initHighlightingOnLoad();
+</script>
+
+
+  </body>
+</html>

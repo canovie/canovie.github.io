@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>container on 青云卷</title>
+    <link>https://mydream.ink/categories/container/</link>
+    <description>Recent content in container on 青云卷</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh-cn</language>
+    <lastBuildDate>Fri, 12 Jul 2019 10:46:25 +0800</lastBuildDate><atom:link href="https://mydream.ink/categories/container/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>在 CentOS7 上安装新版 Docker CE（使用国内源）</title>
+      <link>https://mydream.ink/posts/cloud-native/container/install-docker-on-centos7/</link>
+      <pubDate>Fri, 12 Jul 2019 10:46:25 +0800</pubDate>
+      
+      <guid>https://mydream.ink/posts/cloud-native/container/install-docker-on-centos7/</guid>
+      <description>卸载老版本 $ sudo yum remove docker \  docker-client \  docker-client-latest \  docker-common \  docker-latest \  docker-latest-logrotate \  docker-logrotate \  docker-engine 如果曾经安装过，/var/lib/docker/中会有原来的镜像、容器、卷以及网络残留，如果不需要可将之一并删除。
+安装 Docker CE 安装 Docker 国内源   安装 yum 配置管理工具
+$ sudo yum install -y yum-utils \ device-mapper-persistent-data \ lvm2   安装清华大学的 Docker 安装源（本网站有效，该命令就有效）
+$ sudo yum-config-manager \ --add-repo \ https://mydream.ink/utils/container/docker-ce.repo 你可能会遇到如下问题：
+ adding repo from: https://mydream.ink/utils/container/docker-ce.repo grabbing file https://mydream.ink/utils/container/docker-ce.repo to /etc/yum.</description>
+    </item>
+    
+    <item>
+      <title>LXC介绍</title>
+      <link>https://mydream.ink/posts/cloud-native/container/lxc1/</link>
+      <pubDate>Sat, 11 Nov 2017 08:56:06 +0800</pubDate>
+      
+      <guid>https://mydream.ink/posts/cloud-native/container/lxc1/</guid>
+      <description>什么是LXC？ LXC是Linux内核中拥有容器功能的用户空间接口。 通过强大的API和简单的工具，它可以让Linux用户轻松创建并管理系统或应用程序容器。
+特征 当前的LXC使用以下的内核特性来封装进程
+ Kernel namespaces (ipc, uts, mount, pid, network and user) Apparmor and SELinux profiles Seccomp policies Chroots (using pivot_root) Kernel capabilities CGroups (control groups)  LXC容器通常被认为是chroot和一个完整的虚拟机。 LXC的目标是尽可能创造一个环境 到一个标准的Linux安装，但不需要单独的内核。
+组件 LXC目前由几个单独的组件组成：
+ liblxc库 API的几种语言绑定  python3 (in-tree, long term support in 1.0.x and 2.0.x) lua (in tree, long term support in 1.0.x and 2.0.x) Go ruby python2 Haskell   一套控制容器的标准工具 分发容器模板  </description>
+    </item>
+    
+    <item>
+      <title>LXC简介</title>
+      <link>https://mydream.ink/posts/cloud-native/container/lxc0/</link>
+      <pubDate>Sun, 05 Nov 2017 08:56:09 +0800</pubDate>
+      
+      <guid>https://mydream.ink/posts/cloud-native/container/lxc0/</guid>
+      <description>LXC LXC是著名的经过严格测试的底层Linux容器运行库。从2008年开始发展，现已在世界各地的关键生产环境中得到证明。其中一些核心贡献者是帮助在Linux内核中实现各种知名集装箱功能的人员。
+系统容器 LXC的主要重点是系统容器。也就是说，提供尽可能接近VM但没有运行单独内核并模拟所有硬件的开销的容器。 这是通过内核安全功能（如命名空间，强制访问控制和控制组合）实现的。
+非特权容器 非特权容器是没有任何权限运行的容器。这需要对内核中运行容器的用户名空间的支持。用户命名空间合并到主线内核之后，LXC是第一个支持非特权容器的运行库。 实质上，用户名空间隔离给定的UID和GID集合。这通过在主机上的一系列UID和GID之间建立到容器中UID和GID的不同（非特权）范围之间的映射来实现。内核将以这样一种方式转换此映射，即在容器内部，所有UID和GID按照您期望的从主机显示，而在主机上，这些UID和GID实际上是无特权的。例如，在容器内作为UID和GID 0运行的进程可能在主机上显示为UID和GID 100000。可以从相应的用户命名空间手册页中收集实现和工作细节。 由于非特权容器是一种安全增强功能，因此它们自然会受到内核强制执行的一些限制。为了提供一个功能齐全的非特权容器LXC与3个setuid代码交互：
+ lxc-user-nic（setuid帮助器创建一个veth对，并在主机上桥接它） newuidmap（从shawdow库中，设置一个uid映射） newgidmap（从shawdow库中，设置一个gid映射）  一切都是以您自己的用户身份运行，也可以作为用户拥有的uid运行。 一般来说，LXC的目标是利用内核中可用的每个安全功能。这意味着LXC的配置管理将使经验丰富的用户根据自己的需要对LXC进行复杂的调整。 有关LXC安全性的更详细的介绍可以在以下链接中找到：
+ https://linuxcontainers.org/lxc/security/  移除特权 LXC在没有正确的配置这些工具的情况下是可以运行的。只不过你这种容器的用途通常是非常有限的。这里突出两个最常见的问题：
+ 网络：没有依赖一个setuid帮助器为非特权用户设置适当的网络设备（参见LXC的lxc-user-nic二进制文件），唯一的选择是与主机共享网络命名空间。虽然原则上应该是安全的，但共享主机的网络命名空间仍然是减少隔离的一个步骤，并增加攻击向量。此外，当主机和容器共享相同的网络命名空间时，内核将拒绝任何sysfs挂接。这通常意味着容器内的init二进制文件将无法正确启动。 用户命名空间：如上所述，用户名空间是一个很大的安全性增强。但是，不依赖特权帮助者，主机上无权限的用户只能将自己的UID映射到容器中。然而，标准的POSIX系统需要65536个UID和GID来保证完整的功能。  配置 LXC通过一些简单的关键字配置，例如：
+ lxc.rootfs.path lxc.mount.entry  LXC通过使用单点命名空间配置关键字。这意味着复杂的配置关键字（如lxc.net.0）会展示各种子项，例如lxc.net.0.type，lxc.net.0.link，lxc.net.0.ipv6.address等一些更精细的配置。 LXC被用作LXD的默认运行库，LXD是容器管理程序，它暴露出设计良好且稳定的REST-api。
+内核需求 LXC在2.6.32以上的任何内核上运行。所有它需要的是一个功能C编译器。 LXC适用于提供必要内核功能的所有架构。这包括（但不限于）：
+ i686 x86_64 ppc,ppc64,ppc64le s390x armvl7,arm64  LXC至少还支持以下C标准库：
+ glibc musl bionic(Android&amp;rsquo;s libc)  向后兼容 LXC一直专注于强大的向后兼容性。事实上，API从1.0.0版起没有被破坏。主LXC目前处于版本2。</description>
+    </item>
+    
+    <item>
+      <title>Ubuntu安装 Docker 社区版</title>
+      <link>https://mydream.ink/posts/cloud-native/container/install-docker-on-ubuntu/</link>
+      <pubDate>Sun, 22 Oct 2017 08:54:08 +0800</pubDate>
+      
+      <guid>https://mydream.ink/posts/cloud-native/container/install-docker-on-ubuntu/</guid>
+      <description>准备 系统要求 要安装Docker CE，我们需要这些64位版本的Ubuntu：
+ Artful 17.10 (Docker CE 17.11 Edge and higher only) Zesty 17.04 Xenial 16.04 (LTS) Trusty 14.04 (LTS)  在Ubuntu x86_64、armhf、s390x（IBM Z）和ppc64le（IBM Power）架构上支持Docker CE。
+ ppc64le和s390x限制：IBM Z和Power体系结构的软件包仅在Ubuntu Xenial及更高版本上可用。
+ 卸载旧版本 老版本的Docker被称为docker或者docker-engine。如果安装了这些，请将其卸载：
+sudo apt-get remove docker docker-engine docker.io  如果apt-get报告没有安装这些软件包，则可以直接跳过这一步。
+/var/lib/docker/的内容（包括映像，容器，卷和网络）将被保留。 Docker CE包现在称为docker-ce。
+安装Docker CE 您可以根据您的需要以不同的方式安装Docker CE：
+ 大多数用户设置Docker的存储库并从中进行安装，以方便安装和升级任务。这是推荐的方法。 有些用户下载deb软件包手动安装，并完全手动管理升级。这很适合在诸如没有互联网访问的封闭系统上安装Docker。 在测试和开发环境中，有些用户选择使用自动便捷脚本来安装Docker。  使用软件仓库安装 首次在新的主机上安装Docker CE之前，需要设置Docker软件仓库。之后，您可以从该库安装和更新Docker。
+设置软件仓库   更新apt包索引：
+sudo apt-get update    安装软件包以允许apt通过HTTPS使用存储库：
+sudo apt-get install \ apt-transport-https \ ca-certificates \ curl \ software-properties-common    添加Docker的官方GPG密钥：</description>
+    </item>
+    
+  </channel>
+</rss>

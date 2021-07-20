@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Helm的安装和使用</title>
+    <meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta http-equiv="X-UA-Compatible" content="ie=edge" />
+
+
+<link rel="stylesheet" href="/assets/css/bootstrap.min.css" />
+<link rel="stylesheet" href="/assets/css/style.css" />
+<link rel="stylesheet" href="/assets/css/navbar.css" />
+
+
+<link href="https://fonts.googleapis.com/css2?family=Muli:wght@300;400;500;600" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" />
+
+
+<link rel="icon" type="image/png" href="/assets/images/favicon.png" />
+
+
+    
+<link
+  rel="stylesheet"
+  href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/styles/atom-one-dark.min.css"
+/>
+<link rel="stylesheet" href="/assets/css/single.css" />
+
+
+    
+    
+      
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'UA-142765126-1', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+
+    
+  </head>
+
+  <body>
+    <div class="container-fluid bg-dimmed wrapper">
+      
+      
+    <nav class="navbar navbar-expand-lg top-navbar final-navbar shadow">
+    <div class="container">
+      <a class="navbar-brand" href="/posts">
+        <img src="/assets/images/logo.png">青云卷</a>
+      <button class="navbar-toggler navbar-light" type="button" >
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <div class="collapse navbar-collapse" id="top-nav-items">
+        <ul class="navbar-nav ml-auto">
+        </ul>
+      </div>
+    </div>
+</nav>
+
+
+
+      
+      
+<div class="container p-0 read-area">
+  
+  <div class="hero-area col-sm-12" style='background-image: url(https://mydream.ink/assets/images/default-hero.jpg);'>
+  </div>
+
+  
+  <div class="page-content">
+    <div class="author-profile ml-auto align-self-lg-center">
+      <img class="rounded-circle" src='/assets/images/default-avatar.png'/>
+      <h5 class="author-name">John Doe</h5>
+      <p>July 7, 2019</p>
+    </div>
+
+    <div class="title">
+      <h1>Helm的安装和使用</h1>
+    </div>
+
+    <div class="post-content" id="post-content">
+      <p>Helm 可以理解为 Kubernetes 的包管理工具，可以方便地发现、共享和使用为Kubernetes构建的应用。</p>
+<h1 id="一基本概念">一、基本概念</h1>
+<ol>
+<li>
+<p>Helm的三个基本概念</p>
+<ul>
+<li>Chart：Helm应用（package），包括该应用的所有Kubernetes manifest模版，类似于YUM RPM或Apt dpkg文件</li>
+<li>Repository：Helm package存储仓库</li>
+<li>Release：chart的部署实例，每个chart可以部署一个或多个release</li>
+</ul>
+</li>
+<li>
+<p>Helm工作原理</p>
+<p>Helm包括两个部分，helm客户端和tiller服务端。</p>
+<p>the client is responsible for managing charts, and the server is responsible for managing releases.</p>
+</li>
+<li>
+<p>helm客户端</p>
+<p>helm客户端是一个命令行工具，负责管理charts、reprepository和release。它通过gPRC API（使用kubectl port-forward将tiller的端口映射到本地，然后再通过映射后的端口跟tiller通信）向tiller发送请求，并由tiller来管理对应的Kubernetes资源。</p>
+<p>Helm客户端的使用方法参见Helm命令。</p>
+</li>
+<li>
+<p>tiller服务端</p>
+<p>tiller接收来自helm客户端的请求，并把相关资源的操作发送到Kubernetes，负责管理（安装、查询、升级或删除等）和跟踪Kubernetes资源。为了方便管理，tiller把release的相关信息保存在kubernetes的ConfigMap中。</p>
+<p>tiller对外暴露gRPC API，供helm客户端调用。</p>
+</li>
+</ol>
+<h1 id="二安装">二、安装</h1>
+<p>环境：kubernetes 1.7 + helm 2.5.0</p>
+<ol>
+<li>
+<p>客户端安装：</p>
+<p>下载相应的版本：https://github.com/kubernetes/helm/releases</p>
+<p>解压</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">tar -zxvf helm-v2.5.0-linux-amd64.tgz
+</code></pre></div><p>把helm执行文件放置在：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">mv linux-amd64/helm /usr/local/bin/helm
+</code></pre></div><p>From there, you should be able to run the client: helm help.</p>
+</li>
+<li>
+<p>服务器端安装：</p>
+<pre><code> test@local:~/k8s/helm/test$ helm init
+ Creating /home/test/.helm
+ Creating /home/test/.helm/repository
+ Creating /home/test/.helm/repository/cache
+ Creating /home/test/.helm/repository/local
+ Creating /home/test/.helm/plugins
+ Creating /home/test/.helm/starters
+ Creating /home/test/.helm/cache/archive
+ Creating /home/test/.helm/repository/repositories.yaml
+ $HELM_HOME has been configured at /home/test/.helm.
+</code></pre>
+<p>Tiller (the helm server side component) has been installed into your Kubernetes Cluster.
+成功后，就在你的k8s集群安装Tiller服务。</p>
+</li>
+<li>
+<p>检查：</p>
+<pre><code> test@local:~$ kubectl get all -n kube-system
+ NAME                                           READY     STATUS    RESTARTS   AGE
+ po/tiller-deploy-1713990561-0h04s              1/1       Running   0          2h
+
+ NAME                       CLUSTER-IP       EXTERNAL-IP   PORT(S)         AGE
+ svc/tiller-deploy          10.254.100.69    &lt;none&gt;        44134/TCP       3h
+
+ NAME                              DESIRED   CURRENT   UP-TO-DATE   AVAILABLE   AGE
+ deploy/tiller-deploy              1         1         1            1           3h
+
+ NAME                                     DESIRED   CURRENT   READY     AGE
+ rs/tiller-deploy-1713990561              1         1         1         2h
+
+ test@local:~$ helm version
+ Client: &amp;version.Version{SemVer:&quot;v2.5.0&quot;, GitCommit:&quot;012cb0ac1a1b2f888144ef5a67b8dab6c2d45be6&quot;, GitTreeState:&quot;clean&quot;}
+ Server: &amp;version.Version{SemVer:&quot;v2.5.0&quot;, GitCommit:&quot;012cb0ac1a1b2f888144ef5a67b8dab6c2d45be6&quot;, GitTreeState:&quot;clean&quot;}
+</code></pre>
+<p>在k8s节点机器上：</p>
+<pre><code> [root@k8s-node ~]# ps ax |grep socat
+ 1709 pts/1    S+     0:00 grep --color=auto socat
+ 2630 ?        S      0:00 /usr/bin/socat - TCP4:localhost:44134
+ 7287 ?        S      0:00 /usr/bin/socat - TCP4:localhost:44134
+ 15182 ?        S      0:00 /usr/bin/socat - TCP4:localhost:44134
+ 20016 ?        S      0:00 /usr/bin/socat - TCP4:localhost:44134
+</code></pre>
+<p>到此，客户端和服务器已经安装成功.</p>
+<p>tiller 安装的命名空间问题:</p>
+<p>默认安装在namespace:kube-system,如果你安装在其他namespace,请使用 &ndash;tiller-namespace</p>
+<pre><code> test@local:~/puppet/projects/test2/chart$ helm version
+ Client: &amp;version.Version{SemVer:&quot;v2.5.0&quot;, GitCommit:&quot;012cb0ac1a1b2f888144ef5a67b8dab6c2d45be6&quot;, GitTreeState:&quot;clean&quot;}
+ Error: cannot connect to Tiller
+ test@local:~/puppet/projects/test2/chart$ helm version --tiller-namespace default
+ Client: &amp;version.Version{SemVer:&quot;v2.5.0&quot;, GitCommit:&quot;012cb0ac1a1b2f888144ef5a67b8dab6c2d45be6&quot;, GitTreeState:&quot;clean&quot;}
+ Server: &amp;version.Version{SemVer:&quot;v2.5.0&quot;, GitCommit:&quot;012cb0ac1a1b2f888144ef5a67b8dab6c2d45be6&quot;, GitTreeState:&quot;clean&quot;}
+</code></pre>
+<p>安装问题：</p>
+<ol>
+<li>
+<p>缺少socat</p>
+<pre><code> test@local:~/k8s/helm/test$ helm version
+ Client: &amp;version.Version{SemVer:&quot;v2.5.0&quot;, GitCommit:&quot;012cb0ac1a1b2f888144ef5a67b8dab6c2d45be6&quot;, GitTreeState:&quot;clean&quot;}
+ E0718 11:46:10.132102    7023 portforward.go:332] an error occurred forwarding 41458 -&gt; 44134: error forwarding port 44134 to pod d566b78f997eea6c4b1c0322b34ce8052c6c2001e8edff243647748464cd7919, uid : unable to do port forwarding: socat not found.
+ Error: cannot connect to Tiller
+</code></pre>
+<p>解决方法：在k8s的节点安装socat</p>
+<pre><code> [root@k8s-node ~]#  yum install socat
+ test@local:~/k8s/helm/test$ helm version
+ Client: &amp;version.Version{SemVer:&quot;v2.5.0&quot;, GitCommit:&quot;012cb0ac1a1b2f888144ef5a67b8dab6c2d45be6&quot;, GitTreeState:&quot;clean&quot;}
+ Server: &amp;version.Version{SemVer:&quot;v2.5.0&quot;, GitCommit:&quot;012cb0ac1a1b2f888144ef5a67b8dab6c2d45be6&quot;, GitTreeState:&quot;clean&quot;}
+</code></pre>
+</li>
+<li>
+<p>helm 跟kubectl 一样，从.kube/config 读取配置证书跟k8s通讯，先确保kubectl能够可用，否则出现一下错误：</p>
+<pre><code> test@local:~/k8s/helm/test$ helm version
+ Client: &amp;version.Version{SemVer:&quot;v2.5.0&quot;, GitCommit:&quot;012cb0ac1a1b2f888144ef5a67b8dab6c2d45be6&quot;, GitTreeState:&quot;clean&quot;}
+ Error: cannot connect to Tiller
+</code></pre>
+</li>
+<li>
+<p>RBAC权限问题，如果集群启用RBAC,会出现下面的问题：</p>
+<pre><code> test@local:~/k8s/helm/test$ helm list
+ Error: User &quot;system:serviceaccount:kube-system:default&quot; cannot list configmaps in the namespace &quot;kube-system&quot;. (get configmaps)
+</code></pre>
+<p>解决方法：给tiller增加权限：</p>
+<ol>
+<li>
+<p>创建sa</p>
+<p>kubectl create serviceaccount &ndash;namespace kube-system tiller</p>
+</li>
+<li>
+<p>给sa绑定cluster-admin规则</p>
+<p>kubectl create clusterrolebinding tiller-cluster-rule &ndash;clusterrole=cluster-admin &ndash;serviceaccount=kube-system:tiller</p>
+</li>
+<li>
+<p>编辑 Tiller Deployment 名称为： tiller-deploy.</p>
+<p>kubectl edit deploy &ndash;namespace kube-system tiller-deploy</p>
+</li>
+</ol>
+<p>插入一行 （serviceAccount: tiller） in the spec: template: spec section of the file:</p>
+<pre><code> ...
+ spec:
+ replicas: 1
+ selector:
+     matchLabels:
+     app: helm
+     name: tiller
+ strategy:
+     rollingUpdate:
+     maxSurge: 1
+     maxUnavailable: 1
+     type: RollingUpdate
+ template:
+     metadata:
+     creationTimestamp: null
+     labels:
+         app: helm
+         name: tiller
+     spec:
+     serviceAccount: tiller
+     containers:
+     - env:
+         - name: TILLER_NAMESPACE
+         value: kube-system
+ ...
+</code></pre>
+</li>
+</ol>
+</li>
+</ol>
+<h1 id="三删除服务端">三、删除服务端</h1>
+<pre><code>test@local:~/k8s/helm/test$ helm reset
+Tiller (the helm server side component) has been uninstalled from your Kubernetes Cluster.
+</code></pre>
+<h1 id="四使用">四、使用</h1>
+<ol>
+<li>
+<p>创建chart目录：</p>
+<pre><code> test@local:~/k8s/helm/test$ helm create mycharts
+ Creating myNginx
+ test@local:~/k8s/helm/test$ ls -l
+ drwxr-xr-x 4 test test 4096  7月 18 14:19 mycharts
+</code></pre>
+<p>创建后的目录结构：</p>
+<pre><code> test@local:~/k8s/helm/test$ tree mycharts
+ myNginx
+ ├── charts
+ ├── Chart.yaml
+ ├── templates
+ │   ├── deployment.yaml
+ │   ├── _helpers.tpl
+ │   ├── ingress.yaml
+ │   ├── NOTES.txt
+ │   └── service.yaml
+ └── values.yaml
+</code></pre>
+</li>
+<li>
+<p>发布到k8s集群：</p>
+<pre><code> test@local:~/k8s/helm/test$ helm install --set name=mycharts ./mycharts/
+ NAME:   brown-poodle
+ LAST DEPLOYED: Tue Jul 18 14:38:50 2017
+ NAMESPACE: default
+ STATUS: DEPLOYED
+
+ RESOURCES:
+ ==&gt; v1/Service
+ NAME                   CLUSTER-IP     EXTERNAL-IP  PORT(S)  AGE
+ brown-poodle-mycharts  10.254.59.125  &lt;none&gt;       80/TCP   1s
+
+ ==&gt; v1beta1/Deployment
+ NAME                   DESIRED  CURRENT  UP-TO-DATE  AVAILABLE  AGE
+ brown-poodle-mycharts  1        1        1           0          1s
+
+ NOTES:
+ 1. Get the application URL by running these commands:
+ export POD_NAME=$(kubectl get pods --namespace default -l &quot;app=mycharts,release=brown-poodle&quot; -o jsonpath=&quot;{.items[0].metadata.name}&quot;)
+ echo &quot;Visit http://127.0.0.1:8080 to use your application&quot;
+ kubectl port-forward $POD_NAME 8080:80
+</code></pre>
+</li>
+<li>
+<p>查看以及安装的releases:</p>
+<pre><code> test@local:~/k8s/helm/test$ helm list
+ NAME        	REVISION	UPDATED                 	STATUS  	CHART         	NAMESPACE
+ brown-poodle	1       	Tue Jul 18 14:38:50 2017	DEPLOYED	mycharts-0.1.0	default
+</code></pre>
+</li>
+<li>
+<p>删除releases</p>
+<pre><code> test@local:~/k8s/helm/test$ helm delete brown-poodle
+ release &quot;brown-poodle&quot; deleted
+</code></pre>
+</li>
+<li>
+<p>configmap ,可以配置configmap 读取文件：</p>
+<p>参考：https://docs.helm.sh/chart_template_guide/#basic-example</p>
+</li>
+<li>
+<p>恢复之前的版本</p>
+<pre><code> mac-temp:test test$ helm list
+ NAME      	REVISION	UPDATED                 	STATUS  	CHART           	NAMESPACE
+ inky-eagle	1       	Thu Sep  7 20:45:34 2017	DEPLOYED	prometheus-4.5.0	default  
+ test      	5       	Tue Sep 12 18:43:19 2017	DEPLOYED	test-0.1.0      	default  
+
+ mac-temp:test test$ helm history test
+ REVISION	UPDATED                 	STATUS    	CHART     	DESCRIPTION      
+ 1       	Thu Aug 24 19:50:32 2017	SUPERSEDED	test-0.1.0	Deletion complete
+ 2       	Tue Sep 12 18:31:11 2017	SUPERSEDED	test-0.1.0	Upgrade complete
+ 3       	Tue Sep 12 18:37:31 2017	SUPERSEDED	test-0.1.0	Upgrade complete
+ 4       	Tue Sep 12 18:40:25 2017	SUPERSEDED	test-0.1.0	Rollback to 2    
+ 5       	Tue Sep 12 18:43:19 2017	SUPERSEDED	test-0.1.0	Rollback to 2    
+ 6       	Tue Sep 12 18:43:25 2017	DEPLOYED  	test-0.1.0	Rollback to 2    
+
+ mac-temp:test test$ helm rollback test 2
+ Rollback was a success! Happy Helming!
+</code></pre>
+</li>
+</ol>
+<h1 id="五技巧">五、技巧</h1>
+<ol>
+<li>
+<p>可以增加多个values文件，使用-f 参数选择指定的values文件。这样可以达到使用一样的配置文件，输入不同的参数运行不同的服务：</p>
+<p>例如我们要发布多个版本的apache，各个apachep配置文件只有几个参数不一样，这样可以配置多个values文件，启动不同的apache；</p>
+<pre><code> helm install -f ./mycharts/values-apache.yaml --set name=mycharts ./mycharts/
+ test@local:~/k8s/helm/test$ ls mycharts/ -l
+ 总用量 20
+ drwxr-xr-x 2 test test 4096  7月 18 14:37 charts
+ -rw-r--r-- 1 test test   86  7月 18 14:37 Chart.yaml
+ drwxr-xr-x 2 test test 4096  7月 18 14:37 templates
+ -rw-r--r-- 1 test test 1134  7月 18 16:13 values-apache.yaml
+ -rw-r--r-- 1 test test 1134  7月 18 14:37 values.yaml
+</code></pre>
+</li>
+<li>
+<p>使用 upgrade ,会自动判读如果没安装，会先安装(建议使用此方法)。</p>
+<pre><code> helm upgrade --install mycharts .
+ helm upgrade --install --set name=mycharts --tiller-namespace=default  mycharts ./mycharts/
+</code></pre>
+</li>
+<li>
+<p>下载charts到本地：</p>
+<pre><code> helm search prometheus
+ helm fetch stable/prometheus
+</code></pre>
+</li>
+</ol>
+<h1 id="六各种名词变量解析">六、各种名词变量解析</h1>
+<ol>
+<li>模板格式 : 模版文件deployment.yaml</li>
+<li>Release.Name – 发行版名称</li>
+<li>fullname :Release.Name+Chart.Name – 避免名字冲突</li>
+<li>svc.yaml : 服务描述文件，声明如何访问服务</li>
+<li>secrets.yaml : 存储密钥</li>
+<li>Label : 通过release和app标签可以查找到 所有相关的资源</li>
+</ol>
+<h1 id="其他">其他：</h1>
+<ul>
+<li>
+<p>HOOKS</p>
+<p>参考：https://github.com/kubernetes/helm/blob/master/docs/charts_hooks.md ，允许图表开发人员在发布的生命周期中的某些点进行干预。例如，您可以使用钩子：</p>
+<ul>
+<li>在加载任何其他图表之前，请先安装ConfigMap或Secret。</li>
+<li>在安装新图表之前执行作业来备份数据库，然后在升级后执行第二个作业以恢复数据。</li>
+<li>在删除发行版之前运行作业以在删除之前优雅地将服务取消旋转。</li>
+</ul>
+<p>钩子像常规模板一样工作，但它们具有特殊的注释，使Helm能够不同地使用它们。在本节中，我们将介绍钩子的基本使用模式。</p>
+</li>
+</ul>
+
+    </div>
+
+    
+    
+      <div class="btn-improve-page">
+          <a href="https://github.com/alphajc/mysite/edit/master/content/archive/About%20the%20installation%20and%20use%20of%20Helm.md">
+            <i class="fas fa-code-branch"></i>
+            Improve This Page
+          </a>
+      </div>
+    
+
+    
+  <hr />
+    <div class="row next-prev-navigator">
+
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+</div>
+
+  <hr />
+  
+  
+      <div id="disqus_thread"></div>
+<script type="text/javascript">
+  (function () {
+    
+    
+    if (window.location.hostname == "localhost") return;
+
+    var dsq = document.createElement("script");
+    dsq.type = "text/javascript";
+    dsq.async = true;
+    var disqus_shortname = "mydream-ink";
+    dsq.src = "//" + disqus_shortname + ".disqus.com/embed.js";
+    (
+      document.getElementsByTagName("head")[0] ||
+      document.getElementsByTagName("body")[0]
+    ).appendChild(dsq);
+  })();
+</script>
+<noscript
+  >请开启 JavaScript 功能
+  <a href="https://disqus.com/?ref_noscript"
+    >comments powered by Disqus.</a
+  ></noscript
+>
+<a href="https://disqus.com/" class="dsq-brlink"
+  >通过 <span class="logo-disqus">Disqus</span> 评论</a
+>
+
+  
+</div>
+
+    </div>
+
+    <footer class="container-fluid text-center align-content-center footer pb-2">
+  <div class="container pt-5">
+    <div class="row text-left">
+      <div class="col-md-4 col-sm-12">
+        <h5>导航</h5>
+        
+        <ul>
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#about">关于</a>
+            </li>
+            
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#skills">技能</a>
+            </li>
+            
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#experiences">经历</a>
+            </li>
+            
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#projects">项目</a>
+            </li>
+            
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#recent-posts">最近文章</a>
+            </li>
+            
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#achievements">成就</a>
+            </li>
+            
+        </ul>
+        
+
+      </div>
+      <div class="col-md-4 col-sm-12">
+        <h5>联系我</h5>
+        <ul>
+          
+          <li><span>电话: </span> <span>&#43;8619980414909</span></li>
+          
+          <li><span>邮箱: </span> <span>jerry@mydream.ink</span></li>
+          
+        </ul>
+      </div>
+      <div class="col-md-4 col-sm-12">
+        
+        <p>接收最新的邮件通知</p>
+        <form>
+          <div class="form-group">
+            <input
+              type="email"
+              class="form-control"
+              id="exampleInputEmail1"
+              aria-describedby="emailHelp"
+              placeholder="输入邮箱"
+            />
+            <small id="emailHelp" class="form-text text-muted"
+              >你的邮件地址不会被共享给他人</small
+            >
+          </div>
+          <button type="submit" class="btn btn-info">提交</button>
+        </form>
+      </div>
+    </div>
+  </div>
+  <hr />
+  <div class="container">
+    <div class="row text-left">
+      <div class="col-md-4">
+        <a id="theme" href="/" target="#">
+          <img src="/assets/images/logo-inverted.png">青云卷</a>
+      </div>
+      <div class="col-md-4"><a href="https://beian.miit.gov.cn">蜀ICP备 2021017630号-1</a>© 2021 Copyright.</div>
+    </div>
+  </div>
+</footer>
+
+    <script src="/assets/js/jquery-3.4.1.min.js"></script>
+<script src="/assets/js/bootstrap.min.js"></script>
+
+<script src="/assets/js/navbar.js"></script>
+<script src="/assets/js/jquery.filterizr.min.js"></script>
+
+
+    
+    
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/highlight.min.js"></script>
+<script src="/assets/js/single.js"></script>
+<script>
+  hljs.initHighlightingOnLoad();
+</script>
+
+
+  </body>
+</html>

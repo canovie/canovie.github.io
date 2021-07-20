@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>exsi on 青云卷</title>
+    <link>https://mydream.ink/tags/exsi/</link>
+    <description>Recent content in exsi on 青云卷</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh-cn</language>
+    <lastBuildDate>Thu, 25 Jan 2018 08:52:19 +0800</lastBuildDate><atom:link href="https://mydream.ink/tags/exsi/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>详解VMware vCenter Server</title>
+      <link>https://mydream.ink/posts/virtualization/vmware/vmware-vcenter/</link>
+      <pubDate>Thu, 25 Jan 2018 08:52:19 +0800</pubDate>
+      
+      <guid>https://mydream.ink/posts/virtualization/vmware/vmware-vcenter/</guid>
+      <description>作为vSphere的核心主键之一的 vCenter Server 可以部署在Linux上或者是Windows上，在Linux上被称为 vCenter Server Appliance。 根据 Platform Services Controller 所部署的位置的不同，有以下几种部署类型：
+   部署类型 描述     具有嵌入式 Platform Services Controller 部署的 vCenter Server 与 Platform Services Controller 捆绑在一起的所有服务与 vCenter Server 服务一起部署在同一虚拟机或物理服务器上。   Platform Services Controller 只有与 Platform Services Controller 捆绑在一起的服务会部署在虚拟机或物理服务器上。   具有外部 Platform Services Controller 的 vCenter Server （需要外部 Platform Services Controller） 只有 vCenter Server 服务会部署在虚拟机或物理服务器上。必须向之前部署或安装的 Platform Services Controller 实例注册此类 vCenter Server 实例。    </description>
+    </item>
+    
+    <item>
+      <title>vSphere 和 vCenter Server</title>
+      <link>https://mydream.ink/posts/virtualization/vmware/vmware-vcenter-vsphere/</link>
+      <pubDate>Tue, 23 Jan 2018 08:52:19 +0800</pubDate>
+      
+      <guid>https://mydream.ink/posts/virtualization/vmware/vmware-vcenter-vsphere/</guid>
+      <description>VMware vSphere 是一套虚拟化应用程序，包括 ESXi 和 vCenter Server。 vSphere 使用虚拟化执行以下任务：
+ 在一台物理机上同时运行多个操作系统。 回收闲置资源并在多台物理机之间平衡工作负载。 处理硬件故障和预定维护。  熟悉构成 vSphere 环境的组件有助于理解设置过程，并最终理解使用 VMware vCenter Server 管理主机和运行虚拟机的过程。 除了 ESXi 主机和 vSphere Client 之外，vSphere 还包括以下组件：
+vSphere Web Client vSphere Web Client 是连接到 vCenter Server 和多主机环境的接口。另外，它还提供对虚拟机的控制台访问。借助 vSphere Web Client，您可以使用浏览器内界面执行所有管理任务。
+VMware vCenter Server vCenter Server 将各台主机中的资源统一在一起，使这些资源可以在整个数据中心的虚拟机之间共享。其实现原理是：根据系统管理员设定的策略，管理主机的虚拟机分配，以及给定主机内虚拟机的资源分配。 vCenter Server 允许使用 vSphere 的高级功能，如 vSphere Distributed Resource Scheduler (DRS)、vSphere High Availability (HA)、vSphere vMotion 和 vSphere Storage vMotion。
+数据中心 数据中心是一种结构，在该结构中，可以向清单中添加主机及其相关虚拟机。
+主机 主机是使用 ESXi 虚拟化软件来运行虚拟机的计算机。主机为驻留在其上的虚拟机提供 CPU 和内存资源、对存储器的访问以及网络连接。</description>
+    </item>
+    
+    <item>
+      <title>vCenter Server 组件和服务</title>
+      <link>https://mydream.ink/posts/virtualization/vmware/vmware-vcenter-component/</link>
+      <pubDate>Sun, 21 Jan 2018 08:52:19 +0800</pubDate>
+      
+      <guid>https://mydream.ink/posts/virtualization/vmware/vmware-vcenter-component/</guid>
+      <description>摘自于VMware官方文档，移至自己博客方便阅读，如有侵权，请联系我删除
+vCenter Server 为虚拟机和主机的管理、操作、资源置备和性能评估提供了一个集中式平台。 安装具有嵌入式 Platform Services Controller 的 vCenter Server 或部署具有嵌入式 Platform Services Controller 的 vCenter Server Appliance 时，vCenter Server、vCenter Server 组件以及 Platform Services Controller 中包含的服务将部署在同一个系统上。 安装具有外部 Platform Services Controller 的 vCenter Server 或部署具有外部 Platform Services Controller 的 vCenter Server Appliance 时，vCenter Server 和 vCenter Server 组件将部署在一个系统上，而 Platform Services Controller 中包含的服务将部署在另一个系统上。 以下组件包含在 vCenter Server 和 vCenter Server Appliance 安装中：
+ VMware Platform Services Controller 基础架构服务组包含 vCenter Single Sign-On、License Service、Lookup Service 和 VMware Certificate Authority。 vCenter Server 服务组包含 vCenter Server、vSphere Web Client、vSphere Auto Deploy 和 vSphere ESXi Dump Collector。适用于 Windows 的 vCenter Server 还包含 VMware vSphere Syslog Collector。vCenter Server Appliance 还包含 VMware vSphere Update Manager 扩展服务。   注：从 vSphere 6.</description>
+    </item>
+    
+  </channel>
+</rss>

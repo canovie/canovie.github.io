@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Node使用RabbitMQ：主题交换器</title>
+    <meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta http-equiv="X-UA-Compatible" content="ie=edge" />
+
+
+<link rel="stylesheet" href="/assets/css/bootstrap.min.css" />
+<link rel="stylesheet" href="/assets/css/style.css" />
+<link rel="stylesheet" href="/assets/css/navbar.css" />
+
+
+<link href="https://fonts.googleapis.com/css2?family=Muli:wght@300;400;500;600" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" />
+
+
+<link rel="icon" type="image/png" href="/assets/images/favicon.png" />
+
+
+    
+<link
+  rel="stylesheet"
+  href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/styles/atom-one-dark.min.css"
+/>
+<link rel="stylesheet" href="/assets/css/single.css" />
+
+
+    
+    
+      
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'UA-142765126-1', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+
+    
+  </head>
+
+  <body>
+    <div class="container-fluid bg-dimmed wrapper">
+      
+      
+    <nav class="navbar navbar-expand-lg top-navbar final-navbar shadow">
+    <div class="container">
+      <a class="navbar-brand" href="/posts">
+        <img src="/assets/images/logo.png">青云卷</a>
+      <button class="navbar-toggler navbar-light" type="button" >
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <div class="collapse navbar-collapse" id="top-nav-items">
+        <ul class="navbar-nav ml-auto">
+        </ul>
+      </div>
+    </div>
+</nav>
+
+
+
+      
+      
+<div class="container p-0 read-area">
+  
+  <div class="hero-area col-sm-12" style='background-image: url(https://mydream.ink/assets/images/posts/middleware/rabbitmq_node.jpg);'>
+  </div>
+
+  
+  <div class="page-content">
+    <div class="author-profile ml-auto align-self-lg-center">
+      <img class="rounded-circle" src='/assets/images/portrait.jpg'/>
+      <h5 class="author-name">Jerry Chan</h5>
+      <p>February 15, 2018</p>
+    </div>
+
+    <div class="title">
+      <h1>Node使用RabbitMQ：主题交换器</h1>
+    </div>
+
+    <div class="post-content" id="post-content">
+      <h1 id="前提条件">前提条件</h1>
+<p>本教程假定RabbitMQ已安装并在标准端口（5672）上的本地主机上运行。如果您使用不同的主机，端口或凭据，连接设置将需要调整。</p>
+<h1 id="使用amqpnode客户端">（使用amqp.node客户端）</h1>
+<p>在之前的教程中，我们改良了我们的日志系统。我们没有使用只有虚拟广播的<code>fanout</code>交换器，而是使用<code>direct</code>交换器，提供了有选择性地接收日志的可能性。 虽然使用<code>direct</code>交换器改良了我们的系统，但是他还是存在一些限制——它不能根据多种标准路由。 在我们的日志系统中，我们可能不仅想要订阅基于严重性级别的日志，可能还有基于日志出处的。你可能从syslog unix工具知道这个概念，它根据严重性（info/warn/crit &hellip;）和设备（auth/cron/kern &hellip;）来路由日志。 这会给我们很大的灵活性——我们可能想要获取来自&rsquo;cron&rsquo;的严重错误，而且还要听取来自&rsquo;kern&rsquo;的所有日志。 为了在我们的日志系统中实现这一点，我们需要了解更复杂的主题（<code>topic</code>）交换器。</p>
+<h2 id="主题交换器">主题交换器</h2>
+<p>发送到主题交换的消息不能有任意的<code>routing_key</code>——它必须是由点分隔的单词列表。单词可以是任何东西，但通常它们指定连接到消息的一些功能。一些有效的路由键例子： <code>stock.usd.nyse</code>，<code>nyse.vmw</code>，<code>quick.orange.rabbit</code>。在路由选择键中可以有许多单词，最多255个字母。 绑定键也必须有相同的形式。主题交换器背后的逻辑类似于直接的——使用特定的路由键发送的消息将被传送到与匹配的绑定键绑定的所有队列。但是绑定键有两个重要的特殊情况：</p>
+<ul>
+<li>*（星号）可以代替一个单词。</li>
+<li>#（井号）可以代替另个或者多个单词。</li>
+</ul>
+<p>举个简单的例子：</p>
+<p><img src="/assets/images/posts/middleware/python-five.png" alt=""></p>
+<p>在这个例子中，我们将发送所有描述动物的信息。消息将使用由三个单词（两个点）组成的路由键发送。路由键中的第一个单词将描述速度，第二个颜色和第三个种类：<code>&lt;speed&gt;.&lt;color&gt;.&lt;species&gt;</code>。 我们将创建三个绑定：Q1的绑定键是<code>*.orange.*</code>，Q2是<code>*.*.rabbit</code>和<code>lazy.#</code>。 什么含义呢？</p>
+<ul>
+<li>Q1对所有橘色动物感兴趣。</li>
+<li>Q2想要监听所有的兔子和和所有懒惰的动物。</li>
+</ul>
+<p>一条路由键为<code>quick.orange.rabbit</code>将会被分发到两个队列，同样的，<code>lazy.orange.elephant</code>也将被分发到两个队列。而<code>quick.orange.fox</code>只会被发送到第一个队列中，<code>lazy.brown.fox</code>只会被发送到第二个。<code>lazy.pink.rabbit</code>虽然匹配第二个队列中的两个绑定键，但是它只会被发送一次。<code>auick.brown.fox</code>不匹配任何绑定键所以会被直接取消并且被丢掉。 如果违反我们的约定，发送一个或四个单词，如<code>orange</code>或<code>quick.orange.male.rabbit</code>的消息会发生什么？它们也将因为不匹配绑定键而被丢掉。 另一方面，<code>lazy.orange.male.rabbit</code>即使有四个单词，也会匹配最后一个绑定键，并被传递到第二个队列。</p>
+<blockquote>
+<p><strong>主题交换器</strong> 主题交换器功能强大能够拥有其它交换器的功能。 当一个队列使用“＃”（井号）绑定键绑定时，它将接收所有的消息，而不管路由键如何——类似于<code>fanout</code>交换器。 当在绑定中不使用特殊字符“*”（星号）和“＃”（井号）时，主题交换器将像直接交换器一样。</p>
+</blockquote>
+<h2 id="全部代码">全部代码</h2>
+<p>我们将在我们的日志系统中使用主题交换器。我们首先假定日志的路由键有两个单词：<code>&lt;facility&gt;.&lt;severity&gt;</code>。 这个代码和前一个教程基本一样。 <code>emit_log_topic.js</code>：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-js" data-lang="js"><span style="color:#75715e">#!/usr/bin/env node
+</span><span style="color:#75715e"></span>
+<span style="color:#66d9ef">var</span> <span style="color:#a6e22e">amqp</span> <span style="color:#f92672">=</span> <span style="color:#a6e22e">require</span>(<span style="color:#e6db74">&#39;amqplib/callback_api&#39;</span>);
+
+<span style="color:#a6e22e">amqp</span>.<span style="color:#a6e22e">connect</span>(<span style="color:#e6db74">&#39;amqp://localhost&#39;</span>, <span style="color:#66d9ef">function</span>(<span style="color:#a6e22e">err</span>, <span style="color:#a6e22e">conn</span>) {
+  <span style="color:#a6e22e">conn</span>.<span style="color:#a6e22e">createChannel</span>(<span style="color:#66d9ef">function</span>(<span style="color:#a6e22e">err</span>, <span style="color:#a6e22e">ch</span>) {
+    <span style="color:#66d9ef">var</span> <span style="color:#a6e22e">ex</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;topic_logs&#39;</span>;
+    <span style="color:#66d9ef">var</span> <span style="color:#a6e22e">args</span> <span style="color:#f92672">=</span> <span style="color:#a6e22e">process</span>.<span style="color:#a6e22e">argv</span>.<span style="color:#a6e22e">slice</span>(<span style="color:#ae81ff">2</span>);
+    <span style="color:#66d9ef">var</span> <span style="color:#a6e22e">key</span> <span style="color:#f92672">=</span> (<span style="color:#a6e22e">args</span>.<span style="color:#a6e22e">length</span> <span style="color:#f92672">&gt;</span> <span style="color:#ae81ff">0</span>) <span style="color:#f92672">?</span> <span style="color:#a6e22e">args</span>[<span style="color:#ae81ff">0</span>] <span style="color:#f92672">:</span> <span style="color:#e6db74">&#39;anonymous.info&#39;</span>;
+    <span style="color:#66d9ef">var</span> <span style="color:#a6e22e">msg</span> <span style="color:#f92672">=</span> <span style="color:#a6e22e">args</span>.<span style="color:#a6e22e">slice</span>(<span style="color:#ae81ff">1</span>).<span style="color:#a6e22e">join</span>(<span style="color:#e6db74">&#39; &#39;</span>) <span style="color:#f92672">||</span> <span style="color:#e6db74">&#39;Hello World!&#39;</span>;
+
+    <span style="color:#a6e22e">ch</span>.<span style="color:#a6e22e">assertExchange</span>(<span style="color:#a6e22e">ex</span>, <span style="color:#e6db74">&#39;topic&#39;</span>, {<span style="color:#a6e22e">durable</span><span style="color:#f92672">:</span> <span style="color:#66d9ef">false</span>});
+    <span style="color:#a6e22e">ch</span>.<span style="color:#a6e22e">publish</span>(<span style="color:#a6e22e">ex</span>, <span style="color:#a6e22e">key</span>, <span style="color:#66d9ef">new</span> <span style="color:#a6e22e">Buffer</span>(<span style="color:#a6e22e">msg</span>));
+    <span style="color:#a6e22e">console</span>.<span style="color:#a6e22e">log</span>(<span style="color:#e6db74">&#34; [x] Sent %s:&#39;%s&#39;&#34;</span>, <span style="color:#a6e22e">key</span>, <span style="color:#a6e22e">msg</span>);
+  });
+
+  <span style="color:#a6e22e">setTimeout</span>(<span style="color:#66d9ef">function</span>() { <span style="color:#a6e22e">conn</span>.<span style="color:#a6e22e">close</span>(); <span style="color:#a6e22e">process</span>.<span style="color:#a6e22e">exit</span>(<span style="color:#ae81ff">0</span>) }, <span style="color:#ae81ff">500</span>);
+});
+</code></pre></div><p><code>receive_logs_topic.js</code>：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-js" data-lang="js"><span style="color:#75715e">#!/usr/bin/env node
+</span><span style="color:#75715e"></span>
+<span style="color:#66d9ef">var</span> <span style="color:#a6e22e">amqp</span> <span style="color:#f92672">=</span> <span style="color:#a6e22e">require</span>(<span style="color:#e6db74">&#39;amqplib/callback_api&#39;</span>);
+
+<span style="color:#66d9ef">var</span> <span style="color:#a6e22e">args</span> <span style="color:#f92672">=</span> <span style="color:#a6e22e">process</span>.<span style="color:#a6e22e">argv</span>.<span style="color:#a6e22e">slice</span>(<span style="color:#ae81ff">2</span>);
+
+<span style="color:#66d9ef">if</span> (<span style="color:#a6e22e">args</span>.<span style="color:#a6e22e">length</span> <span style="color:#f92672">==</span> <span style="color:#ae81ff">0</span>) {
+  <span style="color:#a6e22e">console</span>.<span style="color:#a6e22e">log</span>(<span style="color:#e6db74">&#34;Usage: receive_logs_topic.js &lt;facility&gt;.&lt;severity&gt;&#34;</span>);
+  <span style="color:#a6e22e">process</span>.<span style="color:#a6e22e">exit</span>(<span style="color:#ae81ff">1</span>);
+}
+
+<span style="color:#a6e22e">amqp</span>.<span style="color:#a6e22e">connect</span>(<span style="color:#e6db74">&#39;amqp://localhost&#39;</span>, <span style="color:#66d9ef">function</span>(<span style="color:#a6e22e">err</span>, <span style="color:#a6e22e">conn</span>) {
+  <span style="color:#a6e22e">conn</span>.<span style="color:#a6e22e">createChannel</span>(<span style="color:#66d9ef">function</span>(<span style="color:#a6e22e">err</span>, <span style="color:#a6e22e">ch</span>) {
+    <span style="color:#66d9ef">var</span> <span style="color:#a6e22e">ex</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;topic_logs&#39;</span>;
+
+    <span style="color:#a6e22e">ch</span>.<span style="color:#a6e22e">assertExchange</span>(<span style="color:#a6e22e">ex</span>, <span style="color:#e6db74">&#39;topic&#39;</span>, {<span style="color:#a6e22e">durable</span><span style="color:#f92672">:</span> <span style="color:#66d9ef">false</span>});
+
+    <span style="color:#a6e22e">ch</span>.<span style="color:#a6e22e">assertQueue</span>(<span style="color:#e6db74">&#39;&#39;</span>, {<span style="color:#a6e22e">exclusive</span><span style="color:#f92672">:</span> <span style="color:#66d9ef">true</span>}, <span style="color:#66d9ef">function</span>(<span style="color:#a6e22e">err</span>, <span style="color:#a6e22e">q</span>) {
+      <span style="color:#a6e22e">console</span>.<span style="color:#a6e22e">log</span>(<span style="color:#e6db74">&#39; [*] Waiting for logs. To exit press CTRL+C&#39;</span>);
+
+      <span style="color:#a6e22e">args</span>.<span style="color:#a6e22e">forEach</span>(<span style="color:#66d9ef">function</span>(<span style="color:#a6e22e">key</span>) {
+        <span style="color:#a6e22e">ch</span>.<span style="color:#a6e22e">bindQueue</span>(<span style="color:#a6e22e">q</span>.<span style="color:#a6e22e">queue</span>, <span style="color:#a6e22e">ex</span>, <span style="color:#a6e22e">key</span>);
+      });
+
+      <span style="color:#a6e22e">ch</span>.<span style="color:#a6e22e">consume</span>(<span style="color:#a6e22e">q</span>.<span style="color:#a6e22e">queue</span>, <span style="color:#66d9ef">function</span>(<span style="color:#a6e22e">msg</span>) {
+        <span style="color:#a6e22e">console</span>.<span style="color:#a6e22e">log</span>(<span style="color:#e6db74">&#34; [x] %s:&#39;%s&#39;&#34;</span>, <span style="color:#a6e22e">msg</span>.<span style="color:#a6e22e">fields</span>.<span style="color:#a6e22e">routingKey</span>, <span style="color:#a6e22e">msg</span>.<span style="color:#a6e22e">content</span>.<span style="color:#a6e22e">toString</span>());
+      }, {<span style="color:#a6e22e">noAck</span><span style="color:#f92672">:</span> <span style="color:#66d9ef">true</span>});
+    });
+  });
+});
+</code></pre></div><p>接受所有日志：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./receive_logs_topic.js <span style="color:#e6db74">&#34;#&#34;</span>
+</code></pre></div><p>从<code>kern</code>中接受所有日志：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">./receive_logs_topic.js <span style="color:#e6db74">&#34;kern.*&#34;</span>
+</code></pre></div><p>或者，你只想监听<code>critical</code>的日志：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">./receive_logs_topic.js <span style="color:#e6db74">&#34;*.critical&#34;</span>
+</code></pre></div><p>你也可以创建多个绑定：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">./receive_logs_topic.js <span style="color:#e6db74">&#34;kern.*&#34;</span> <span style="color:#e6db74">&#34;*.critical&#34;</span>
+</code></pre></div><p>发送<code>kern.critical</code>类型的日志：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">./emit_log_topic.js <span style="color:#e6db74">&#34;kern.critical&#34;</span> <span style="color:#e6db74">&#34;A critical kernel error&#34;</span>
+</code></pre></div><p>请注意，代码不会对路由或绑定键作任何假设，您可能需要使用两个以上的路由键参数。 接下来，在教程6中找出如何做一个远程过程调用的往返消息。</p>
+
+    </div>
+
+    
+    
+      <div class="btn-improve-page">
+          <a href="https://github.com/alphajc/mysite/edit/master/content/posts/middleware/rabbitmq/RabbitMQ%20Exchange%20with%20Node.md">
+            <i class="fas fa-code-branch"></i>
+            Improve This Page
+          </a>
+      </div>
+    
+
+    
+  <hr />
+    <div class="row next-prev-navigator">
+
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    
+      
+      <div class="col-md-6 previous-article">
+        <a href="/posts/middleware/rabbitmq/rabbitmq-rpc-with-node/" class="btn btn-outline-info">
+          <span><i class="fas fa-chevron-circle-left"></i> 上一篇</span>
+          <br />
+          <span>Node使用RabbitMQ：远程过程调用（RPC）</span>
+        </a>
+      </div>
+      
+    
+    
+      
+        
+        
+          
+              
+          
+        
+        <div class="col-md-6 next-article">
+          <a href="/posts/middleware/rabbitmq/rabbitmq-route-with-node/" class="btn btn-outline-info">
+            <span>下一篇 <i class="fas fa-chevron-circle-right"></i></span>
+            <br />
+            <span>Node使用RabbitMQ：路由</span>
+          </a>
+        </div>
+      
+    
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+</div>
+
+  <hr />
+  
+  
+      <div id="disqus_thread"></div>
+<script type="text/javascript">
+  (function () {
+    
+    
+    if (window.location.hostname == "localhost") return;
+
+    var dsq = document.createElement("script");
+    dsq.type = "text/javascript";
+    dsq.async = true;
+    var disqus_shortname = "mydream-ink";
+    dsq.src = "//" + disqus_shortname + ".disqus.com/embed.js";
+    (
+      document.getElementsByTagName("head")[0] ||
+      document.getElementsByTagName("body")[0]
+    ).appendChild(dsq);
+  })();
+</script>
+<noscript
+  >请开启 JavaScript 功能
+  <a href="https://disqus.com/?ref_noscript"
+    >comments powered by Disqus.</a
+  ></noscript
+>
+<a href="https://disqus.com/" class="dsq-brlink"
+  >通过 <span class="logo-disqus">Disqus</span> 评论</a
+>
+
+  
+</div>
+
+    </div>
+
+    <footer class="container-fluid text-center align-content-center footer pb-2">
+  <div class="container pt-5">
+    <div class="row text-left">
+      <div class="col-md-4 col-sm-12">
+        <h5>导航</h5>
+        
+        <ul>
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#about">关于</a>
+            </li>
+            
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#skills">技能</a>
+            </li>
+            
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#experiences">经历</a>
+            </li>
+            
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#projects">项目</a>
+            </li>
+            
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#recent-posts">最近文章</a>
+            </li>
+            
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#achievements">成就</a>
+            </li>
+            
+        </ul>
+        
+
+      </div>
+      <div class="col-md-4 col-sm-12">
+        <h5>联系我</h5>
+        <ul>
+          
+          <li><span>电话: </span> <span>&#43;8619980414909</span></li>
+          
+          <li><span>邮箱: </span> <span>jerry@mydream.ink</span></li>
+          
+        </ul>
+      </div>
+      <div class="col-md-4 col-sm-12">
+        
+        <p>接收最新的邮件通知</p>
+        <form>
+          <div class="form-group">
+            <input
+              type="email"
+              class="form-control"
+              id="exampleInputEmail1"
+              aria-describedby="emailHelp"
+              placeholder="输入邮箱"
+            />
+            <small id="emailHelp" class="form-text text-muted"
+              >你的邮件地址不会被共享给他人</small
+            >
+          </div>
+          <button type="submit" class="btn btn-info">提交</button>
+        </form>
+      </div>
+    </div>
+  </div>
+  <hr />
+  <div class="container">
+    <div class="row text-left">
+      <div class="col-md-4">
+        <a id="theme" href="/" target="#">
+          <img src="/assets/images/logo-inverted.png">青云卷</a>
+      </div>
+      <div class="col-md-4"><a href="https://beian.miit.gov.cn">蜀ICP备 2021017630号-1</a>© 2021 Copyright.</div>
+    </div>
+  </div>
+</footer>
+
+    <script src="/assets/js/jquery-3.4.1.min.js"></script>
+<script src="/assets/js/bootstrap.min.js"></script>
+
+<script src="/assets/js/navbar.js"></script>
+<script src="/assets/js/jquery.filterizr.min.js"></script>
+
+
+    
+    
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/highlight.min.js"></script>
+<script src="/assets/js/single.js"></script>
+<script>
+  hljs.initHighlightingOnLoad();
+</script>
+
+
+  </body>
+</html>

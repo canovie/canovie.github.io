@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Pyflink in Kubernetes</title>
+    <meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta http-equiv="X-UA-Compatible" content="ie=edge" />
+
+
+<link rel="stylesheet" href="/assets/css/bootstrap.min.css" />
+<link rel="stylesheet" href="/assets/css/style.css" />
+<link rel="stylesheet" href="/assets/css/navbar.css" />
+
+
+<link href="https://fonts.googleapis.com/css2?family=Muli:wght@300;400;500;600" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" />
+
+
+<link rel="icon" type="image/png" href="/assets/images/favicon.png" />
+
+
+    
+<link
+  rel="stylesheet"
+  href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/styles/atom-one-dark.min.css"
+/>
+<link rel="stylesheet" href="/assets/css/single.css" />
+
+
+    
+    
+      
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'UA-142765126-1', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+
+    
+  </head>
+
+  <body>
+    <div class="container-fluid bg-dimmed wrapper">
+      
+      
+    <nav class="navbar navbar-expand-lg top-navbar final-navbar shadow">
+    <div class="container">
+      <a class="navbar-brand" href="/posts">
+        <img src="/assets/images/logo.png">青云卷</a>
+      <button class="navbar-toggler navbar-light" type="button" >
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <div class="collapse navbar-collapse" id="top-nav-items">
+        <ul class="navbar-nav ml-auto">
+        </ul>
+      </div>
+    </div>
+</nav>
+
+
+
+      
+      
+<div class="container p-0 read-area">
+  
+  <div class="hero-area col-sm-12" style='background-image: url(https://mydream.ink/assets/images/posts/cloud-native/apache-flink.png);'>
+  </div>
+
+  
+  <div class="page-content">
+    <div class="author-profile ml-auto align-self-lg-center">
+      <img class="rounded-circle" src='/assets/images/portrait.jpg'/>
+      <h5 class="author-name">Jerry Chan</h5>
+      <p>January 6, 2021</p>
+    </div>
+
+    <div class="title">
+      <h1>Pyflink in Kubernetes</h1>
+    </div>
+
+    <div class="post-content" id="post-content">
+      <h2 id="pyflink-on-kubernetes">pyFlink on kubernetes</h2>
+<blockquote>
+<p>在 TKE 环境下</p>
+</blockquote>
+<h3 id="准备工作">准备工作</h3>
+<p>为 flink 创建专用的命名空间、ServiceAccount，并设置好资源配额</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">kubectl create ns flink
+kubectl -n flink create sa flink
+kubectl -n flink create role flink --verb<span style="color:#f92672">=</span>* --resource<span style="color:#f92672">=</span>*.*
+kubectl -n flink create rolebinding flink --role<span style="color:#f92672">=</span>flink --serviceaccount<span style="color:#f92672">=</span>flink:flink
+cat <span style="color:#e6db74">&lt;&lt; EOF &gt; apiserver.crt # base 集群 apiserver 证书
+</span><span style="color:#e6db74">-----BEGIN CERTIFICATE-----
+</span><span style="color:#e6db74">MIICyDCCAbCgAwIBAgIBADANBgkqhkiG9w0BAQsFADAVMRMwEQYDVQQDEwprdWJl
+</span><span style="color:#e6db74">cm5ldGVzMB4XDTIwMDMwNTA4MjYzOFoXDTMwMDMwMzA4MjYzOFowFTETMBEGA1UE
+</span><span style="color:#e6db74">AxMKa3ViZXJuZXRlczCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAMq/
+</span><span style="color:#e6db74">6ae6qIZbchBK7b0AaP2714K+tuxtGnl7p3yNwlCgVEnZjfytAr8cvkIzxCBH8xBc
+</span><span style="color:#e6db74">vqV2vtDOy0r6HecbIPTkd0bGn6BXjqPp6XZY0ffFgyBhGv6/DD7x7aJIG+A8uSVk
+</span><span style="color:#e6db74">/yTGcahGQ9WOQ6CDWDjZvC+K9zkeNqhtj1wm9P/hQcECAQkQbkIqLUF/P8SF4b8N
+</span><span style="color:#e6db74">QlodYsrZIg9MDqgQDq744AoFPm/F6G2GfHs1DfesYMoSYQs6ECec0+N/Nf5Kx7XX
+</span><span style="color:#e6db74">KW+ARAGEZxC3X7bJmxWr5JSRmmS46rmrN/MUDpMBaWUwtxubVxtIwt1FIFlFqCYz
+</span><span style="color:#e6db74">MR9UtvZkTaL6oSd6Q18CAwEAAaMjMCEwDgYDVR0PAQH/BAQDAgKUMA8GA1UdEwEB
+</span><span style="color:#e6db74">/wQFMAMBAf8wDQYJKoZIhvcNAQELBQADggEBABXd9WbwOlhlqyFsr/2s9wgf86+/
+</span><span style="color:#e6db74">oo05gZhybHtuKHYvSwzoxAeyaMFGn4b7S2okcLoo3EwjmAN2Pup/qhTtiqM9xNfa
+</span><span style="color:#e6db74">+GuN+NX4zjkra+T2NEywIykwhodaFiYB+r6xM0LIHANlKKT7kRtgzkq/s8ui6Wkt
+</span><span style="color:#e6db74">b94T8BpE5U3f6YGz/4NtbqpYS6XVjIIjfP5MxoHRCh8H2LXmWs9A2RlmuZAwo0M2
+</span><span style="color:#e6db74">FJjxcfIgvHrgCerPogVcXYT23BavOhMFlx7Jck2GAbDg0HYTabZuLNkj9T1//raL
+</span><span style="color:#e6db74">aknXJxuLYHbZe6I1cbsIdXJjav5c83YgqGDKetcJdkQqMgk8lVWW7RIdLb0=
+</span><span style="color:#e6db74">-----END CERTIFICATE-----
+</span><span style="color:#e6db74">EOF</span>
+kubectl config --kubeconfig<span style="color:#f92672">=</span>flink-kubeconfig set-cluster base --server<span style="color:#f92672">=</span>https://cls-xxxxxxx.ccs.tencent-cloud.com --certificate-authority<span style="color:#f92672">=</span>apiserver.crt --embed-certs<span style="color:#f92672">=</span>true
+kubectl config --kubeconfig<span style="color:#f92672">=</span>flink-kubeconfig set-credentials flink --token<span style="color:#f92672">=</span><span style="color:#66d9ef">$(</span>kubectl -n flink get sa flink -o<span style="color:#f92672">=</span>jsonpath<span style="color:#f92672">={</span>.secrets<span style="color:#f92672">[</span>0<span style="color:#f92672">]</span>.name<span style="color:#f92672">}</span> | xargs kubectl -n flink get secrets -o<span style="color:#f92672">=</span>jsonpath<span style="color:#f92672">={</span>.data.token<span style="color:#f92672">}</span> | base64 -d<span style="color:#66d9ef">)</span>
+kubectl config --kubeconfig<span style="color:#f92672">=</span>flink-kubeconfig set-context default --user<span style="color:#f92672">=</span>flink --cluster<span style="color:#f92672">=</span>base --namespace<span style="color:#f92672">=</span>flink
+cat <span style="color:#e6db74">&lt;&lt; EOF | kubectl create -f -
+</span><span style="color:#e6db74">apiVersion: v1
+</span><span style="color:#e6db74">kind: ResourceQuota
+</span><span style="color:#e6db74">metadata:
+</span><span style="color:#e6db74">  name: flink-rq
+</span><span style="color:#e6db74">  namespace: flink
+</span><span style="color:#e6db74">spec:
+</span><span style="color:#e6db74">  hard:
+</span><span style="color:#e6db74">    limits.cpu: &#34;20&#34;
+</span><span style="color:#e6db74">    limits.memory: 40Gi
+</span><span style="color:#e6db74">    requests.cpu: &#34;10&#34;
+</span><span style="color:#e6db74">    requests.memory: 20Gi
+</span><span style="color:#e6db74">EOF</span>
+</code></pre></div><h3 id="配置-flink-环境">配置 flink 环境</h3>
+<ol>
+<li>
+<p>登录工作服务器，将上述生成的文件拷贝到<code>~/.kube/</code>目录下，并更名为<code>config</code>，此外还需要满足以下依赖条件：</p>
+<p>－ 该服务器需与目标集群网络内网互通
+－ 已安装<code>kubectl</code>工具
+－ 已安装 Java 版本 8 或 11（官方推荐）</p>
+</li>
+<li>
+<p>修改<code>/etc/hosts</code>文件</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">sudo sed -i <span style="color:#e6db74">&#39;$a 10.1.192.48 cls-xxxxxxx.ccs.tencent-cloud.com&#39;</span> /etc/hosts
+</code></pre></div></li>
+<li>
+<p>安装 Flink 工具包</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">wget https://www.apache.org/dyn/closer.lua/flink/flink-1.12.0/flink-1.12.0-bin-scala_2.12.tgz
+tar zxf flink-1.12.0-bin-scala_2.12.tgz
+export PATH<span style="color:#f92672">=</span>$PATH:<span style="color:#e6db74">`</span>pwd<span style="color:#e6db74">`</span>/flink-1.12.0/bin
+</code></pre></div></li>
+</ol>
+<h3 id="部署应用">部署应用</h3>
+<ol>
+<li>
+<p>构建 docker base 镜像</p>
+<blockquote>
+<p>不依赖 flink 环境</p>
+</blockquote>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">git clone https://github.com/apache/flink-docker.git
+cd flink-docker/1.12/scala_2.12-java11-debian
+docker build -t alphajc/flink:1.12-scala_2.12-java11 .
+docker tag alphajc/flink:1.12-scala_2.12-java11 alphajc/flink:1.12-scala_2.12
+docker tag alphajc/flink:1.12-scala_2.12-java11 alphajc/flink:1.12-java11
+docker tag alphajc/flink:1.12-scala_2.12-java11 alphajc/flink:1.12
+docker push -a alphajc/flink <span style="color:#75715e"># 需要先使用 docker login 登录 docker hub，alphajc 为我的账号</span>
+</code></pre></div><p>上述镜像现在可直接使用</p>
+</li>
+<li>
+<p>制作 pyFlink 1.12 的 docker 镜像</p>
+<blockquote>
+<p>不依赖 flink 环境</p>
+</blockquote>
+<p>创建下述 Dockerfile 文件：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-dockerfile" data-lang="dockerfile"><span style="color:#66d9ef">FROM</span><span style="color:#e6db74"> alphajc/flink:1.12</span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#75715e"># install python3 and pip3</span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#66d9ef">RUN</span> apt-get update -y <span style="color:#f92672">&amp;&amp;</span> <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>apt-get install -y python3.7 python3-pip python3.7-dev <span style="color:#f92672">&amp;&amp;</span> rm -rf /var/lib/apt/lists/*<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#66d9ef">RUN</span> ln -s /usr/bin/python3 /usr/bin/python<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#75715e"># install Python Flink</span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#66d9ef">RUN</span> pip3 config set global.index-url https://mirrors.aliyun.com/pypi/simple/ <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>    <span style="color:#f92672">&amp;&amp;</span> pip3 install apache-flink<span style="color:#f92672">==</span>1.12.0<span style="color:#960050;background-color:#1e0010">
+</span></code></pre></div><p>构建并提交：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">docker build -t alphajc/pyflink:1.12 .
+docker push alphajc/pyflink:1.12
+</code></pre></div></li>
+<li>
+<p>运行一个 python 的批处理程序<code>word_count</code></p>
+<blockquote>
+<p>依赖 flink 环境</p>
+</blockquote>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">flink run-application <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>  --target kubernetes-application <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>  --parallelism <span style="color:#ae81ff">8</span> <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>  -Dkubernetes.cluster-id<span style="color:#f92672">=</span>word-count <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>  -Dtaskmanager.memory.process.size<span style="color:#f92672">=</span>4096m <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>  -Dkubernetes.namespace<span style="color:#f92672">=</span>flink <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>  -Dkubernetes.jobmanager.service-account<span style="color:#f92672">=</span>flink <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>  -Dkubernetes.taskmanager.cpu<span style="color:#f92672">=</span><span style="color:#ae81ff">2</span> <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>  -Dtaskmanager.numberOfTaskSlots<span style="color:#f92672">=</span><span style="color:#ae81ff">4</span> <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>  -Dkubernetes.container.image<span style="color:#f92672">=</span>alphajc/pyflink:1.12 <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>  --pyModule word_count <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>  --pyFiles /opt/flink/examples/python/table/batch/word_count.py
+</code></pre></div><p>这是一个批处理程序，运行完就没了，可以使用<code>kubectl get po -w</code>持续观察 Pod 的变化：</p>
+<p><img src="/assets/images/word_count_pods_watch.png" alt=""></p>
+</li>
+<li>
+<p>自定义镜像创建一个需要连接 mysql 和 kafka 的流处理应用(test)</p>
+<blockquote>
+<p>不依赖 flink 环境</p>
+</blockquote>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">git clone ssh://git@github.com:xxxx/flink_test.git <span style="color:#75715e"># 克隆 flink 测试库</span>
+cd flink_test
+</code></pre></div><p>创建下述的 Dockerfile 文件：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-dockerfile" data-lang="dockerfile"><span style="color:#66d9ef">FROM</span><span style="color:#e6db74"> alphajc/pyflink:1.12</span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#66d9ef">ADD</span> --chown<span style="color:#f92672">=</span>9999:9999 https://repo.maven.apache.org/maven2/org/apache/flink/flink-sql-connector-kafka_2.11/1.12.0/flink-sql-connector-kafka_2.11-1.12.0.jar /opt/flink/lib/<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#66d9ef">ADD</span> --chown<span style="color:#f92672">=</span>9999:9999 https://repo.maven.apache.org/maven2/org/apache/flink/flink-connector-jdbc_2.11/1.12.0/flink-connector-jdbc_2.11-1.12.0.jar /opt/flink/lib/<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#66d9ef">ADD</span> --chown<span style="color:#f92672">=</span>9999:9999 https://repo.maven.apache.org/maven2/mysql/mysql-connector-java/8.0.22/mysql-connector-java-8.0.22.jar /opt/flink/lib/<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#66d9ef">ADD</span> --chown<span style="color:#f92672">=</span>9999:9999 examples_112 /app/flink_test<span style="color:#960050;background-color:#1e0010">
+</span></code></pre></div><p>构建发布镜像：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">docker build -t alphajc/flink_test .
+docker push alphajc/flink_test
+</code></pre></div></li>
+<li>
+<p>运行 test 应用</p>
+<blockquote>
+<p>依赖 flink 环境</p>
+</blockquote>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">flink run-application  <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>--target kubernetes-application <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>--parallelism <span style="color:#ae81ff">8</span> <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>-Dkubernetes.cluster-id<span style="color:#f92672">=</span>test <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>-Dkubernetes.container.image<span style="color:#f92672">=</span>alphajc/flink_test <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>-Dkubernetes.namespace<span style="color:#f92672">=</span>flink <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>-Dkubernetes.jobmanager.service-account<span style="color:#f92672">=</span>flink <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>-Dtaskmanager.memory.process.size<span style="color:#f92672">=</span>4096m <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>-Dkubernetes.taskmanager.cpu<span style="color:#f92672">=</span><span style="color:#ae81ff">2</span> <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>-Dtaskmanager.numberOfTaskSlots<span style="color:#f92672">=</span><span style="color:#ae81ff">4</span> <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>-Dkubernetes.container.image.pull-secrets<span style="color:#f92672">=</span>qcloudregistrykey <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>-Dexecution.attached<span style="color:#f92672">=</span>true <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>-Dkubernetes.container.image.pull-policy<span style="color:#f92672">=</span>Always <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>--pyModule test <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>--pyFiles /app/flink_test/test.py
+</code></pre></div></li>
+</ol>
+<h4 id="一些提示一些坑">一些提示＆一些坑</h4>
+<ol>
+<li>jobmanager 的日志中可以看到 jar 包有没使用成功</li>
+</ol>
+<pre><code>2021-01-05 02:00:00,510 INFO  org.apache.flink.runtime.entrypoint.ClusterEntrypoint        [] -  Classpath: /opt/flink/lib/flink-csv-1.12.0.jar:/opt/flink/lib/flink-json-1.12.0.jar:/opt/flink/lib/flink-shaded-zookeeper-3.4.14.jar:/opt/flink/lib/flink-table-blink_2.12-1.12.0.jar:/opt/flink/lib/flink-table_2.12-1.12.0.jar:/opt/flink/lib/log4j-1.2-api-2.12.1.jar:/opt/flink/lib/log4j-api-2.12.1.jar:/opt/flink/lib/log4j-core-2.12.1.jar:/opt/flink/lib/log4j-slf4j-impl-2.12.1.jar:/opt/flink/lib/flink-dist_2.12-1.12.0.jar:::
+</code></pre><ol start="2">
+<li>缺少 kafka connector 插件</li>
+</ol>
+<pre><code>Caused by: org.apache.flink.table.api.ValidationException: Could not find any factory for identifier 'kafka' that implements 'org.apache.flink.table.factories.DynamicTableFactory' in the classpath.
+</code></pre><ol start="3">
+<li>缺少 jdbc 插件</li>
+</ol>
+<pre><code>Caused by: org.apache.flink.table.api.ValidationException: Could not find any factory for identifier 'jdbc' that implements 'org.apache.flink.table.factories.DynamicTableFactory' in the classpath.
+</code></pre><ol start="4">
+<li>缺少 mysql 插件</li>
+</ol>
+<pre><code>java.io.IOException: unable to open JDBC writer
+	at org.apache.flink.connector.jdbc.internal.AbstractJdbcOutputFormat.open(AbstractJdbcOutputFormat.java:61) ~[flink-connector-jdbc_2.11-1.12.0.jar:1.12.0]
+	at org.apache.flink.connector.jdbc.internal.JdbcBatchingOutputFormat.open(JdbcBatchingOutputFormat.java:114) ~[flink-connector-jdbc_2.11-1.12.0.jar:1.12.0]
+	at org.apache.flink.streaming.api.functions.sink.OutputFormatSinkFunction.open(OutputFormatSinkFunction.java:65) ~[flink-dist_2.12-1.12.0.jar:1.12.0]
+	at org.apache.flink.api.common.functions.util.FunctionUtils.openFunction(FunctionUtils.java:36) ~[flink-dist_2.12-1.12.0.jar:1.12.0]
+	at org.apache.flink.streaming.api.operators.AbstractUdfStreamOperator.open(AbstractUdfStreamOperator.java:102) ~[flink-dist_2.12-1.12.0.jar:1.12.0]
+	at org.apache.flink.table.runtime.operators.sink.SinkOperator.open(SinkOperator.java:63) ~[flink-table-blink_2.12-1.12.0.jar:1.12.0]
+	at org.apache.flink.streaming.runtime.tasks.OperatorChain.initializeStateAndOpenOperators(OperatorChain.java:401) ~[flink-dist_2.12-1.12.0.jar:1.12.0]
+	at org.apache.flink.streaming.runtime.tasks.StreamTask.lambda$beforeInvoke$2(StreamTask.java:507) ~[flink-dist_2.12-1.12.0.jar:1.12.0]
+	at org.apache.flink.streaming.runtime.tasks.StreamTaskActionExecutor$1.runThrowing(StreamTaskActionExecutor.java:47) ~[flink-dist_2.12-1.12.0.jar:1.12.0]
+	at org.apache.flink.streaming.runtime.tasks.StreamTask.beforeInvoke(StreamTask.java:501) ~[flink-dist_2.12-1.12.0.jar:1.12.0]
+	at org.apache.flink.streaming.runtime.tasks.StreamTask.invoke(StreamTask.java:531) ~[flink-dist_2.12-1.12.0.jar:1.12.0]
+	at org.apache.flink.runtime.taskmanager.Task.doRun(Task.java:722) ~[flink-dist_2.12-1.12.0.jar:1.12.0]
+	at org.apache.flink.runtime.taskmanager.Task.run(Task.java:547) ~[flink-dist_2.12-1.12.0.jar:1.12.0]
+	at java.lang.Thread.run(Unknown Source) ~[?:?]
+Caused by: java.lang.ClassNotFoundException: com.mysql.jdbc.Driver
+	at jdk.internal.loader.BuiltinClassLoader.loadClass(Unknown Source) ~[?:?]
+	at jdk.internal.loader.ClassLoaders$AppClassLoader.loadClass(Unknown Source) ~[?:?]
+	at java.lang.ClassLoader.loadClass(Unknown Source) ~[?:?]
+	at java.lang.Class.forName0(Native Method) ~[?:?]
+	at java.lang.Class.forName(Unknown Source) ~[?:?]
+	at org.apache.flink.connector.jdbc.internal.connection.SimpleJdbcConnectionProvider.getConnection(SimpleJdbcConnectionProvider.java:52) ~[flink-connector-jdbc_2.11-1.12.0.jar:1.12.0]
+	at org.apache.flink.connector.jdbc.internal.AbstractJdbcOutputFormat.establishConnection(AbstractJdbcOutputFormat.java:66) ~[flink-connector-jdbc_2.11-1.12.0.jar:1.12.0]
+	at org.apache.flink.connector.jdbc.internal.AbstractJdbcOutputFormat.open(AbstractJdbcOutputFormat.java:59) ~[flink-connector-jdbc_2.11-1.12.0.jar:1.12.0]
+	... 13 more
+</code></pre>
+    </div>
+
+    
+    
+      <div class="btn-improve-page">
+          <a href="https://github.com/alphajc/mysite/edit/master/content/posts/cloud-native/kubernetes/pyflink-in-kubernetes.md">
+            <i class="fas fa-code-branch"></i>
+            Improve This Page
+          </a>
+      </div>
+    
+
+    
+  <hr />
+    <div class="row next-prev-navigator">
+
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    
+    
+      
+        
+        
+        <div class="col-md-12 next-article">
+          <a href="/posts/cloud-native/kubernetes/record-a-kubernetes-service-exception-caused-by-ipvs/" class="btn btn-outline-info">
+            <span>下一篇 <i class="fas fa-chevron-circle-right"></i></span>
+            <br />
+            <span>记一次 IPVS 引起的 kubernetes 服务异常</span>
+          </a>
+        </div>
+      
+    
+  
+
+</div>
+
+  <hr />
+  
+  
+      <div id="disqus_thread"></div>
+<script type="text/javascript">
+  (function () {
+    
+    
+    if (window.location.hostname == "localhost") return;
+
+    var dsq = document.createElement("script");
+    dsq.type = "text/javascript";
+    dsq.async = true;
+    var disqus_shortname = "mydream-ink";
+    dsq.src = "//" + disqus_shortname + ".disqus.com/embed.js";
+    (
+      document.getElementsByTagName("head")[0] ||
+      document.getElementsByTagName("body")[0]
+    ).appendChild(dsq);
+  })();
+</script>
+<noscript
+  >请开启 JavaScript 功能
+  <a href="https://disqus.com/?ref_noscript"
+    >comments powered by Disqus.</a
+  ></noscript
+>
+<a href="https://disqus.com/" class="dsq-brlink"
+  >通过 <span class="logo-disqus">Disqus</span> 评论</a
+>
+
+  
+</div>
+
+    </div>
+
+    <footer class="container-fluid text-center align-content-center footer pb-2">
+  <div class="container pt-5">
+    <div class="row text-left">
+      <div class="col-md-4 col-sm-12">
+        <h5>导航</h5>
+        
+        <ul>
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#about">关于</a>
+            </li>
+            
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#skills">技能</a>
+            </li>
+            
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#experiences">经历</a>
+            </li>
+            
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#projects">项目</a>
+            </li>
+            
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#recent-posts">最近文章</a>
+            </li>
+            
+            
+            <li class="nav-item">
+              <a class="smooth-scroll" href="/#achievements">成就</a>
+            </li>
+            
+        </ul>
+        
+
+      </div>
+      <div class="col-md-4 col-sm-12">
+        <h5>联系我</h5>
+        <ul>
+          
+          <li><span>电话: </span> <span>&#43;8619980414909</span></li>
+          
+          <li><span>邮箱: </span> <span>jerry@mydream.ink</span></li>
+          
+        </ul>
+      </div>
+      <div class="col-md-4 col-sm-12">
+        
+        <p>接收最新的邮件通知</p>
+        <form>
+          <div class="form-group">
+            <input
+              type="email"
+              class="form-control"
+              id="exampleInputEmail1"
+              aria-describedby="emailHelp"
+              placeholder="输入邮箱"
+            />
+            <small id="emailHelp" class="form-text text-muted"
+              >你的邮件地址不会被共享给他人</small
+            >
+          </div>
+          <button type="submit" class="btn btn-info">提交</button>
+        </form>
+      </div>
+    </div>
+  </div>
+  <hr />
+  <div class="container">
+    <div class="row text-left">
+      <div class="col-md-4">
+        <a id="theme" href="/" target="#">
+          <img src="/assets/images/logo-inverted.png">青云卷</a>
+      </div>
+      <div class="col-md-4"><a href="https://beian.miit.gov.cn">蜀ICP备 2021017630号-1</a>© 2021 Copyright.</div>
+    </div>
+  </div>
+</footer>
+
+    <script src="/assets/js/jquery-3.4.1.min.js"></script>
+<script src="/assets/js/bootstrap.min.js"></script>
+
+<script src="/assets/js/navbar.js"></script>
+<script src="/assets/js/jquery.filterizr.min.js"></script>
+
+
+    
+    
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/highlight.min.js"></script>
+<script src="/assets/js/single.js"></script>
+<script>
+  hljs.initHighlightingOnLoad();
+</script>
+
+
+  </body>
+</html>

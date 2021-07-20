@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Linux on 青云卷</title>
+    <link>https://mydream.ink/tags/linux/</link>
+    <description>Recent content in Linux on 青云卷</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh-cn</language>
+    <lastBuildDate>Sat, 27 Jul 2019 21:56:03 +0800</lastBuildDate><atom:link href="https://mydream.ink/tags/linux/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Docker 背后的内核知识——cgroups 资源限制</title>
+      <link>https://mydream.ink/archive/docker-kernel-knowledge-cgroups-resource-isolation/</link>
+      <pubDate>Sat, 27 Jul 2019 21:56:03 +0800</pubDate>
+      
+      <guid>https://mydream.ink/archive/docker-kernel-knowledge-cgroups-resource-isolation/</guid>
+      <description>上一篇中，我们了解了 Docker 背后使用的资源隔离技术 namespace，通过系统调用构建一个相对隔离的 shell 环境，也可以称之为一个简单的“容器”。本文我们则要开始讲解另一个强大的内核工具——cgroups。他不仅可以限制被 namespace 隔离起来的资源，还可以为资源设置权重、计算使用量、操控进程启停等等。在介绍完基本概念后，我们将详细讲解 Docker 中使用到的 cgroups 内容。希望通过本文，让读者对 Docker 有更深入的了解。
+1. cgroups 是什么 cgroups（Control Groups）最初叫 Process Container，由 Google 工程师（Paul Menage 和 Rohit Seth）于 2006 年提出，后来因为 Container 有多重含义容易引起误解，就在 2007 年更名为 Control Groups，并被整合进 Linux 内核。顾名思义就是把进程放到一个组里面统一加以控制。官方的定义如下 { 引自：https://www.kernel.org/doc/Documentation/cgroups/cgroups.txt }：
+ cgroups 是 Linux 内核提供的一种机制，这种机制可以根据特定的行为，把一系列系统任务及其子任务整合（或分隔）到按资源划分等级的不同组内，从而为系统资源管理提供一个统一的框架。
+ 通俗的来说，cgroups 可以限制、记录、隔离进程组所使用的物理资源（包括：CPU、memory、IO 等），为容器实现虚拟化提供了基本保证，是构建 Docker 等一系列虚拟化管理工具的基石。
+对开发者来说，cgroups 有如下四个有趣的特点：
+ cgroups 的 API 以一个伪文件系统的方式实现，即用户可以通过文件操作实现 cgroups 的组织管理。 cgroups 的组织管理操作单元可以细粒度到线程级别，用户态代码也可以针对系统分配的资源创建和销毁 cgroups，从而实现资源再分配和管理。 所有资源管理的功能都以“subsystem（子系统）”的方式实现，接口统一。 子进程创建之初与其父进程处于同一个 cgroups 的控制组。  本质上来说，cgroups 是内核附加在程序上的一系列钩子（hooks），通过程序运行时对资源的调度触发相应的钩子以达到资源追踪和限制的目的。</description>
+    </item>
+    
+    <item>
+      <title>在CentOS6.5上布署OpenLDAP</title>
+      <link>https://mydream.ink/archive/deploy-openldap-on-centos-6.5/</link>
+      <pubDate>Sun, 07 Jul 2019 08:19:54 +0800</pubDate>
+      
+      <guid>https://mydream.ink/archive/deploy-openldap-on-centos-6.5/</guid>
+      <description>本文系统：Centos6.5_x64
+ip:192.168.28.139
+客户端：192.168.28.141
+推荐大家可以先了解下AD域的结构，一些概念性的东西，比如树、林、组织单位、资源等
+openldap 可以看作是nis的升级，把他想象成资料库的一种就好了
+一、ldap的部署、用户信息的存储   安装openldap
+ [root@master ~]# yum install openldap openldap-devel openldap-servers openldap-clients -y    配置文件模版
+ [root@master ~]# cp /usr/share/openldap-servers/slapd.conf.obsolete /etc/openldap/slapd.conf  修改配置文件
+ [root@master ~]# vim /etc/openldap/slapd.conf 26 pidfile /var/run/openldap/slapd.pid 27 argsfile /var/run/openldap/slapd.args 28 loglevel 1 115 suffix &amp;quot;dc=lansgg,dc=com&amp;quot; 117 rootdn &amp;quot;cn=admin,dc=lansgg,dc=com&amp;quot; 121 rootpw adminpw  这里管理员的密码使用了明文，也可以使用加密形式，方法如下：
+ [root@master ~]# slappasswd New password: Re-enter new password: {SSHA}7EJGErpaeX3Zd6rxfxVzNVwSm2UC1e/T  将密文串替换成adminpw即可；
+你也可以指定加密方式：</description>
+    </item>
+    
+    <item>
+      <title>LXC的简单用法</title>
+      <link>https://mydream.ink/archive/the-simple-usage-of-lxc/</link>
+      <pubDate>Sun, 07 Jul 2019 08:02:31 +0800</pubDate>
+      
+      <guid>https://mydream.ink/archive/the-simple-usage-of-lxc/</guid>
+      <description>LXC简介 LXC (Linux Containters) 是一种基于内核容器属性的用户空间接口。 它被认为介于chroot和完全虚拟化之间，其目标为创建一个不需要独立内核，但近可能接近标准Linux安装的环境。
+其特性如下：
+ 内核空间（ipc, uts, mount, pid, network和user) 支持Apparmor和SELinux seccomp策略 chroots (使用pivot_root) Kernel capabilities 支持cgroups (Control groups) 由于没有完全虚拟化CPU，也没有虚拟化硬盘，其性能是与物理机接近的。实际经验，我发现在LXC中编译C/C++源码（如构建基于C/C++源码的RPM或DEB）的性能是VirtualBox的3倍。强烈建议使用LXC代替KVM和VirtualBox作为RPM或DEB的构建环境。  以下操作基于Ubuntu 12.04，那么需要安装LXC包：
+sudo apt-get install -y lxc  创建LXC 以创建一个名为precise的Ubuntu 12.04容器为例。
+需要创建一个基础的配置文件。由于创建LXC完成后，不再需要该配置文件（可以删除），故该文件的名字和路径没有特殊要求。这里命名为precise.conf，放在当前路径下：
+lxc.network.type = veth lxc.network.flags = up lxc.network.name = eth0 lxc.network.link = lxcbr0  lxcbr0为由LXC包创建的虚拟网桥，通过ifconfig可以知道其IP地址10.0.3.1，网段10.0.3.1/24，容器将通过lxcbr0与外界通信。
+如此，可以开始创建容器了：
+sudo lxc-create -n precise -f precise.conf -t ubuntu -- -r precise   -n 指定容器名，这里为precise。
+-f 指定基础配置文件，即上一步骤创建的precise.conf。
+-t 指定模板名，这里必须为ubuntu（创建Ubuntu 12.</description>
+    </item>
+    
+    <item>
+      <title>GNU sed用户手册</title>
+      <link>https://mydream.ink/posts/tools/gnu-sed/</link>
+      <pubDate>Sun, 11 Mar 2018 08:49:39 +0800</pubDate>
+      
+      <guid>https://mydream.ink/posts/tools/gnu-sed/</guid>
+      <description>1 简介 sed是一个流编辑器（Stream EDitor）。流编辑器对输入流（文件或者是来自于管道的输入）进行基本的文件转换。虽然在某些方面类似于脚本化编辑器（例如ed），但是sed通过对输入进行一次遍历来工作，因此更高效。比较大的区别是sed能在管道中筛选文本。
+2 运行 2.1 概述 一般的sed用法：
+sed SCRIPT INPUTFILE... 例，将input.txt中的‘hello’全部替换成‘world’：
+sed &amp;#39;s/hello/world/&amp;#39; input.txt &amp;gt; output.txt 如果已没有指定INPUTFILE或者INPUTFILE是-，sed将处理标准输入的内容，下述命令是等价的：
+sed &amp;#39;s/hello/world/&amp;#39; input.txt &amp;gt; output.txt sed &amp;#39;s/hello/world/&amp;#39; &amp;lt; input.txt &amp;gt; output.txt cat input.txt | sed &amp;#39;s/hello/world/&amp;#39; - &amp;gt; output.txt sed默认是将处理结果写到标准输出。使用-i参数则是直接修改文件。另见W和s///w命令将输出写入到其他文件。下述命令将会修改file.txt文件而不会产生任何输出：
+sed -i &amp;#39;s/hello/world&amp;#39; file.txt 默认情况下，sed打印所有的输入（修改和删除除外，比如命令d）。用-n限制输出，p打印特定行。以下命令只打印输入文件的第45行：
+sed -n &amp;#39;45p&amp;#39; file.txt sed将多个输入文件作为一个长的输入流，在下述例子中，将打印第一个文件（one.txt）的第一行和第三个文件（three.txt）的最后一行。可用-s反转。
+sed -n &amp;#39;1p ; $p&amp;#39; one.txt two.txt three.txt 若没有指定-e或者-f选项，sed使用第一个非选项参数作为执行脚本，接下来的非选项参数作为输入文件。如果使用-e或者-f指定一个执行脚本，其它所有的非参数选项将作为输入文件。-e和-f可以结合使用，并且可以多次出现（最终的执行脚本是这些单独脚本连接后的结果）。 下述例子是等价的：
+sed &amp;#39;s/hello/world/&amp;#39; input.txt &amp;gt; output.txt sed -e &amp;#39;s/hello/world/&amp;#39; input.txt &amp;gt; output.txt sed --expression=&amp;#39;s/hello/world/&amp;#39; input.</description>
+    </item>
+    
+  </channel>
+</rss>

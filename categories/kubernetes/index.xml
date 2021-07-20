@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>kubernetes on 青云卷</title>
+    <link>https://mydream.ink/categories/kubernetes/</link>
+    <description>Recent content in kubernetes on 青云卷</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh-cn</language>
+    <lastBuildDate>Wed, 06 Jan 2021 15:00:43 +0800</lastBuildDate><atom:link href="https://mydream.ink/categories/kubernetes/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Pyflink in Kubernetes</title>
+      <link>https://mydream.ink/posts/cloud-native/kubernetes/pyflink-in-kubernetes/</link>
+      <pubDate>Wed, 06 Jan 2021 15:00:43 +0800</pubDate>
+      
+      <guid>https://mydream.ink/posts/cloud-native/kubernetes/pyflink-in-kubernetes/</guid>
+      <description>pyFlink on kubernetes  在 TKE 环境下
+ 准备工作 为 flink 创建专用的命名空间、ServiceAccount，并设置好资源配额
+kubectl create ns flink kubectl -n flink create sa flink kubectl -n flink create role flink --verb=* --resource=*.* kubectl -n flink create rolebinding flink --role=flink --serviceaccount=flink:flink cat &amp;lt;&amp;lt; EOF &amp;gt; apiserver.crt # base 集群 apiserver 证书 -----BEGIN CERTIFICATE----- MIICyDCCAbCgAwIBAgIBADANBgkqhkiG9w0BAQsFADAVMRMwEQYDVQQDEwprdWJl cm5ldGVzMB4XDTIwMDMwNTA4MjYzOFoXDTMwMDMwMzA4MjYzOFowFTETMBEGA1UE AxMKa3ViZXJuZXRlczCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAMq/ 6ae6qIZbchBK7b0AaP2714K+tuxtGnl7p3yNwlCgVEnZjfytAr8cvkIzxCBH8xBc vqV2vtDOy0r6HecbIPTkd0bGn6BXjqPp6XZY0ffFgyBhGv6/DD7x7aJIG+A8uSVk /yTGcahGQ9WOQ6CDWDjZvC+K9zkeNqhtj1wm9P/hQcECAQkQbkIqLUF/P8SF4b8N QlodYsrZIg9MDqgQDq744AoFPm/F6G2GfHs1DfesYMoSYQs6ECec0+N/Nf5Kx7XX KW+ARAGEZxC3X7bJmxWr5JSRmmS46rmrN/MUDpMBaWUwtxubVxtIwt1FIFlFqCYz MR9UtvZkTaL6oSd6Q18CAwEAAaMjMCEwDgYDVR0PAQH/BAQDAgKUMA8GA1UdEwEB /wQFMAMBAf8wDQYJKoZIhvcNAQELBQADggEBABXd9WbwOlhlqyFsr/2s9wgf86+/ oo05gZhybHtuKHYvSwzoxAeyaMFGn4b7S2okcLoo3EwjmAN2Pup/qhTtiqM9xNfa +GuN+NX4zjkra+T2NEywIykwhodaFiYB+r6xM0LIHANlKKT7kRtgzkq/s8ui6Wkt b94T8BpE5U3f6YGz/4NtbqpYS6XVjIIjfP5MxoHRCh8H2LXmWs9A2RlmuZAwo0M2 FJjxcfIgvHrgCerPogVcXYT23BavOhMFlx7Jck2GAbDg0HYTabZuLNkj9T1//raL aknXJxuLYHbZe6I1cbsIdXJjav5c83YgqGDKetcJdkQqMgk8lVWW7RIdLb0= -----END CERTIFICATE----- EOF kubectl config --kubeconfig=flink-kubeconfig set-cluster base --server=https://cls-xxxxxxx.</description>
+    </item>
+    
+    <item>
+      <title>记一次 IPVS 引起的 kubernetes 服务异常</title>
+      <link>https://mydream.ink/posts/cloud-native/kubernetes/record-a-kubernetes-service-exception-caused-by-ipvs/</link>
+      <pubDate>Sun, 06 Dec 2020 17:14:02 +0800</pubDate>
+      
+      <guid>https://mydream.ink/posts/cloud-native/kubernetes/record-a-kubernetes-service-exception-caused-by-ipvs/</guid>
+      <description>问题描述 在我们的环境中，业务 A 会访问业务 B（也即 B 是 A 的上游服务），当 B 发版时，A 的请求偶尔会出现 timeout。现象看起来是流量路由到了已经不能提供服务的老的 pod 中。
+问题处理 排查点一 当 pod 下线时，endpoint controller 未及时将 pod 从 endpoint 中取出，导致流量进入了旧的 pod。
+由于集群 master 是托管部署的，所以我们没有办法查看相关日志和负载，求助于腾讯云的同时，自己这边也在排查。排查分两步进行，监控服务 B endpoint 的变化，同时滚动重启该服务。
+  监控 ep 变化
+watch -n 1 kubectl -n production describe ep wk-dispatcher   重启服务
+kubectl -n production rollout restart deployment wk-dispatcher   通过排查发现，跟 endpoint controller 并没有关系，因为 ep 变化很及时，加上至少 30 秒的优雅终止时间，基本可以确定在服务结束前，pod 是从 ep 中移除了的。</description>
+    </item>
+    
+    <item>
+      <title>使用 cert-manager 自动管理 tls 证书</title>
+      <link>https://mydream.ink/posts/cloud-native/kubernetes/use-cert-manager-in-kubernetes/</link>
+      <pubDate>Sat, 09 Nov 2019 08:49:39 +0800</pubDate>
+      
+      <guid>https://mydream.ink/posts/cloud-native/kubernetes/use-cert-manager-in-kubernetes/</guid>
+      <description>http 协议是一个全明文传输的协议，不加任何处理的 http 报文将在因特网中裸奔，只要有人对监听你的报文，你所有隐私将被人一览无余。Let’s Encrypt 是一家免费、开放、自动化的证书颁发机构（CA），为公众的利益而运行。它是一项由 Internet Security Research Group（ISRG）提供的服务。本着想要创建一个更安全，更尊重隐私的 Web 环境的初衷，Let’s Encrypt 以尽可能对用户友好的方式免费提供为网站启用 HTTPS（SSL/TLS）所需的数字证书。
+但是 Let’s Encrypt 颁发的证书有个特点，有效期只有三个月。这意味着我们需要频繁续期证书，倘若手动续期，无疑会增加运维成本。有什么方式可以为我们自动颁发证书吗？当然有！ACME 无疑就是我们的最佳选择。
+有一款很好用的 ACME 客户端叫 Certbot，可以帮助自动颁发、续期证书。在 kubernetes 的生态中有没有什么好的工具能帮助我们非常方便地使用证书么？当然有，那就是本期主题——cert-manager。
+cert-manager 是本地 Kubernetes 证书管理控制器。它可以帮助从各种来源颁发证书，例如 Let&amp;rsquo;s Encrypt，HashiCorp Vault，Venafi，简单的签名密钥对或自签名。它将确保证书有效并且是最新的，并在到期前尝试在配置的时间续订证书。
+原理比较简单，本文就不讲了，主要谈谈来安装和使用。
+安装 YAML 安装   创建 namespace
+kubectl create namespace cert-manager   安装 crd 和 cert-manager
+kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/v0.11.0/cert-manager.yaml  值得说明的是：在 kubernetes 1.15 以前的版本需要在执行kubectl apply时添加一个参数--validate=false，否则在创建 CustomResourceDefinition 资源时会收到与 x-kubernetes-preserve-unknown-fields 字段有关的验证错误。
+   helm 安装 依次执行下述命令：</description>
+    </item>
+    
+    <item>
+      <title>在 Mac 上使用 Docker 自带的 Kubernetes</title>
+      <link>https://mydream.ink/posts/cloud-native/kubernetes/use-kubernetes-from-docker-on-mac/</link>
+      <pubDate>Fri, 12 Jul 2019 20:23:13 +0800</pubDate>
+      
+      <guid>https://mydream.ink/posts/cloud-native/kubernetes/use-kubernetes-from-docker-on-mac/</guid>
+      <description>Mac 安装 Docker 的方法不再赘述，很简单，官方下载安装即可。
+安装完成后，kubectl的二进制文件就已经存在了。我们仅需要下载镜像，开启 kubernetes。
+下载镜像 查看一下你的 Docker 和 Kubernetes 版本：
+使用以下脚本，记得将镜像版本改成你所需要的🍁
+#!/bin/bash  set -e KUBE_VERSION=v1.10.11 KUBE_PAUSE_VERSION=3.1 ETCD_VERSION=3.1.12 DNS_VERSION=1.14.8 DOCKER_TOOL_VERSION=v0.4.12 GCR_URL=k8s.gcr.io ALIYUN_URL=registry.cn-hangzhou.aliyuncs.com/google_containers images=(kube-proxy-amd64:${KUBE_VERSION} kube-scheduler-amd64:${KUBE_VERSION} kube-controller-manager-amd64:${KUBE_VERSION} kube-apiserver-amd64:${KUBE_VERSION} pause-amd64:${KUBE_PAUSE_VERSION} etcd-amd64:${ETCD_VERSION} k8s-dns-sidecar-amd64:${DNS_VERSION} k8s-dns-kube-dns-amd64:${DNS_VERSION} k8s-dns-dnsmasq-nanny-amd64:${DNS_VERSION}) for image in ${images[@]} ; do docker pull ${ALIYUN_URL}/${image} docker tag ${ALIYUN_URL}/${image} ${GCR_URL}/${image} docker rmi ${ALIYUN_URL}/${image} done # 拉取 Docker 相关镜像 docker pull docker/kube-compose-api-server:${DOCKER_TOOL_VERSION} docker pull docker/kube-compose-controller:${DOCKER_TOOL_VERSION} 执行该脚本，将从阿里镜像库获得所需镜像。
+启动 Kubernetes 功能 打开 Docker 配置面板，请至少勾选 Enable Kubernetes 以开启 Kubernetes 服务。</description>
+    </item>
+    
+    <item>
+      <title>使用 kubeadm 安装 Kubernetes 1.10.0</title>
+      <link>https://mydream.ink/posts/cloud-native/kubernetes/kubeadm/</link>
+      <pubDate>Fri, 09 Mar 2018 00:00:00 +0000</pubDate>
+      
+      <guid>https://mydream.ink/posts/cloud-native/kubernetes/kubeadm/</guid>
+      <description>kubernetes可以使用多种容器runtime，此处使用当前最常见的docker。
+安装docker 在各种机器上安装docker的方式不同，我曾翻译过一篇ubuntu安装docker的文章，还有一些没来的及翻译的，可以参考官方文档。推荐的docker版本为v1.12，v1.11, v1.13 和 17.03 也行，其它的官方就没测试过了，不过我使用当前最新的v18.03也行。
+docker官方  使用Ubuntu安装docker-ce Mac和Windows桌面安装docker-ce  下载Mac版本的docker-ce，执行即安装 下载Windows版本的docker-ce，执行即可安装   CentOS安装docker-ce Fedora安装docker-ce 二进制安装方式  kubernetes推荐   Ubuntu/Debian/HypriotOS 从Ubuntu的库安装
+apt-get update apt-get install -y docker.io 使用docker库安装v17.03
+apt-get update apt-get install -y \  apt-transport-https \  ca-certificates \  curl \  software-properties-common curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add - add-apt-repository \  &amp;#34;deb https://download.docker.com/linux/$(. /etc/os-release; echo &amp;#34;$ID&amp;#34;)\ $(lsb_release -cs)\ stable&amp;#34; apt-get update &amp;amp;&amp;amp; apt-get install -y docker-ce=$(apt-cache madison docker-ce | grep 17.</description>
+    </item>
+    
+  </channel>
+</rss>

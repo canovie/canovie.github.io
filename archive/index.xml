@@ -1,0 +1,255 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>转载 on 青云卷</title>
+    <link>https://mydream.ink/archive/</link>
+    <description>Recent content in 转载 on 青云卷</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh-cn</language>
+    <lastBuildDate>Thu, 13 Sep 2018 22:31:21 +0800</lastBuildDate><atom:link href="https://mydream.ink/archive/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Docker 背后的内核知识——cgroups 资源限制</title>
+      <link>https://mydream.ink/archive/docker-kernel-knowledge-cgroups-resource-isolation/</link>
+      <pubDate>Sat, 27 Jul 2019 21:56:03 +0800</pubDate>
+      
+      <guid>https://mydream.ink/archive/docker-kernel-knowledge-cgroups-resource-isolation/</guid>
+      <description>上一篇中，我们了解了 Docker 背后使用的资源隔离技术 namespace，通过系统调用构建一个相对隔离的 shell 环境，也可以称之为一个简单的“容器”。本文我们则要开始讲解另一个强大的内核工具——cgroups。他不仅可以限制被 namespace 隔离起来的资源，还可以为资源设置权重、计算使用量、操控进程启停等等。在介绍完基本概念后，我们将详细讲解 Docker 中使用到的 cgroups 内容。希望通过本文，让读者对 Docker 有更深入的了解。
+1. cgroups 是什么 cgroups（Control Groups）最初叫 Process Container，由 Google 工程师（Paul Menage 和 Rohit Seth）于 2006 年提出，后来因为 Container 有多重含义容易引起误解，就在 2007 年更名为 Control Groups，并被整合进 Linux 内核。顾名思义就是把进程放到一个组里面统一加以控制。官方的定义如下 { 引自：https://www.kernel.org/doc/Documentation/cgroups/cgroups.txt }：
+ cgroups 是 Linux 内核提供的一种机制，这种机制可以根据特定的行为，把一系列系统任务及其子任务整合（或分隔）到按资源划分等级的不同组内，从而为系统资源管理提供一个统一的框架。
+ 通俗的来说，cgroups 可以限制、记录、隔离进程组所使用的物理资源（包括：CPU、memory、IO 等），为容器实现虚拟化提供了基本保证，是构建 Docker 等一系列虚拟化管理工具的基石。
+对开发者来说，cgroups 有如下四个有趣的特点：
+ cgroups 的 API 以一个伪文件系统的方式实现，即用户可以通过文件操作实现 cgroups 的组织管理。 cgroups 的组织管理操作单元可以细粒度到线程级别，用户态代码也可以针对系统分配的资源创建和销毁 cgroups，从而实现资源再分配和管理。 所有资源管理的功能都以“subsystem（子系统）”的方式实现，接口统一。 子进程创建之初与其父进程处于同一个 cgroups 的控制组。  本质上来说，cgroups 是内核附加在程序上的一系列钩子（hooks），通过程序运行时对资源的调度触发相应的钩子以达到资源追踪和限制的目的。</description>
+    </item>
+    
+    <item>
+      <title>docker 容器网络方案：calico 网络模型</title>
+      <link>https://mydream.ink/archive/docker-calico-network/</link>
+      <pubDate>Thu, 18 Jul 2019 06:57:59 +0800</pubDate>
+      
+      <guid>https://mydream.ink/archive/docker-calico-network/</guid>
+      <description>calico 简介 calico 是容器网络的又一种解决方案，和其他虚拟网络最大的不同是，它没有采用 overlay 网络做报文的转发，提供了纯 3 层的网络模型。三层通信模型表示每个容器都通过 IP 直接通信，中间通过路由转发找到对方。在这个过程中，容器所在的节点类似于传统的路由器，提供了路由查找的功能。
+要想路由工作能够正常，每个虚拟路由器（容器所在的主机节点）必须有某种方法知道整个集群的路由信息，calico 采用的是 BGP 路由协议，全称是 Border Gateway Protocol。
+除了能用于 docker 这样的容器外，它还能集成到容器集群平台 kubernetes、共有云平台 AWS、GCE 等， 而且也能很容易地集成到 openstack 等 Iaas 平台。
+这篇文章就介绍 calico 是如何实现 docker 跨主机网络的。
+calico 集群安装和实验 这部分我会在自己的 virtualbox 环境中运行多节点 docker，并使用 calico 实现跨主机的容器网络通信功能。实验环境一共启动了三台 centos7 虚拟机：
+ node00: 172.17.8.100 node01: 172.17.8.101 node02: 172.17.8.102  这三台机器可以通过上面的 IP 地址进行通信，并且有不同的 hostname，推荐使用 vagrant 运行虚拟机集群。
+这部分我们会手动安装 calico 集群，以加深理解，在生产环境中推荐使用自动化安装。
+1. 安装 docker 既然要在 docker 集群中测试 calico 网络，当然要有一个能正常工作的 docker 环境。docker 的安装这里就不说了，请参考官网上的安装手册选择适合自己的方式。</description>
+    </item>
+    
+    <item>
+      <title>Istio 流量管理实现机制深度解析</title>
+      <link>https://mydream.ink/archive/deep-analysis-of-istio-traffic-management-implementation-mechanism/</link>
+      <pubDate>Sat, 13 Jul 2019 16:33:15 +0800</pubDate>
+      
+      <guid>https://mydream.ink/archive/deep-analysis-of-istio-traffic-management-implementation-mechanism/</guid>
+      <description>前言 Istio 作为一个 service mesh 开源项目,其中最重要的功能就是对网格中微服务之间的流量进行管理,包括服务发现,请求路由和服务间的可靠通信。Istio 实现了 service mesh 的控制面，并整合 Envoy 开源项目作为数据面的 sidecar，一起对流量进行控制。
+Istio 体系中流量管理配置下发以及流量规则如何在数据面生效的机制相对比较复杂，通过官方文档容易管中窥豹，难以了解其实现原理。本文尝试结合系统架构、配置文件和代码对 Istio 流量管理的架构和实现机制进行分析，以达到从整体上理解 Pilot 和 Envoy 的流量管理机制的目的。
+Pilot 高层架构 Istio 控制面中负责流量管理的组件为 Pilot，Pilot 的高层架构如下图所示：
+
+Pilot Architecture（来自[Isio 官网文档](https://istio.io/docs/concepts/traffic-management/)[[1]](#ref01)) 根据上图,Pilot 主要实现了下述功能：
+统一的服务模型 Pilot 定义了网格中服务的标准模型，这个标准模型独立于各种底层平台。由于有了该标准模型，各个不同的平台可以通过适配器和 Pilot 对接，将自己特有的服务数据格式转换为标准格式，填充到 Pilot 的标准模型中。
+例如 Pilot 中的 Kubernetes 适配器通过 Kubernetes API 服务器得到 kubernetes 中 service 和 pod 的相关信息，然后翻译为标准模型提供给 Pilot 使用。通过适配器模式，Pilot 还可以从 Mesos, Cloud Foundry, Consul 等平台中获取服务信息，还可以开发适配器将其他提供服务发现的组件集成到 Pilot 中。
+标准数据面 API Pilo 使用了一套起源于 Envoy 项目的标准数据面 API[2]来将服务信息和流量规则下发到数据面的 sidecar 中。</description>
+    </item>
+    
+    <item>
+      <title>深入解读 Service Mesh 背后的技术细节</title>
+      <link>https://mydream.ink/archive/the-technicial-detail-of-service-mesh/</link>
+      <pubDate>Sat, 13 Jul 2019 13:36:51 +0800</pubDate>
+      
+      <guid>https://mydream.ink/archive/the-technicial-detail-of-service-mesh/</guid>
+      <description>深入解读 Service Mesh 背后的技术细节 本文由网易云发布。
+作者：刘超，网易云首席解决方案架构师
+在 Kubernetes 称为容器编排的标准之后，Service Mesh 开始火了起来，但是很多文章讲概念的多，讲技术细节的少，所以专门写一篇文章，来解析 Service Mesh 背后的技术细节。
+一、Service Mesh 是 Kubernetes 支撑微服务能力拼图的最后一块 在上一篇文章为什么 kubernetes 天然适合微服务中我们提到，Kubernetes 是一个奇葩所在，他的组件复杂，概念复杂，在没有实施微服务之前，你可能会觉得为什么 Kubernetes 要设计的这么复杂，但是一旦你要实施微服务，你会发现 Kubernetes 中的所有概念，都是有用的。
+在我们微服务设计的是个要点中，我们会发现 Kubernetes 都能够有相应的组件和概念，提供相应的支持。
+其中最后的一块拼图就是服务发现，与熔断限流降级。
+众所周知，Kubernetes 的服务发现是通过 Service 来实现的，服务之间的转发是通过 kube-proxy 下发 iptables 规则来实现的，这个只能实现最基本的服务发现和转发能力，不能满足高并发应用下的高级的服务特性，比较 SpringCloud 和 Dubbo 有一定的差距，于是 Service Mesh 诞生了，他期望讲熔断，限流，降级等特性，从应用层，下沉到基础设施层去实现，从而使得 Kubernetes 和容器全面接管微服务。
+二、以 Istio 为例讲述 Service Mesh 中的技术关键点 就如 SDN 一样，Service Mesh 将服务请求的转发分为控制面和数据面，因而分析他，也是从数据面先分析转发的能力，然后再分析控制面如何下发命令。今天这篇文章重点讲述两个组件 Envoy 和 Pilot
+一切从 Envoy 开始 我们首先来看，如果没有融入 Service Mesh，Envoy 本身能够做什么事情呢？
+Envoy 是一个高性能的 C++写的 proxy 转发器，那 Envoy 如何转发请求呢？需要定一些规则，然后按照这些规则进行转发。</description>
+    </item>
+    
+    <item>
+      <title>MongoDB 复制集原理</title>
+      <link>https://mydream.ink/archive/the-principle-of-the-mongodb-replication-set/</link>
+      <pubDate>Sun, 07 Jul 2019 19:20:18 +0800</pubDate>
+      
+      <guid>https://mydream.ink/archive/the-principle-of-the-mongodb-replication-set/</guid>
+      <description>MongoDB的单实例模式下，一个mongod进程为一个实例，一个实例中包含若干db，每个db包含若干张表。
+MongoDB通过一张特殊的表local.oplog.rs存储oplog，该表的特点是：固定大小，满了会删除最旧记录插入新记录，而且只支持append操作，因此可以理解为一个持久化的ring-buffer。oplog是MongoDB复制集的核心功能点。
+MongoDB复制集是指MongoDB实例通过复制并应用其他实例的oplog达到数据冗余的技术。
+常用的复制集构成一般有下图两种方式 (注意，可以使用mongoshell 手工指定复制源，但mongdb不保证这个指定是持久的，下文会讲到在某些情况下，MongoDB会自动进行复制源切换）。
+MongoDB的复制集技术并不少见，很类似mysql的异步复制模式，这种模式主要有几个技术点：
+ 新节点加入，正常同步前的初始化 Primary节点挂掉后，剩余的Secondary节点如何提供服务 如何保证主节点挂掉后数据不丢失/主节点挂掉后丢失数据的处理  MongoDB作为一个成熟的数据库产品，较好的解决了上述问题，一个完整的复制集包含如下几点功能：
+  数据同步
+ initial-sync steady-sync 异常数据回滚    MongoDB集群心跳与选举
+  一.数据同步 initial_sync 当一个节点刚加入集群时，它需要初始化数据使得 自身与集群中其它节点的数据量差距尽量少，这个过程称为initial-sync。
+一个initial-sync 包括六步（阅读rs_initialSync.cpp:_initialSync函数的逻辑)。
+ 删除本地除local库以外的所有db 选取一个源节点，将源节点中的所有db导入到本地（注意，此处只导入数据，不导入索引） 将2）开始执行到执行结束中源产生的oplog 应用到本地 将3）开始执行到执行结束中源产生的oplog 应用到本地 从源将所有table的索引在本地重建（导入索引） 将5）开始执行到执行结束中源产生的oplog 应用到本地 当第6）步结束后，源和本地的差距足够小，MongoDB进入Secondary（从节点）状态。  第2）步要拷贝所有数据，因此一般第2）步消耗时间最长，第3）与第4）步是一个连续逼近的过程，MongoDB这里做了两次。
+是因为第2）步一般耗时太长，导致第3）步数据量变多，间接受到影响。然而这么做并不是必须的，rs_initialSync.cpp：384 开始的TODO建议使用SyncTail的方式将数据一次性读回来（SyncTail以及TailableCursor的行为与原理如果不熟悉请看官方文档。
+steady-sync 当节点初始化完成后，会进入steady-sync状态，顾名思义，正常情况下，这是一个稳定静默运行于后台的，从复制源不断同步新oplog的过程。该过程一般会出现这两种问题：
+ 复制源写入过快（或者相对的，本地写入速度过慢），复制源的oplog覆盖了 本地用于同步源oplog而维持在源的游标。 本节点在宕机之前是Primary，在重启后本地oplog有和当前Primary不一致的Oplog。  这两种情况分别如下图所示：
+这两种情况在bgsync.cpp:_produce函数中，虽然这两种情况很不一样，但是最终都会进入bgsync.cpp:_rollback函数处理。
+对于第二种情况，处理过程在rs_rollback.cpp中，具体步骤为：
+  维持本地与远程的两个反向游标，以线性的时间复杂度找到LCA（最近公共祖先，上conflict.png中为Record4）
+该过程与经典的两个有序链表找公共节点的过程类似，具体实现在roll_back_local_operations.cpp:syncRollBackLocalOperations中，读者可以自行思考这一过程如何以线性时间复杂度实现。
+  针对本地每个冲突的oplog，枚举该oplog的类型，推断出回滚该oplog需要的逆操作并记录，如下：
+2.1: create_table -&amp;gt; drop_table 2.2: drop_table -&amp;gt; 重新同步该表 2.</description>
+    </item>
+    
+    <item>
+      <title>8种主流NoSQL数据库对比</title>
+      <link>https://mydream.ink/archive/comparison-of-8-mainstream-nosql-databases/</link>
+      <pubDate>Sun, 07 Jul 2019 14:02:44 +0800</pubDate>
+      
+      <guid>https://mydream.ink/archive/comparison-of-8-mainstream-nosql-databases/</guid>
+      <description>简介 NoSQL，是一项全新的数据库革命性运动，NoSQL的拥护者们提倡运用非关系型的数据存储。现今的计算机体系结构在数据存储方面要求具备庞大的水平扩展性，而NoSQL致力于改变这一现状。目前Google的 BigTable 和Amazon 的Dynamo使用的就是NoSQL型数据库。
+但是NoSQL数据库之间的不同，远超过两 SQL数据库之间的差别。这意味着软件架构师更应该在项目开始时就选择好一个适合的 NoSQL数据库。
+针对这种情况，这里对 Cassandra、 Mongodb、CouchDB、Redis、 Riak、 Membase、Neo4j、HBase进行了比较：
+1. CouchDB  所用语言： Erlang 特点：DB一致性，易于使用 使用许可： Apache 协议： HTTP/REST 双向数据复制 持续进行或临时处理 处理时带冲突检查 因此，采用的是master-master复制(见编注2) MVCC – 写操作不阻塞读操作 可保存文件之前的版本 Crash-only(可靠的)设计 需要不时地进行数据压缩 视图：嵌入式 映射/减少 格式化视图：列表显示 支持进行服务器端文档验证 支持认证 根据变化实时更新 支持附件处理 因此，CouchApps(独立的 js应用程序) 需要 jQuery程序库 master-master复制是一种数据库同步方法，允许数据在一组计算机之间共享数据，并且可以通过小组中任意成员在组内进行数据更新。  最佳应用场景：适用于数据变化较少，执行预定义查询，进行数据统计的应用程序。适用于需要提供数据版本支持的应用程序。
+例如： CRM、CMS系统。 master-master复制对于多站点部署是非常有用的。
+2. Redis  所用语言：C/C++ 特点：运行异常快 使用许可： BSD 协议：类 Telnet 有硬盘存储支持的内存数据库， 但自2.0版本以后可以将数据交换到硬盘(注意， 2.4以后版本不支持该特性!) Master-slave复制(见编注3) 虽然采用简单数据或以键值索引的哈希表，但也支持复杂操作，例如 ZREVRANGEBYSCORE。 INCR &amp;amp; co (适合计算极限值或统计数据) 支持 sets(同时也支持 union/diff/inter) 支持列表(同时也支持队列;阻塞式 pop操作) 支持哈希表(带有多个域的对象) 支持排序 sets(高得分表，适用于范围查询) Redis支持事务 支持将数据设置成过期数据(类似快速缓冲区设计) Pub/Sub允许用户实现消息机制 Master-slave复制，如果同一时刻只有一台服务器处理所有的复制请求，通常应用在需要提供高可用性的服务器集群。  最佳应用场景：适用于数据变化快且数据库大小可遇见(适合内存容量)的应用程序。</description>
+    </item>
+    
+    <item>
+      <title>从IaaS到FaaS——Serverless架构的前世今生</title>
+      <link>https://mydream.ink/archive/iaas-faas-serverless/</link>
+      <pubDate>Sun, 07 Jul 2019 13:43:44 +0800</pubDate>
+      
+      <guid>https://mydream.ink/archive/iaas-faas-serverless/</guid>
+      <description>今天大多数公司在开发应用程序并将其部署在服务器上的时候，无论是选择公有云还是私有的数据中心，都需要提前了解究竟需要多少台服务器、多大容量的存储和数据库的功能等。并需要部署运行应用程序和依赖的软件到基础设施之上。假设我们不想在这些细节上花费精力，是否有一种简单的架构模型能够满足我们这种想法？这个答案已经存在，这就是今天软件架构世界中新鲜但是很热门的一个话题——Serverless（无服务器）架构。
+什么是Serverless 如同许多新的概念一样，Serverless目前还没有一个普遍公认的权威的定义。最新的一个定义是这样描述的：“无服务器架构是基于互联网的系统，其中应用开发不使用常规的服务进程。相反，它们仅依赖于第三方服务（例如AWS Lambda服务），客户端逻辑和服务托管远程过程调用的组合。”
+最开始，“无服务器”架构试图帮助开发者摆脱运行后端应用程序所需的服务器设备的设置和管理工作。这项技术的目标并不是为了实现真正意义上的“无服务器”，而是指由第三方云计算供应商负责后端基础结构的维护，以服务的方式为开发者提供所需功能，例如数据库、消息，以及身份验证等。简单地说，这个架构的就是要让开发人员关注代码的运行而不需要管理任何的基础设施。程序代码被部署在诸如AWS Lambda这样的平台之上，通过事件驱动的方法去触发对函数的调用。很明显，这是一种完全针对程序员的架构技术。其技术特点包括了事件驱动的调用方式，以及有一定限制的程序运行方式，例如AWS Lambda的函数的运行时间默认为3秒到5分钟。从这种架构技术出现的两年多时间来看，这个技术已经有了非常广泛的应用，例如移动应用的后端和物联网应用等。简而言之，无服务器架构的出现不是为了取代传统的应用。然而，从具有高度灵活性的使用模式及事件驱动的特点出发，开发人员／架构师应该重视这个新的计算范例，它可以帮助我们达到减少部署、提高扩展性并减少代码后面的基础设施的维护负担。
+Serverless的历史 Serverless这个概念并不容易理解。乍见之下，很容易让人混淆硬件服务器及软件上的服务与其所谓的“服务器”差别。在这里强调的所谓“无服务器”指的是我们的代码不会明确地部署在某些特定的软件或者硬件的服务器上。运行代码托管的环境是由例如AWS这样的云计算厂商所提供的。
+Serverless这个词第一次被使用大约是2012年由Ken Form所写的一篇名为《Why The Future of Software and Apps is Serverless》的文章。这篇文章谈到的内容是关于持续集成及源代码控制等内容，并不是我们今天所特指的这一种架构模式。但Amazon在2014年发布的AWS Lambda让“Serverless”这一范式提高到一个全新的层面，为云中运行的应用程序提供了一种全新的系统体系结构。至此再也不需要在服务器上持续运行进程以等待HTTP请求或API调用，而是可以通过某种事件机制触发代码的执行，通常这只需要在AWS的某台服务器上配置一个简单的功能。此后Ant Stanley 在2015年7月的名为《Server are Dead…》的文章中更是围绕着AWS Lambda及刚刚发布的AWS API Gateway这两个服务解释了他心目中的Serverless，“Server are dead…they just don’t know it yet”。到了2015年10月份，在那一年的AWS re:Invent大会上，Serverless的这个概念更是反复出现在了很多场合。印象中就包括了“（ARC308）The Serverless Company Using AWS Lambda”及“（DVO209）JAWS: The Monstrously Scalable Serverless Framework”这些演讲当中。随着这个概念的进一步发酵，2016年10月在伦敦举办了第一届的Serverlessvconf。在两天时间里面，来自全世界40多位演讲嘉宾为开发者分享了关于这个领域进展。
+在Serverless的世界里面，AWS扮演了一个非常重要的角色。但是AWS并不是唯一的Serverless架构服务的供应商。其他厂商，例如Google Cloud Functions、Microsoft Azure Functions、IBM OpenWhisk、Iron.io和Webtask等各种开源平台都提供了类似的服务。
+Serverless与FaaS 微服务（MicroService）是软件架构领域业另一个热门的话题。如果说微服务是以专注于单一责任与功能的小型功能块为基础，利用模组化的方式组合出复杂的大型应用程序，那么我们还可以进一步认为Serverless架构可以提供一种更加“代码碎片化”的软件架构范式，我们称之为Function as a Services（FaaS）。而所谓的“函数”（Function）提供的是相比微服务更加细小的程序单元。例如，可以通过微服务代表为某个客户执行所有CRUD操作所需的代码，而FaaS中的“函数”可以代表客户所要执行的每个操作：创建、读取、更新，以及删除。当触发“创建账户”事件后，将通过AWS Lambda函数的方式执行相应的“函数”。从这一层意思来说，我们可以简单地将Serverless架构与FaaS概念等同起来。
+FaaS与PaaS的比较 乍看起来，FaaS与PaaS的概念在某些方面有许多相似的地方。人们甚至认为FaaS就是另一种形式的PaaS。但是Intent Media的工程副总裁Mike Roberts有自己的不同看法：“大部分PaaS应用无法针对每个请求启动和停止整个应用程序，而FaaS平台生来就是为了实现这样的目的。”
+FaaS和PaaS在运维方面最大的差异在于缩放能力。对于大部分PaaS平台，用户依然需要考虑缩放。但是对于FaaS应用，这种问题完全是透明的。就算将PaaS应用设置为自动缩放，依然无法在具体请求的层面上进行缩放，而FaaS应用在成本方面效益就高多了。AWS云架构战略副总裁Adrian Cockcroft曾经针对两者的界定给出了一个简单的方法：“如果你的PaaS能够有效地在20毫秒内启动实例并运行半秒,那么就可以称之为Serverless”。
+Serverless架构的优点   降低运营成本：
+Serverless是非常简单的外包解决方案。它可以让您委托服务提供商管理服务器、数据库和应用程序甚至逻辑，否则您就不得不自己来维护。由于这个服务使用者的数量会非常庞大，于是就会产生规模经济效应。在降低成本上包含了两个方面，即基础设施的成本和人员（运营/开发）的成本。
+  降低开发成本：</description>
+    </item>
+    
+    <item>
+      <title>consul 支持多数据中心的服务发现与配置共享工具</title>
+      <link>https://mydream.ink/archive/the-consul-of-discovery-and-configure-services/</link>
+      <pubDate>Sun, 07 Jul 2019 11:24:33 +0800</pubDate>
+      
+      <guid>https://mydream.ink/archive/the-consul-of-discovery-and-configure-services/</guid>
+      <description>consul 是一个支持多数据中心分布式高可用，用于服务发现和配置共享的工具。那么，之前已经有了众多的用于服务发现和配置的工具，如：etcd、zookeeper 等，为什么还冒出来个 consul？阅读 Consul vs. Other Software 或许你可以找到答案。
+consul 关键特性   服务发现：支持服务发现。你可以通过 DNS 或 HTTP 的方式获取服务信息。
+  健康检查：支持健康检查。可以提供与给定服务相关联的任何数量的健康检查（如 web 状态码或 cpu 使用率）。
+  K/V 存储：键/值对存储。你可用通过 consul 存储如动态配置之类的相关信息。
+  多数据中心：支持多数据中心，开箱即用。
+  WEB UI：支持 WEB UI。点点点，你就能够了解你的服务现在的运行情况，一目了然，对开发运维是非常友好的。
+  consul 相较与 etcd、zookeeper 最大的特点就是：它整合了用户普遍的需求，开箱即用，降低了使用的门槛。
+consul 术语 首先介绍下在 consul 中会经常见到的术语：
+ node：节点，需要 consul 注册发现或配置管理的服务器。 agent：consul 中的核心程序，它将以守护进程的方式在各个节点运行，有 client 和 server 启动模式。每个 agent 维护一套服务和注册发现以及健康信息。 client：agent 以 client 模式启动的节点。在该模式下，该节点会采集相关信息，通过 RPC 的方式向 server 发送。 server：agent 以 server 模式启动的节点。一个数据中心中至少包含 1 个 server 节点。不过官方建议使用 3 或 5 个 server 节点组建成集群，以保证高可用且不失效率。server 节点参与 Raft、维护会员信息、注册服务、健康检查等功能。 datacenter：数据中心，私有的，低延迟的和高带宽的网络环境。一般的多个数据中心之间的数据是不会被复制的，但可用过 ACL replication 或使用外部工具 onsul-replicate。 Consensus，共识协议，使用它来协商选出 leader。 Gossip：consul 是建立在 Serf，它提供完整的 gossip protocol，维基百科。 LAN Gossip，Lan gossip 池，包含位于同一局域网或数据中心上的节点。 WAN Gossip，只包含 server 的 WAN Gossip 池，这些服务器主要位于不同的数据中心，通常通过互联网或广域网进行通信。 members：成员，对 consul 成员的称呼。提供会员资格，故障检测和事件广播。有兴趣的朋友可以深入研究下。  consul 架构 consul 的架构是什么，官方给出了一个很直观的图片：</description>
+    </item>
+    
+    <item>
+      <title>CentOS7安装PPTP</title>
+      <link>https://mydream.ink/archive/install-pptp-on-centos7/</link>
+      <pubDate>Sun, 07 Jul 2019 10:52:34 +0800</pubDate>
+      
+      <guid>https://mydream.ink/archive/install-pptp-on-centos7/</guid>
+      <description>CentOS7安装PPTP VPN（开启firewall防火墙）
+  准备一个CentOS7服务器
+  检查是否支持PPTP
+modprobe ppp-compress-18 &amp;amp;&amp;amp; echo ok #返回OK zgrep MPPE /proc/config.gz #返回CONFIG_PPP_MPPE=y 或 =m cat /dev/net/tun #返回cat: /dev/net/tun: File descriptor in bad state 以上三条命令满足一条即为支持PPTP
+  安装PPP
+ yum install -y ppp    安装PPTPD
+  添加EPEL源：
+ wget http://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm    安装EPEL源：
+ rpm -ivh epel-release-latest-7.noarch.rpm    检查是否已添加到源列表中：
+ yum repolist    更新源列表：
+ yum -y update    安装PPTPD：</description>
+    </item>
+    
+    <item>
+      <title>Helm的安装和使用</title>
+      <link>https://mydream.ink/archive/about-the-installation-and-use-of-helm/</link>
+      <pubDate>Sun, 07 Jul 2019 08:42:53 +0800</pubDate>
+      
+      <guid>https://mydream.ink/archive/about-the-installation-and-use-of-helm/</guid>
+      <description>Helm 可以理解为 Kubernetes 的包管理工具，可以方便地发现、共享和使用为Kubernetes构建的应用。
+一、基本概念   Helm的三个基本概念
+ Chart：Helm应用（package），包括该应用的所有Kubernetes manifest模版，类似于YUM RPM或Apt dpkg文件 Repository：Helm package存储仓库 Release：chart的部署实例，每个chart可以部署一个或多个release    Helm工作原理
+Helm包括两个部分，helm客户端和tiller服务端。
+the client is responsible for managing charts, and the server is responsible for managing releases.
+  helm客户端
+helm客户端是一个命令行工具，负责管理charts、reprepository和release。它通过gPRC API（使用kubectl port-forward将tiller的端口映射到本地，然后再通过映射后的端口跟tiller通信）向tiller发送请求，并由tiller来管理对应的Kubernetes资源。
+Helm客户端的使用方法参见Helm命令。
+  tiller服务端
+tiller接收来自helm客户端的请求，并把相关资源的操作发送到Kubernetes，负责管理（安装、查询、升级或删除等）和跟踪Kubernetes资源。为了方便管理，tiller把release的相关信息保存在kubernetes的ConfigMap中。
+tiller对外暴露gRPC API，供helm客户端调用。
+  二、安装 环境：kubernetes 1.7 + helm 2.5.0
+  客户端安装：
+下载相应的版本：https://github.com/kubernetes/helm/releases
+解压
+tar -zxvf helm-v2.5.0-linux-amd64.tgz 把helm执行文件放置在：
+mv linux-amd64/helm /usr/local/bin/helm From there, you should be able to run the client: helm help.</description>
+    </item>
+    
+    <item>
+      <title>在CentOS6.5上布署OpenLDAP</title>
+      <link>https://mydream.ink/archive/deploy-openldap-on-centos-6.5/</link>
+      <pubDate>Sun, 07 Jul 2019 08:19:54 +0800</pubDate>
+      
+      <guid>https://mydream.ink/archive/deploy-openldap-on-centos-6.5/</guid>
+      <description>本文系统：Centos6.5_x64
+ip:192.168.28.139
+客户端：192.168.28.141
+推荐大家可以先了解下AD域的结构，一些概念性的东西，比如树、林、组织单位、资源等
+openldap 可以看作是nis的升级，把他想象成资料库的一种就好了
+一、ldap的部署、用户信息的存储   安装openldap
+ [root@master ~]# yum install openldap openldap-devel openldap-servers openldap-clients -y    配置文件模版
+ [root@master ~]# cp /usr/share/openldap-servers/slapd.conf.obsolete /etc/openldap/slapd.conf  修改配置文件
+ [root@master ~]# vim /etc/openldap/slapd.conf 26 pidfile /var/run/openldap/slapd.pid 27 argsfile /var/run/openldap/slapd.args 28 loglevel 1 115 suffix &amp;quot;dc=lansgg,dc=com&amp;quot; 117 rootdn &amp;quot;cn=admin,dc=lansgg,dc=com&amp;quot; 121 rootpw adminpw  这里管理员的密码使用了明文，也可以使用加密形式，方法如下：
+ [root@master ~]# slappasswd New password: Re-enter new password: {SSHA}7EJGErpaeX3Zd6rxfxVzNVwSm2UC1e/T  将密文串替换成adminpw即可；
+你也可以指定加密方式：</description>
+    </item>
+    
+    <item>
+      <title>LXC的简单用法</title>
+      <link>https://mydream.ink/archive/the-simple-usage-of-lxc/</link>
+      <pubDate>Sun, 07 Jul 2019 08:02:31 +0800</pubDate>
+      
+      <guid>https://mydream.ink/archive/the-simple-usage-of-lxc/</guid>
+      <description>LXC简介 LXC (Linux Containters) 是一种基于内核容器属性的用户空间接口。 它被认为介于chroot和完全虚拟化之间，其目标为创建一个不需要独立内核，但近可能接近标准Linux安装的环境。
+其特性如下：
+ 内核空间（ipc, uts, mount, pid, network和user) 支持Apparmor和SELinux seccomp策略 chroots (使用pivot_root) Kernel capabilities 支持cgroups (Control groups) 由于没有完全虚拟化CPU，也没有虚拟化硬盘，其性能是与物理机接近的。实际经验，我发现在LXC中编译C/C++源码（如构建基于C/C++源码的RPM或DEB）的性能是VirtualBox的3倍。强烈建议使用LXC代替KVM和VirtualBox作为RPM或DEB的构建环境。  以下操作基于Ubuntu 12.04，那么需要安装LXC包：
+sudo apt-get install -y lxc  创建LXC 以创建一个名为precise的Ubuntu 12.04容器为例。
+需要创建一个基础的配置文件。由于创建LXC完成后，不再需要该配置文件（可以删除），故该文件的名字和路径没有特殊要求。这里命名为precise.conf，放在当前路径下：
+lxc.network.type = veth lxc.network.flags = up lxc.network.name = eth0 lxc.network.link = lxcbr0  lxcbr0为由LXC包创建的虚拟网桥，通过ifconfig可以知道其IP地址10.0.3.1，网段10.0.3.1/24，容器将通过lxcbr0与外界通信。
+如此，可以开始创建容器了：
+sudo lxc-create -n precise -f precise.conf -t ubuntu -- -r precise   -n 指定容器名，这里为precise。
+-f 指定基础配置文件，即上一步骤创建的precise.conf。
+-t 指定模板名，这里必须为ubuntu（创建Ubuntu 12.</description>
+    </item>
+    
+    <item>
+      <title>MongoDB3.4副本集分片集群搭建</title>
+      <link>https://mydream.ink/archive/deploy-mongodb-3.4-with-sharded-cluster/</link>
+      <pubDate>Sat, 06 Jul 2019 15:54:35 +0800</pubDate>
+      
+      <guid>https://mydream.ink/archive/deploy-mongodb-3.4-with-sharded-cluster/</guid>
+      <description>mongdb3.4 的副本集搭建与以前的版本有些区别，最主要的区别就是 configdb强制复制集(CSRS)。网上很多的教程都没有注意到这一点，所以在使用3.4版本的时候搭建不成功。
+搭建时遇到不少坑，几乎放弃的情况下，借助谷歌翻译查看了官方文档，问题迎刃而解。
+官方文档：Sharding - MongoDB Manual 3.4
+一、测试环境 操作体统：VMware + ubuntu16.04 + 静态IP mongodb版本：mongodb-3.4
+二、布局预览 三、资源分配 IP分配：
+ 机器1：192.168.80.61 机器2：192.168.80.62 机器3：192.168.80.63 机器4：192.168.80.64 机器5：192.168.80.65 机器6：192.168.80.66  端口分配：
+ mongos：18000 config：17000 shard01：18001 shard02：18002 shard03：18003 shard04：18004 shard05：18005 shard06：18006  表1:
+三台主机分别新建如下目录：
+ /home/ubuntu/data/mongodb/config/data /home/ubuntu/data/mongodb/config/log/ /home/ubuntu/data/mongodb/mongos/log  六台机器分别创建 表1 对应的分片，每台机器三个分片
+ /home/ubuntu/data/mongodb/shard0X/data /home/ubuntu/data/mongodb/shard0X/log  四、启动配置服务器 这是最关键的一步，网上一些教程报错的主要原因就在于congfigsvr配置不是针对版本3.4分别
+  在每一台路由机器上启动配置服务器（非第一次启动加--logappend）
+ mongod –configsvr --replSet cfgsvr –port 17000 –dbpath /home/ubuntu/data/mongodb/config/data --logpath /home/ubuntu/data/mongodb/config/log/config.log –fork    登录任意一台配置服务器，初始化配置副本集</description>
+    </item>
+    
+  </channel>
+</rss>
